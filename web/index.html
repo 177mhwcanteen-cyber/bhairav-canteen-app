@@ -554,6 +554,12 @@ html.camon header{top:0}
 /* Part 4 — बचत */
 .pp-save{margin:6px 0 2px;text-align:center;border:1.5px dashed #16a34a;color:#15803d;border-radius:10px;padding:6px;font-weight:700}
 .ppc-save{display:block;color:#15803d;font-weight:700;margin-top:2px}
+
+/* Part 5 — खरीद */
+.pqrow{display:flex;gap:8px;margin:10px 0}.pqrow .inp{flex:1}
+.mhnote{display:grid;gap:4px;border:1.5px solid #0ea5e9;background:#f0f9ff}
+.qexp{display:flex;align-items:center;gap:8px}.qexp input{flex:1;font-size:17px}
+.mhslip{white-space:pre-wrap;font:15px/1.5 "Mukta","Noto Sans Devanagari",sans-serif;background:#fffdf5;border:1px dashed #cbd5e1;border-radius:12px;padding:12px;margin:0 0 10px;max-height:46vh;overflow:auto}
 </style>
 
 <header class="px">
@@ -621,7 +627,7 @@ function mcat(it){return OLDCAT[it.cat]||it.cat||"kirana"}
 const LOW=5;
 function lowOf(it){return +it.min>0?+it.min:LOW}
 function isLow(it){return !!it.track&&(+(S.pstock[it.id]?.qty)||0)<=lowOf(it)}
-function expInfo(it){if(!it.exp)return it.chk?{k:"chk",t:"तारीख जाँचें"}:null;const d=Math.floor((new Date(String(it.exp)+"T23:59:59")-Date.now())/864e5);if(isNaN(d))return null;if(d<0)return {k:"dead",t:"एक्सपायर",d};if(d<=30)return {k:"soon",t:d+" दिन बचे",d};return it.chk?{k:"chk",t:"तारीख जाँचें"}:null}
+function expInfo(it){const e0=window.SF&&SF.nearExp?SF.nearExp(it):it.exp;if(e0!==it.exp)it={...it,exp:e0};if(!it.exp)return it.chk?{k:"chk",t:"तारीख जाँचें"}:null;const d=Math.floor((new Date(String(it.exp)+"T23:59:59")-Date.now())/864e5);if(isNaN(d))return null;if(d<0)return {k:"dead",t:"एक्सपायर",d};if(d<=30)return {k:"soon",t:d+" दिन बचे",d};return it.chk?{k:"chk",t:"तारीख जाँचें"}:null}
 function ean13(s12){let t=0;for(let i=0;i<12;i++)t+=(+s12[i])*(i%2?3:1);return s12+((10-t%10)%10)}
 function nextCode(cat){const base={kirana:1000,fast:2000,sabzi:3000}[cat||"kirana"]||1000;return String(S.items.reduce((a,i)=>{const c=+i.code||0;return c>base&&c<base+1000?Math.max(a,c):a},base)+1)}
 function canSell(it){if(expInfo(it)?.k==="dead"){beep(false);toast("⚠ "+it.name+" एक्सपायर है — इसे काउंटर से हटाएँ, बिल में नहीं जुड़ेगा");return false}return true}
@@ -1136,6 +1142,7 @@ async function handleScan(code){
     if(vw.kind==="fix"&&vw.it.unit!=="pc"){beep(true);openQty(vw.it);return}quickAdd(vw.it,vw.qty);return}
   const it=findByCode(code);beep(!!it);
   if(!it){unknownCode(code);return}
+  if(S.tab==="kharid"&&!S.scanIn&&window.SF&&SF.scanAdd){SF.scanAdd(it);return}
   if(S.scanIn){
     await adjStock([[it.id,1]],"माल आया");
     if(!S.demo){try{await S.db.collection("inward").doc("w"+Date.now().toString(36)+Math.random().toString(36).slice(2,4)).set({itemId:it.id,name:it.name,qty:1,cost:(window.SF?SF.costOf(it):(+it.cost||0)),code,date:today(),ts:Date.now(),by:S.uid||"",byName:biller()})}catch(e){}}
@@ -1207,7 +1214,7 @@ function camUi(on){document.documentElement.classList.toggle("camon",on);$("#cam
   const tb=$("#camTorch");tb.hidden=!(on&&SE.cam.canTorch);tb.textContent="🔦";}
 $("#camOff").onclick=()=>camOff(true);
 $("#camTorch").onclick=async()=>{const t=await SE.cam.toggleTorch();$("#camTorch").textContent=t?"🔦 बंद":"🔦"};
-function camAuto(){const want=(S.tab==="bill"||(S.tab==="day"&&S.scanIn));if(!want&&SE.cam.on)camOff(false);else if(want&&!SE.cam.on&&SE.isNative&&lsGet("se_cam")==="1"&&!document.hidden)camOn()}
+function camAuto(){const want=(S.tab==="bill"||S.tab==="kharid"||(S.tab==="day"&&S.scanIn));if(!want&&SE.cam.on)camOff(false);else if(want&&!SE.cam.on&&SE.isNative&&lsGet("se_cam")==="1"&&!document.hidden)camOn()}
 document.addEventListener("visibilitychange",()=>{if(document.hidden){if(SE.cam.on){SE.cam.stop();camUi(false);camAuto._resume=true}}else if(camAuto._resume){camAuto._resume=false;camAuto()}});
 async function liveScan(){
   if(SE.cam.on){camOff(true);return}
