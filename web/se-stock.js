@@ -118,6 +118,49 @@ function viewCount(c){
   $("#sheet").onclick=e=>{if(e.target.matches("[data-close]")){closeSheet();SK.render()}};
 }
 
+/* ---------- 📲 रात की रिपोर्ट ---------- */
+function dayNums(){
+  const all=S.dayBills||[],bills=all.filter(b=>!b.cancelled),sale=bills.filter(b=>b.mode!=="inst"),inst=bills.filter(b=>b.mode==="inst");
+  const sum=(a,f)=>r2(a.reduce((x,b)=>x+(+f(b)||0),0));
+  const cost=sum(sale,b=>(b.lines||[]).reduce((y,l)=>y+(+l.cost||0)*(+l.qty||0),0));
+  const P=(S.purch||[]).filter(p=>!p.cancelled);
+  const W=((S.stock&&S.stock.wlog)||[]);
+  return {n:sale.length,tot:sum(sale,b=>b.total),cash:sum(sale,b=>b.pay&&b.pay.cash),upi:sum(sale,b=>b.pay&&b.pay.upi),ud:sum(sale,b=>b.pay&&b.pay.udhar),
+    pend:sale.filter(b=>b.settled===false).length,inst:sum(inst,b=>b.total),nInst:inst.length,cost,gm:r2(sum(sale,b=>b.total)-cost),
+    saved:sum(sale,b=>typeof savedOf==="function"?savedOf(b):0),cancel:all.filter(b=>b.cancelled),
+    buy:sum(P.filter(p=>p.src!=="mh"),p=>p.total),mh:sum(P.filter(p=>p.src==="mh"),p=>p.total),mhUnsent:P.filter(p=>p.src==="mh"&&!p.mhSent).length,
+    waste:r2(W.reduce((a,w)=>a+(+w.qty||0)*(+w.cost||0),0)),nWaste:W.length,
+    kh:sum(S.kharch||[],k=>k.amt),byStaff:sale.reduce((m,b)=>{const k=b.byName||"—";m[k]=r2((m[k]||0)+(+b.total||0));return m},{})};
+}
+function ownerText(){
+  const d=dayNums(),T=tracked(),low=T.filter(isLow),xp=T.filter(it=>qOf(it)>0&&expInfo(it)&&expInfo(it).k!=="chk");
+  const cnt=(S.counts||[]).filter(c=>c.date===S.billsDate);
+  return `🛒 *भैरव कैंटीन — ${fdate(S.billsDate)} का हिसाब*\n────────\n`+
+  `💰 बिक्री: *${rs(d.tot)}* (${d.n} बिल)\n   नकद ${rs(d.cash)} · UPI ${rs(d.upi)} · उधार ${rs(d.ud)}${d.pend?`\n   ⏳ ${d.pend} बिल का भुगतान बाकी`:""}\n`+
+  (d.nInst?`🏢 संस्था को: ${rs(d.inst)} (${d.nInst} बिल)\n`:"")+
+  `📈 लगभग मुनाफ़ा: *${rs(d.gm)}* (लागत ${rs(d.cost)})\n`+
+  (d.saved>0?`🎉 ग्राहकों की MRP से बचत: ${rs(d.saved)}\n`:"")+
+  `🚚 माल आया: ${rs(d.buy)}${d.mh?` · 177 MH से ${rs(d.mh)}${d.mhUnsent?` (⚠ ${d.mhUnsent} पर्ची भेजनी बाकी)`:""}`:""}\n`+
+  (d.kh?`💸 खर्चा: ${rs(d.kh)}\n`:"")+
+  (d.nWaste?`🗑️ खराब/एक्सपायर हटाया: ${d.nWaste} बार · लगभग ${rs(d.waste)}\n`:"")+
+  (cnt.length?`🔢 गिनती: ${cnt.map(c=>c.byName+" · "+(c.short>0?"कम "+rs(c.short):"सब मिला")).join(", ")}\n`:"")+
+  (d.cancel.length?`❌ रद्द बिल: ${d.cancel.map(b=>b.no+" "+rs(b.total)+(b.cancelReason?" ("+b.cancelReason+")":"")).join(", ")}\n`:"")+
+  `👤 ${Object.entries(d.byStaff).map(([k,v])=>k+" "+rs(v)).join(" · ")||"—"}\n`+
+  `────────\n⚠ कम स्टॉक (${low.length}): ${low.slice(0,10).map(it=>it.name+" "+Math.max(0,qOf(it))).join(", ")||"कोई नहीं"}${low.length>10?" …":""}\n`+
+  `⏰ एक्सपायरी पास (${xp.length}): ${xp.slice(0,8).map(it=>it.name+" ("+expInfo(it).t+")").join(", ")||"कोई नहीं"}`;
+}
+function staffText(){
+  const d=dayNums();
+  return `🛒 *भैरव कैंटीन — ${fdate(S.billsDate)}*\n${biller()} की तरफ़ से आज का हिसाब 🙏\n────────\n`+
+  `बिक्री: *${rs(d.tot)}* (${d.n} बिल)\nनकद ${rs(d.cash)} · UPI ${rs(d.upi)} · उधार ${rs(d.ud)}\n`+(d.nInst?`संस्था: ${rs(d.inst)}\n`:"")+(d.kh?`खर्चा: ${rs(d.kh)}\n`:"")+(d.buy||d.mh?`माल आया: ${rs(r2(d.buy+d.mh))}\n`:"");
+}
+SK.reportBtnHTML=function(){return `<div class="card2 nightcard"><div><b>📲 आज का पूरा हिसाब WhatsApp पर</b><span class="note">बिक्री, मुनाफ़ा, खरीद, रद्द बिल, कम स्टॉक, एक्सपायरी — एक मैसेज में</span></div>
+  <a class="big" style="text-align:center;text-decoration:none" target="_blank" rel="noopener" href="${waLink(ownerText(),ownerPh())}">🟢 भेजें</a><button class="lnk" data-nightview>पहले देखें</button></div>`};
+SK.staffBtnHTML=function(){return `<div class="card2 nightcard"><div><b>📲 आज का हिसाब विक्रम जी को भेजें</b><span class="note">दुकान बंद करते समय एक बार</span></div>
+  <a class="big" style="text-align:center;text-decoration:none" target="_blank" rel="noopener" href="${waLink(staffText(),ownerPh())}">🟢 भेजें</a></div>`};
+SK.ownerText=ownerText;
+document.addEventListener("click",e=>{if(e.target.closest("[data-nightview]")){$("#sheet").innerHTML=`<div class="scrim" data-close><div class="sheet px" role="dialog" aria-label="आज का हिसाब"><div class="grab"></div><div class="sh-head"><h3>📲 आज का हिसाब</h3><button class="x" data-close aria-label="बंद करें">✕</button></div><pre class="mhslip">${esc(ownerText().replace(/\*/g,""))}</pre><a class="big" style="text-align:center;text-decoration:none;display:block" target="_blank" rel="noopener" href="${waLink(ownerText(),ownerPh())}">🟢 WhatsApp पर भेजें</a></div></div>`;$("#sheet").onclick=x=>{if(x.target.matches("[data-close]"))closeSheet()}}});
+
 /* ---------- घटनाएँ ---------- */
 SK.bind=function(){
   const el=$("#p-stock");

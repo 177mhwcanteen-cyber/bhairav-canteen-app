@@ -83,7 +83,7 @@ function loginFlow(){
       try{
         let v=1;try{const x=await db.doc("staffIndex/"+st.phone).get();if(x.exists)v=+x.data().v||1}catch(e){}
         await auth.signInWithEmailAndPassword(staffEmail(st.phone,v),staffPass(st.phone,st.pin));
-        try{const h=await SE.pinHash(st.phone,st.pin);localStorage.setItem("se_pinh",h);localStorage.setItem("se_pinph",st.phone);localStorage.setItem("se_act",String(Date.now()))}catch(e){}
+        try{const h=await SE.pinHash(st.phone,st.pin);localStorage.setItem("se_pinh",h);localStorage.setItem("se_pinph",st.phone);localStorage.setItem("se_act",String(Date.now()));localStorage.setItem("bh_pin_ts",String(Date.now()))}catch(e){}
       }catch(e){st.busy=false;st.pin="";st.err=errHi(e);draw()}
     };
     L.onclick=async e=>{

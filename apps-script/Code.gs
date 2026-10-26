@@ -9,16 +9,21 @@
  * 4. ऊपर फ़ंक्शन "setup" चुनकर ▶ Run दबाएँ → अनुमति दें (Allow)
  * 5. ऊपर Deploy → New deployment → प्रकार "Web app" → Execute as: Me, Who has access: Anyone → Deploy
  *    जो URL मिले (…/exec) वह Claude को भेजें — ऐप की खरीद वाली फोटो इसी से Drive में जाएँगी
- * बस। अब हर घंटे पिछले 3 दिन का हिसाब Sheet में अपने-आप उतरता रहेगा।
+ * बस। अब हर घंटे पिछले 3 दिन का हिसाब Sheet में अपने-आप उतरता रहेगा,
+ * और दिन में 2 बार (सुबह ~7 और रात ~10 बजे) पूरा डेटा JSON फाइल बनकर Drive के
+ * "भैरव कैंटीन बैकअप" फ़ोल्डर में जाएगा (पिछले 60 बैकअप रखे जाते हैं, पुराने अपने-आप हटते हैं)।
  * Sheet में कुछ भी हाथ से बदलने से ऐप का डेटा नहीं बदलता (सिर्फ़ पढ़ने की कॉपी है)।
  */
-const PROJECT_ID = 'sabji-express-9a8f0'; // Firebase प्रोजेक्ट ID, जैसे sabji-express-1a2b3
+const PROJECT_ID = 'BHAIRAV_PROJECT_ID'; // भैरव का Firebase प्रोजेक्ट ID (Claude भरेगा, जैसे bhairav-canteen-1a2b3)
 const DAYS_BACK = 3;
 
 function setup() {
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('syncAll').timeBased().everyHours(1).create();
+  ScriptApp.newTrigger('backupJson').timeBased().atHour(7).everyDays(1).inTimezone('Asia/Kolkata').create();
+  ScriptApp.newTrigger('backupJson').timeBased().atHour(22).everyDays(1).inTimezone('Asia/Kolkata').create();
   syncAll();
+  backupJson();
 }
 
 function syncAll() {
@@ -30,6 +35,23 @@ function syncAll() {
   syncPurchases_(ss);
   sheet_(ss, 'जानकारी', ['आखिरी अपडेट']).getRange(2, 1).setValue(new Date());
 }
+
+/* ---------- दिन में 2 बार पूरा बैकअप (Drive → "भैरव कैंटीन बैकअप") ---------- */
+const BK_COLS = ['items', 'pstock', 'batches', 'parties', 'ledger', 'customers', 'purchases', 'suppliers', 'supPay', 'counts', 'settings', 'priceLog', 'staff', 'staffIndex', 'cancelReq'];
+function backupJson() {
+  const out = { app: 'भैरव कैंटीन', project: PROJECT_ID, at: new Date().toISOString(), collections: {}, days: {} };
+  BK_COLS.forEach(c => { try { out.collections[c] = fsList_(c); } catch (e) { out.collections[c] = { error: String(e) }; } });
+  days_().concat(daysBack_(7)).filter((d, i, a) => a.indexOf(d) === i).forEach(d => {
+    try { out.days[d] = { bills: fsList_('days/' + d + '/bills'), meta: fsList_('days/' + d + '/meta'), kharch: fsList_('days/' + d + '/kharch') }; } catch (e) {}
+  });
+  const root = folder_(DriveApp.getRootFolder(), 'भैरव कैंटीन बैकअप');
+  const name = 'bhairav-backup-' + Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd_HHmm') + '.json';
+  root.createFile(name, JSON.stringify(out), 'application/json');
+  const files = []; const it = root.getFiles(); while (it.hasNext()) files.push(it.next());
+  files.filter(f => /^bhairav-backup-/.test(f.getName())).sort((a, b) => b.getDateCreated() - a.getDateCreated()).slice(60).forEach(f => f.setTrashed(true));
+  sheet_(SpreadsheetApp.getActive(), 'जानकारी', ['आखिरी अपडेट']).getRange(3, 1).setValue('आखिरी बैकअप: ' + name);
+}
+function daysBack_(n) { const out = []; for (let i = 0; i < n; i++) out.push(Utilities.formatDate(new Date(Date.now() - i * 864e5), 'Asia/Kolkata', 'yyyy-MM-dd')); return out; }
 
 /* ---------- Firestore REST (आपके Google खाते की अनुमति से) ---------- */
 function fsList_(path) {

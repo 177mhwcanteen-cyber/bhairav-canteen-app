@@ -224,7 +224,7 @@ const R={date:null,map:null,live:[],day:null,agg:null,loading:false,custQ:"",cus
 SR.onDb=function(db){
   db.collection("places").onSnapshot(s=>{SR.places=s.docs.map(d=>({id:d.id,...d.data()}));if(S.tab==="route"&&R.day){R.day=analyze(R.day.date,R.day.docs,R.day.bills);SR.renderRoute()}},()=>{});
   if(S.isOwner)db.collection("live").onSnapshot(s=>{R.live=s.docs.map(d=>({id:d.id,...d.data()}));if(S.tab==="route")SR.updateLive()},()=>{});
-  else{setTimeout(SR.start,1500);setTimeout(SR.lockCheck,1200)}
+  // भैरव कैंटीन: गाड़ी वाली GPS ट्रैकिंग नहीं चलती (कैंटीन एक जगह है)
 };
 function parse(docs){
   const by={};
@@ -475,7 +475,7 @@ function bindRoute(el){
 
 /* ======================= ⚡ जल्दी वाले काम: खराबी, खर्चा, भाव, रात का स्टॉक ======================= */
 SR.quickStripHTML=function(){return `<div class="qstrip"><button data-qwaste>🗑️<span>खराबी</span></button><button data-qkharch>💸<span>खर्चा</span></button><button data-qrate>✏️<span>भाव बदलें</span></button><button data-qnight>🌙<span>रात का स्टॉक</span></button></div>`};
-const KH=["गाड़ी किराया","पेट्रोल / डीज़ल","गाड़ी रिपेयर","मंडी भाड़ा","हम्माली","पॉलीथीन / थैली","चाय-नाश्ता","अन्य"];
+const KH=["बिजली","गैस सिलेंडर","चाय-नाश्ता","पॉलीथीन / थैली","सफ़ाई","भाड़ा / ऑटो","हम्माली"];
 SR.kharchSheet=function(){
   $("#sheet").innerHTML=`<div class="scrim" data-close><div class="sheet px" role="dialog" aria-label="खर्चा"><div class="grab"></div>
   <div class="sh-head"><div><h3>💸 खर्चा लिखें</h3><span class="note">आज ${fdate(today())} · दिन के हिसाब में जुड़ जाएगा</span></div><button class="x" data-close aria-label="बंद करें">✕</button></div>
@@ -578,6 +578,7 @@ document.addEventListener("click",e=>{
 const IDLE=60*60000;let lastMark=0;
 function markAct(){const n=Date.now();if(n-lastMark<30000)return;lastMark=n;LSx.set("se_act",String(n))}
 SR.lockCheck=function(){
+  return; // भैरव: घंटे-घंटे का लॉक बंद — PIN हर 12 घंटे (index.html pinGate)
   if(S.isOwner||S.demo||!S.uid||document.getElementById("plock"))return;
   const h=LSx.get("se_pinh"),ph=LSx.get("se_pinph"),last=+LSx.get("se_act")||0;
   if(!h||!ph)return;

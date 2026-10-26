@@ -600,6 +600,7 @@ kbd{border:1px solid #cbd5e1;border-bottom-width:2px;border-radius:5px;padding:0
 .pinlock input{width:200px;text-align:center;font-size:34px;letter-spacing:14px;border-radius:16px;border:0;padding:12px}
 .pinlock .lnk{color:#fff;opacity:.85}
 .paper.pp-c .ppc-tag{background:#fff;border-color:#fff}
+.nightcard{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;border:1.5px solid #22c55e}.nightcard>div{display:grid;gap:2px}.nightcard .lnk{grid-column:1/-1;justify-self:start}
 </style>
 
 <header class="px">
@@ -823,7 +824,7 @@ function renderBill(){
 }
 $("#p-bill").addEventListener("click",e=>{
   if(e.target.closest("[data-ratemode]")){S.rateMode=!S.rateMode;renderBill();if(S.rateMode)toast("✏️ अब जिस सामान का भाव बदलना है, उसे दबाएँ");return}
-  const rmi=S.rateMode&&e.target.closest("[data-item]");if(rmi&&window.SR){SR.rateSheet(item(rmi.dataset.item));return}
+  const rmi=S.rateMode&&e.target.closest("[data-item]");if(rmi&&window.SR){const x=item(rmi.dataset.item);if(!S.isOwner&&!x.flex){beep(false);toast(x.name+" का भाव सिर्फ़ विक्रम जी बदल सकते हैं");return}SR.rateSheet(x);return}
   const ni=e.target.closest("[data-newitem]");if(ni&&window.SR){SR.newItemSheet(ni.dataset.newitem);return}
   const m=e.target.closest("[data-mode]");if(m){setMode(m.dataset.mode);return}
   const c=e.target.closest("[data-cat]");if(c){S.cat=c.dataset.cat;S.sub="all";S.flt="";renderBill();return}
@@ -1351,7 +1352,8 @@ const PIN_MS=12*3600*1000;
 function pinGate(){
   if(S.demo||S.isOwner||!S.uid)return;
   const h=lsGet("se_pinh"),ph=lsGet("se_pinph");if(!h||!ph)return;
-  if(Date.now()-(+lsGet("se_act")||0)<PIN_MS)return;
+  if(!lsGet("bh_pin_ts"))lsSet("bh_pin_ts",String(Date.now()));
+  if(Date.now()-(+lsGet("bh_pin_ts")||0)<PIN_MS)return;
   if(document.querySelector(".pinlock"))return;
   const d=document.createElement("div");d.className="pinlock";
   d.innerHTML=`<div style="font-size:44px">🔐</div><h2 style="margin:0">${esc((b=>/जी$/.test(b)?b:b+" जी")(biller()||""))}, अपना PIN डालें</h2><p style="margin:0;opacity:.85">दिन में एक-दो बार PIN पूछा जाता है ताकि आपके नाम से कोई और बिल न बनाए।</p>
@@ -1359,7 +1361,7 @@ function pinGate(){
   document.body.appendChild(d);let bad=0;const inp=d.querySelector("#pgIn");setTimeout(()=>inp.focus(),80);
   inp.oninput=async()=>{inp.value=inp.value.replace(/\D/g,"");if(inp.value.length<4)return;
     const ok=(await SE.pinHash(ph,inp.value))===h;
-    if(ok){lsSet("se_act",String(Date.now()));d.remove();toast("✓ स्वागत है "+(biller()||""))}
+    if(ok){lsSet("bh_pin_ts",String(Date.now()));lsSet("se_act",String(Date.now()));d.remove();toast("✓ स्वागत है "+(biller()||""))}
     else{bad++;inp.value="";d.querySelector("#pgErr").textContent=bad>=5?"5 बार गलत — दोबारा लॉगिन करें":"PIN गलत है ("+bad+"/5)";if(navigator.vibrate)navigator.vibrate(120);if(bad>=5)setTimeout(()=>SE.logout(),1200)}};
   d.querySelector("[data-pgout]").onclick=()=>SE.logout();
 }
@@ -1507,11 +1509,12 @@ function diffPill(diff){if(diff==null)return '<span class="pill blue">अभी 
 function renderDay(){
   const d=S.billsDate,c=cashCalc(d),rows=stockRows();
   const _k=window.SF?SF.dayKpi():{buy:0,short:0};const buyTot=_k.buy,shortTot=_k.short;
-  const quick=["गाड़ी किराया","पेट्रोल / डीज़ल","गाड़ी रिपेयर","मंडी भाड़ा","हम्माली","पॉलीथीन / थैली","चाय-नाश्ता"];
+  const quick=["बिजली","गैस सिलेंडर","चाय-नाश्ता","पॉलीथीन / थैली","सफ़ाई","भाड़ा / ऑटो","हम्माली"];
   $("#p-day").innerHTML=`<div class="daterow"><h2 class="sec" style="margin:0;flex:1">दिन का हिसाब</h2><input class="inp" type="date" id="dayDate" value="${d}" aria-label="तारीख"></div>
-  <div class="kpis"><div class="kpi"><span>आज की खरीद (मंडी)</span><b>${rs(buyTot)}</b></div><div class="kpi red"><span>खर्चा</span><b>${rs(c.khAll)}</b></div>
+  <div class="kpis"><div class="kpi"><span>आज की खरीद (माल)</span><b>${rs(buyTot)}</b></div><div class="kpi red"><span>खर्चा</span><b>${rs(c.khAll)}</b></div>
   <div class="kpi ${shortTot>0?"red":""}"><span>माल में कमी (बिक्री रेट)</span><b>${rs(shortTot)}</b></div><div class="kpi"><span>गल्ला</span><b style="font-size:16px;padding-top:6px">${diffPill(c.diff)}</b></div></div>
 
+  ${window.SK&&!S.isOwner?SK.staffBtnHTML():""}
   <div class="card2"><h3>गल्ला मिलान</h3>
     <div class="stkmeta"><span>सुबह खुला पैसा</span><b>${rs(c.float)}</b></div>
     <div class="stkmeta"><span>+ नकद बिक्री</span><b>${rs(c.cashSale)}</b></div>
@@ -1595,7 +1598,7 @@ function renderReport(){
   const topC=[...S.customers].sort((a,b)=>(b.spent||0)-(a.spent||0)).slice(0,5);
   const waText=`*भैरव कैंटीन · ${fdate(date)}*\nबिक्री: ${rs(salesTot)} (${sale.length} बिल)\nनकद ${rs(cash)} · UPI ${rs(upi)} · उधार ${rs(ud)}\nवसूली: ${rs(jc+ju)}\nखर्चा: ${rs(cc.khAll)}\nमुनाफ़ा (खर्चे के बाद): ${rs(net)}\nगल्ला: ${cc.diff==null?"गिना नहीं":Math.abs(cc.diff)<=5?"पूरा मिला":rs(cc.diff)}\nमाल में कमी: ${rs(shortTot)}\nरेट बदले/छूट: ${flags.length} बिल`;
   const rows=Object.values(items).sort((a,b)=>b.amt-a.amt);
-  $("#p-report").innerHTML=(window.SF?SF.cancelReqsHTML():"")+(window.SB?SB.editsHTML():"")+(window.SR?SR.pendingItemsHTML():"")+guardHTML()+`<div class="daterow"><h2 class="sec" style="margin:0;flex:1">मालिक की रिपोर्ट</h2><input class="inp" type="date" id="repDate" value="${date}" aria-label="तारीख"></div>
+  $("#p-report").innerHTML=(window.SK?SK.reportBtnHTML():"")+(window.SF?SF.cancelReqsHTML():"")+(window.SB?SB.editsHTML():"")+(window.SR?SR.pendingItemsHTML():"")+guardHTML()+`<div class="daterow"><h2 class="sec" style="margin:0;flex:1">मालिक की रिपोर्ट</h2><input class="inp" type="date" id="repDate" value="${date}" aria-label="तारीख"></div>
   <button class="big ghost" data-a4 style="margin-bottom:10px">🖨️ A4 रिपोर्ट प्रिंट / PDF</button>
   ${window.SF?SF.chartsHTML():""}
   <div class="kpis">

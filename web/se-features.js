@@ -408,7 +408,7 @@ SF.dayStockHTML=function(){
     <label class="fld">रात बचा (होना चाहिए ${fq(Math.max(0,r.expect),it.unit)})<input class="inp ${r.flag?"bad":""}" id="sc-${id}" data-sk="close" inputmode="decimal" value="${r.close??""}"></label></div>
     ${(()=>{const o=(S.stock.items||{})[it.id]||{};return S.isOwner&&o.recount&&o.close1!=null?`<div class="note" style="margin-top:4px">⚖️ पहली गिनती ${fq(num(o.close1),it.unit)} → दोबारा ${fq(num(o.close),it.unit)}${o.closeBy?" · "+esc(o.closeBy):""}</div>`:""})()}
     ${r.short!=null?`<div class="stkmeta" style="margin-top:4px">${r.flag?`<span class="pill red">कमी ${fq(r.short,it.unit)} · ${rs(r2(r.short*(+it.sale||0)))}</span>`:r.extra?`<span class="pill blue">${fq(-r.short,it.unit)} ज़्यादा बचा</span>`:'<span class="pill green">✓ हिसाब मिला</span>'}</div>`:""}
-  </div></div>`}).join("")||'<div class="empty">आज अभी कोई माल नहीं — "खरीद" में मंडी की खरीद डालें</div>'}</div>`;
+  </div></div>`}).join("")||'<div class="empty">आज अभी कोई माल नहीं — "माल आया" में की खरीद डालें</div>'}</div>`;
 };
 function dayMoney(rows){
   const bills=liveBills(),sale=bills.filter(b=>b.mode!=="inst"),inst=bills.filter(b=>b.mode==="inst");
@@ -547,7 +547,7 @@ F. **कौन सा आँकड़ा अधूरा है** — जो ऐ
 - कुल बिल: ${all.length} (रद्द ${all.length-bills.length}) · ग्राहक बिल ${sale.length} · संस्था बिल ${inst.length}
 - ग्राहकों से बिक्री: ₹${M.sales} · नकद ₹${sum(sale,b=>b.pay&&b.pay.cash)} · UPI ₹${sum(sale,b=>b.pay&&b.pay.upi)} · उधार ₹${sum(sale,b=>b.pay&&b.pay.udhar)}
 - संस्था को दिया: ₹${M.instVal}
-- मंडी खरीद: ₹${M.buyAll} (${livePurch().length} बिल)
+- माल खरीद: ₹${M.buyAll} (${livePurch().length} बिल)
 - कल रात का माल (खरीद भाव): ₹${M.openVal} · आज रात का माल: ₹${M.closeVal}${rows.length&&rows.every(r=>r.close!=null)?"":" ⚠ (रात का स्टॉक पूरा नहीं लिखा — अंदाज़ा)"}
 - ऐप का निकाला मुनाफ़ा (खर्च घटाए बिना): ₹${M.profit}
 - बोर्ड भाव से बिक्री होनी चाहिए थी: ₹${M.expSale} · असल ₹${M.sales} · फर्क ₹${M.gap}
@@ -568,7 +568,7 @@ F. **कौन सा आँकड़ा अधूरा है** — जो ऐ
 ${TH(["सामान","इकाई","कल रात","+खरीदा","खरीद भाव ₹","−ग्राहक","−संस्था","−खराब","होना चाहिए","रात बचा (लिखा)","कमी","कमी ₹ (बिक्री भाव)","बिक्री भाव ₹"])}
 ${T(rows.map(r=>[r.it.name,U(r.it),r.prev,r.buyQ,r.rate,r.saleQ,r.instQ,r.waste,Math.max(0,r.expect),r.close==null?"⚠ नहीं लिखा":r.close,r.short==null?"—":r.short,r.short!=null&&r.short>0?r2(r.short*num(r.it.sale)):"",num(r.it.sale)]))}
 
-## 4. मंडी खरीद
+## 4. माल खरीद
 ${TH(["नं","समय","दुकान","किसने","सामान","मात्रा","भाव ₹","पिछला भाव ₹","फर्क %","रकम ₹","भुगतान","फोटो"])}
 ${T(livePurch().flatMap((p,i)=>(p.lines||[]).map(l=>{const pr=lastRate(l.id,p.ts);const diff=pr&&pr.rate>0?r2((num(l.rate)-pr.rate)/pr.rate*100):"";
   return [pNo(p,i+1),ftime(p.ts),p.supName||"",p.byName||"",l.name,num(l.qty),num(l.rate),pr?pr.rate:"",diff,r2(num(l.qty)*num(l.rate)),PAY[p.pay]||p.pay||"",(p.photos&&p.photos.length)||p.photoPending?"हाँ":"⚠ नहीं"]})))}
@@ -872,9 +872,9 @@ SF.chartsHTML=function(){
   const hs=hours.map((v,h)=>({h,v})).filter(x=>x.h>=6&&x.h<=22),hmax=Math.max(1,...hs.map(x=>x.v));
   const wk=CH.data&&CH.end===end?CH.data:null;
   const wkSale=wk?r2(wk.reduce((a,r)=>a+r.sale,0)):0,wkBuy=wk?r2(wk.reduce((a,r)=>a+r.buy,0)):0;
-  return `<div class="chart"><h3>📊 पिछले 7 दिन</h3><p class="note">${wk?`कुल बिक्री ${rs(wkSale)} · कुल मंडी खरीद ${rs(wkBuy)}`:"लोड हो रहा है…"}</p>
+  return `<div class="chart"><h3>📊 पिछले 7 दिन</h3><p class="note">${wk?`कुल बिक्री ${rs(wkSale)} · कुल माल खरीद ${rs(wkBuy)}`:"लोड हो रहा है…"}</p>
     ${wk?weekSVG(wk):'<div style="height:170px"></div>'}
-    <div class="legend"><span><i style="background:#1f8a4c"></i>बिक्री (ग्राहक)</span><span><i style="background:#f0a500"></i>मंडी खरीद</span></div></div>
+    <div class="legend"><span><i style="background:#1f8a4c"></i>बिक्री (ग्राहक)</span><span><i style="background:#f0a500"></i>माल खरीद</span></div></div>
   ${mt>0?`<div class="chart"><h3>💳 आज पैसा कैसे आया</h3>
     <div class="mixbar">${mix.filter(m=>m[1]>0).map(m=>`<span style="flex:${m[1]};background:${m[2]}">${Math.round(m[1]/mt*100)}%</span>`).join("")}</div>
     <div class="legend">${mix.map(m=>`<span><i style="background:${m[2]}"></i>${m[0]} ${rs(m[1])}</span>`).join("")}</div></div>`:""}
@@ -1106,7 +1106,7 @@ SF.purchA4HTML=function(){
   const list=livePurch();if(!list.length)return "";
   const tot=r2(list.reduce((a,p)=>a+num(p.total),0));
   const by={};list.forEach(p=>{by[p.pay]=r2((by[p.pay]||0)+num(p.paid));});
-  return `<h2>मंडी खरीद (${list.length} बिल · ${rs(tot)})</h2><table><tr><th>नं</th><th>दुकान</th><th>किसने</th><th>सामान</th><th class="r">रकम</th><th>भुगतान</th><th>फोटो</th></tr>
+  return `<h2>माल खरीद (${list.length} बिल · ${rs(tot)})</h2><table><tr><th>नं</th><th>दुकान</th><th>किसने</th><th>सामान</th><th class="r">रकम</th><th>भुगतान</th><th>फोटो</th></tr>
   ${list.map((p,i)=>`<tr><td>${pNo(p,i+1)}</td><td>${esc(p.supName||"")}</td><td>${esc(p.byName||"")}</td><td>${(p.lines||[]).map(l=>`${esc(l.name)} ${fq(l.qty,l.unit)}×${rs(l.rate)}${l.prev&&l.rate>l.prev*1.03?" 🔺":""}`).join(", ")}</td><td class="r">${rs(p.total)}</td><td>${PAY[p.pay]||""}${num(p.due)>0?" · बाकी "+rs(p.due):""}</td><td>${(p.photos||[]).length?(p.photos||[]).map((f,j)=>`<a href="${esc(f.url)}">${j+1}</a>`).join(" "):"—"}</td></tr>`).join("")}</table>
   <p>भुगतान: ${Object.entries(by).map(([k,v])=>`${PAY[k]||k} ${rs(v)}`).join(" · ")}</p>`;
 };
