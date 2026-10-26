@@ -141,7 +141,7 @@ SR.keepPhone=async function(b,ph,saved){
 };
 SR.smsText=function(b){
   const L=b.lines||[];const it=L.slice(0,6).map(l=>l.name+" "+fq(l.qty,l.unit).replace(" कि.ग्रा","kg")).join(", ");const ph=SF.orderPh();
-  return `भैरव कैंटीन\nबिल ${b.no} · ${fdate(b.date||today())}\n${it}${L.length>6?"…":""}\nकुल: Rs ${b.total}\nधन्यवाद! फिर पधारें${ph?"\nघर बैठे सब्ज़ी: "+SF.fmtPh(ph)+" (WhatsApp/कॉल)":""}`;
+  return `भैरव कैंटीन\nबिल ${b.no} · ${fdate(b.date||today())}\n${it}${L.length>6?"…":""}\nकुल: Rs ${b.total}\nधन्यवाद! फिर पधारें${ph?"\nऑर्डर: "+SF.fmtPh(ph)+" (WhatsApp/कॉल)":""}`;
 };
 SR.sendSms=async function(b,ph){
   const t=SR.smsText(b);
@@ -190,7 +190,7 @@ SR.newItemSheet=function(q){
   <label class="fld">अंग्रेज़ी नाम (अगर पता हो)<input class="inp" id="niEn" placeholder="जैसे Sweet Potato"></label>
   <div class="row2"><label class="fld">किस हिसाब से बिकेगा<select class="inp" id="niUnit"><option value="kg">किलो</option><option value="pc">पीस / पैकेट</option></select></label>
   <label class="fld">बेचने का भाव ₹<input class="inp" id="niRate" inputmode="decimal" placeholder="₹"></label></div>
-  <label class="fld">किस में रखें<select class="inp" id="niCat">${[["sabzi","🛒 सब्ज़ी"],["fal","🍎 फल"],["patta","🌿 पत्तेदार"],["packed","📦 किराना / पैकेट"]].map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select></label>
+  <label class="fld">किस में रखें<select class="inp" id="niCat">${[["kirana","🛒 किराना"],["fast","🍔 फास्ट फूड"],["sabzi","🥬 सब्ज़ी-फल"]].map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select></label>
   <button class="big" data-nisave style="margin-top:10px">✓ जोड़ें और बिल में डालें</button></div></div>`;
   $("#sheet").onclick=e=>{if(e.target.matches("[data-close]")){closeSheet();return}if(e.target.closest("[data-nisave]"))SR.saveNewItem()};
   setTimeout(()=>{const x=$(q?"#niRate":"#niName");if(x)x.focus()},120);

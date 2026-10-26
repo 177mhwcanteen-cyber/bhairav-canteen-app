@@ -127,7 +127,7 @@ SF.renderKharid=function(force){
   <div class="shoprow"><label class="fld">🏪 दुकान का नाम<input class="inp" id="pShop" list="shopList" value="${esc(P.shop)}" placeholder="कुछ भी — जैसे पवन, 12 नं दुकान" autocomplete="off"></label>
     <label class="fld">📞 मोबाइल<input class="inp" id="pPh" inputmode="tel" value="${esc(P.phone)}" placeholder="ज़रूरी नहीं" autocomplete="off"></label></div>
   <datalist id="shopList">${names.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
-  <input class="inp" id="pq" type="search" placeholder="🔍 सब्ज़ी खोजें — जैसे टमाटर 25" value="${esc(P.q||"")}" autocomplete="off" aria-label="सब्ज़ी खोजें" style="margin:10px 0">
+  <input class="inp" id="pq" type="search" placeholder="🔍 सामान खोजें — नाम या कोड" value="${esc(P.q||"")}" autocomplete="off" aria-label="सामान खोजें" style="margin:10px 0">
   <div class="grid" id="pgrid">${pGridHTML()}</div>
   ${list.length?`<h3 style="margin:16px 0 6px">आज की खरीद · ${list.length} बिल · ${rs(r2(list.reduce((a,p)=>a+num(p.total),0)))}</h3>
   <div class="list">${list.map((p,i)=>`<button class="li" data-pview="${esc(p.id)}"><div class="mid"><b>${pNo(p,i+1)} · ${esc(p.supName||"दुकान")}</b><span>${ftime(p.ts)} · ${esc(p.byName||"")} · ${PAY[p.pay]||""}${num(p.disc)>0?" · छूट "+rs(p.disc):""}${num(p.due)>0?" · बाकी "+rs(p.due):""} · ${(p.photos||[]).length?"📷 "+(p.photos||[]).length:num(p.photoPending)>0?"📷 भेजनी बाकी":"फोटो नहीं"}</span></div><div class="rt">${rs(p.total)}<small>${(p.lines||[]).length} सामान</small></div></button>`).join("")}</div>`:""}
@@ -342,7 +342,7 @@ SF.dayStockHTML=function(){
     <p class="note" style="margin:0">दुकान बंद करते समय बचा माल तौलकर डालें। "होना चाहिए" = कल रात का + आज की खरीद − बिका − संस्था।</p>
     <button class="big" data-night>🌙 रात का स्टॉक डालें</button></div>
   ${flags.length?`<div class="warn">⚠ ${flags.length} सब्ज़ियों में माल कम निकला: ${flags.map(r=>esc(r.it.name)+" "+fq(r.short,r.it.unit)).join(", ")}</div>`:""}
-  <h3 style="margin:0 0 4px">माल का हिसाब (सब्ज़ी-वार)</h3>
+  <h3 style="margin:0 0 4px">माल का हिसाब (सामान-वार)</h3>
   <div class="list">${rows.map(r=>{const it=r.it,id=esc(it.id);return `<div class="stkrow" data-sid="${id}">${tileHTML(it)}<div style="min-width:0">
     <div class="stkmeta"><b style="color:var(--ink);font-size:16px">${esc(it.name)}</b><span>${r.rate?`खरीद ${rs(r.rate)}/${UNITS[it.unit]||it.unit}`:""}</span></div>
     <div class="dgrid"><span>कल रात<b>${fq(r.prev,it.unit)}</b></span><span>+ खरीदा<b>${fq(r.buyQ,it.unit)}</b></span><span>− बिका<b>${fq(r.saleQ,it.unit)}</b></span><span>− संस्था<b>${fq(r.instQ,it.unit)}</b></span></div>
@@ -426,9 +426,9 @@ SF.nightReviewHTML=function(){
   const short=D.filter(x=>x.r.short>0),tot=r2(short.reduce((a,x)=>a+x.val,0));
   if(!D.length)return `<div class="card2 nrev ok"><h3>🌙 रात का मिलान</h3><p style="margin:0">✓ ${esc(who)} का लिखा हिसाब एकदम मिल गया 👍 <span class="note">${ftime(S.stock.nightTs)}</span></p>
     ${ph?`<a class="big ghost" style="margin-top:8px;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="${waLink(who+", आज का हिसाब एकदम सही मिला 👍 बहुत बढ़िया। धन्यवाद 🙏",ph)}">🟢 शाबाशी भेजें</a>`:""}</div>`;
-  const msg=`${who}, आज के हिसाब में ${short.map(x=>`${x.r.it.name} लगभग ${fq(x.r.short,x.r.it.unit)}`).join(", ")} कम लग रहा है। कोई सब्ज़ी खराब हुई, किसी संस्था/ग्राहक को दी, या तौल में फर्क रहा क्या? बता दीजिए तो हिसाब में लिख दूँ 🙏`;
+  const msg=`${who}, आज के हिसाब में ${short.map(x=>`${x.r.it.name} लगभग ${fq(x.r.short,x.r.it.unit)}`).join(", ")} कम लग रहा है। कोई सामान खराब हुआ, किसी संस्था/ग्राहक को दिया, या तौल में फर्क रहा क्या? बता दीजिए तो हिसाब में लिख दूँ 🙏`;
   return `<div class="card2 nrev"><h3>🌙 रात का मिलान — आपका फैसला</h3>
-  <p class="note" style="margin:0 0 6px">${esc(who)} ने ${ftime(S.stock.nightTs)} पर लिखा · ${D.length} ${D.length>1?"सब्ज़ियों":"सब्ज़ी"} में फर्क${tot>0?` · कमी लगभग <b style="color:var(--chili)">${rs(tot)}</b>`:""} · यह सिर्फ़ आपको दिखता है</p>
+  <p class="note" style="margin:0 0 6px">${esc(who)} ने ${ftime(S.stock.nightTs)} पर लिखा · ${D.length} ${D.length>1?"सामानों":"सामान"} में फर्क${tot>0?` · कमी लगभग <b style="color:var(--chili)">${rs(tot)}</b>`:""} · यह सिर्फ़ आपको दिखता है</p>
   <div class="list" style="margin:0">${D.map(({r,val})=>`<div class="li"><div class="mid"><b>${esc(r.it.name)}</b><span>होना चाहिए ${fq(Math.max(0,r.expect),r.it.unit)} · लिखा ${fq(r.close,r.it.unit)}</span></div><div class="rt" style="color:${r.short>0?"var(--chili)":"var(--leaf)"}">${r.short>0?"कम "+fq(r.short,r.it.unit):"ज़्यादा "+fq(-r.short,r.it.unit)}<small>${rs(Math.abs(val))}</small></div></div>`).join("")}</div>
   ${rev?`<p class="pill green" style="margin:8px 0 0;display:inline-block">✓ आपने देख लिया · ${ftime(rev.ts)}${rev.note?" · "+esc(rev.note):""}</p>`:""}
   <div class="sp-btns" style="margin-top:8px">${ph?`<a class="big ghost" style="text-align:center;text-decoration:none" href="tel:+91${ph}">📞 कॉल करें</a><a class="big ghost" style="text-align:center;text-decoration:none" target="_blank" rel="noopener" href="${waLink(msg,ph)}">🟢 प्यार से पूछें</a>`:`<span class="note">कर्मचारी का नंबर सेटिंग में नहीं मिला</span><span></span>`}
@@ -913,7 +913,7 @@ SF.drawCheckout=function(){
   const st=c.stage||"bill";
   let body="";
   if(st==="bill"){
-    body=`${anyChg?`<div class="warn" style="padding:6px 10px;margin-bottom:6px">⚠ इस बिल में किसी सब्ज़ी का भाव बदला गया है</div>`:""}
+    body=`${anyChg?`<div class="warn" style="padding:6px 10px;margin-bottom:6px">⚠ इस बिल में किसी सामान का भाव बदला गया है</div>`:""}
     ${overLim?`<div class="warn">⚠ ${esc(party.name)} की उधार सीमा ${rs(party.limit)} है। इस बिल के बाद बाकी ${rs(bal(party.id)+tot)} हो जाएगा।</div>`:""}
     ${SF.compactPaperHTML(b,{editable:true,qr:S.mode!=="inst",anim:!c.shown})}
     <p class="note" style="text-align:center;margin:0 0 10px">सामान पर टैप करके मात्रा बदलें · ✕ से हटाएँ</p>
