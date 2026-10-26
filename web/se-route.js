@@ -527,7 +527,7 @@ SR.wasteSheet=function(id,why0){
     if(it.track){const have=+(S.pstock[it.id]?.qty)||0;if(q>have+0.001){toast("स्टॉक में "+fq(have,it.unit)+" ही हैं");return}}
     const items=S.stock.items||(S.stock.items={});const o=items[it.id]||(items[it.id]={});o.waste=r2((+o.waste||0)+q);
     (S.stock.wlog||(S.stock.wlog=[])).push({id:it.id,name:it.name,unit:it.unit,qty:q,reason:why,ts:Date.now(),by:S.uid||"",byName:biller()});
-    if(it.track){(S.stock.wlog[S.stock.wlog.length-1]).cost=window.SF?SF.costOf(it):(+it.cost||0);await adjStock([[it.id,-q]],"खराब: "+why)}
+    if(it.track){(S.stock.wlog[S.stock.wlog.length-1]).cost=(window.SF?SF.costOf(it):(+it.cost||0))||(+it.sale||0);await adjStock([[it.id,-q]],"खराब: "+why)}
     await saveStock();closeSheet();toast("🗑️ "+it.name+" "+fq(q,it.unit)+" हटाया ("+why+")");try{renderPane()}catch(err){}
   };
   setTimeout(()=>{const x=$("#wQ");if(x)x.focus()},60);
