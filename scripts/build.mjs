@@ -18,7 +18,7 @@ rm(OUT); rm(DIST); fs.mkdirSync(path.join(OUT, "lib"), { recursive: true });
 
 // 1) Firebase + Capacitor एक छोटे बंडल में
 await build({ entryPoints: [path.join(W, "src/vendor.js")], bundle: true, minify: true, format: "iife",
-  target: ["chrome90"], outfile: path.join(OUT, "lib/vendor.js"), legalComments: "none", logLevel: "warning" });
+  target: ["chrome90"], charset: "ascii", outfile: path.join(OUT, "lib/vendor.js"), legalComments: "none", logLevel: "warning" });
 
 // 2) बाकी फ़ाइलें
 for (const f of ["index.html", "se-platform.js", "se-features.js", "se-nutri.js", "se-route.js", "se-pay.js", "se-bill.js", "se-stock.js", "se-intake.js", "config.js", "manifest.webmanifest", "migrate.json", "icon.png"])
@@ -27,6 +27,11 @@ cp(path.join(W, "img"), path.join(OUT, "img"));
 cp(path.join(R, "node_modules/qrcodejs/qrcode.min.js"), path.join(OUT, "lib/qrcode.min.js"));
 cp(path.join(R, "node_modules/@zxing/library/umd/index.min.js"), path.join(OUT, "lib/zxing.min.js"));
 cp(path.join(R, "node_modules/jspdf/dist/jspdf.umd.min.js"), path.join(OUT, "lib/jspdf.min.js"));
+// छिपे कंट्रोल-अक्षर (\x01 आदि) को \xNN लिखावट में — कुछ होस्ट कच्चे कंट्रोल-अक्षर नहीं लेते
+for (const f of ["lib/vendor.js", "lib/zxing.min.js", "lib/jspdf.min.js"]) {
+  const fp = path.join(OUT, f); const t = fs.readFileSync(fp, "latin1");
+  fs.writeFileSync(fp, t.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, c => "\\x" + c.charCodeAt(0).toString(16).padStart(2, "0")), "latin1");
+}
 cp(path.join(R, "node_modules/leaflet/dist/leaflet.js"), path.join(OUT, "lib/leaflet.js"));
 cp(path.join(R, "node_modules/leaflet/dist/leaflet.css"), path.join(OUT, "lib/leaflet.css"));
 
