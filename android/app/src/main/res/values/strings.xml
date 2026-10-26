@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">भैरव कैंटीन</string>
+    <string name="title_activity_main">भैरव कैंटीन</string>
+    <string name="package_name">in.bhairav.canteen</string>
+    <string name="custom_url_scheme">in.bhairav.canteen</string>
+</resources>
