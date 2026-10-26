@@ -497,8 +497,8 @@ SR.kharchSheet=function(){
   };
   setTimeout(()=>{const x=$("#qkW");if(x)x.focus()},120);
 };
-const WR=["सड़ गई","सूख गई","दब/टूट गई","कम तौल","ग्राहक को लौटाई","अन्य"];
-SR.wasteSheet=function(id){
+const WR=["सड़ गई","सूख गई","दब/टूट गई","कम तौल","ग्राहक को लौटाई","अन्य"],WRP=["एक्सपायर","पैकेट फटा/टूटा","चूहे/कीड़े","ग्राहक को लौटाया","अन्य"];
+SR.wasteSheet=function(id,why0){
   if(S.billsDate!==today()){toast("खराबी आज की तारीख में ही लिखें — दिन का हिसाब में आज चुनें");return}
   const it=id?item(id):null;
   if(!it){
@@ -511,21 +511,24 @@ SR.wasteSheet=function(id){
     $("#sheet").onclick=e=>{if(e.target.matches("[data-close]")){closeSheet();return}const b=e.target.closest("[data-wit]");if(b)SR.wasteSheet(b.dataset.wit)};
     return;
   }
-  const kg=it.unit==="kg",u=UNITS[it.unit]||it.unit;const hd=$("header").getBoundingClientRect(),top=Math.max(8,Math.round(hd.bottom)+6);
+  const kg=it.unit==="kg",u=UNITS[it.unit]||it.unit,RS=it.track?WRP:WR;const hd=$("header").getBoundingClientRect(),top=Math.max(8,Math.round(hd.bottom)+6);
   $("#sheet").innerHTML=`<div class="qscrim" data-close></div><div class="qpop" style="top:${top}px" role="dialog" aria-label="${esc(it.name)} खराबी">
     <div class="qh">${tileHTML(it)}<div class="qn"><b>🗑️ ${esc(it.name)}</b><span>कितना खराब हुआ?</span></div><button class="x" data-close aria-label="बंद करें">✕</button></div>
     <div class="qrow"><label class="qf"><input id="wQ" inputmode="decimal" autocomplete="off" placeholder="0"><span>${kg?"कि.ग्रा":u}</span></label></div>
-    <div class="lsws">${WR.map((w,i)=>`<button class="chip" data-wr="${esc(w)}" aria-pressed="${i===0}">${esc(w)}</button>`).join("")}</div>
+    ${it.track?`<p class="note" style="margin:0">अभी स्टॉक: ${fq(+(S.pstock[it.id]?.qty)||0,it.unit)}</p>`:""}
+    <div class="lsws">${RS.map((w,i)=>`<button class="chip" data-wr="${esc(w)}" aria-pressed="${why0?w===why0:i===0}">${esc(w)}</button>`).join("")}</div>
     <button class="big" data-wsave style="background:var(--chili);color:#fff">✓ खराबी दर्ज करें</button></div>`;
-  let why=WR[0];
+  let why=why0&&RS.includes(why0)?why0:RS[0];
   $("#sheet").onclick=async e=>{
     if(e.target.matches("[data-close]")){closeSheet();return}
     const w=e.target.closest("[data-wr]");if(w){why=w.dataset.wr;document.querySelectorAll("[data-wr]").forEach(x=>x.setAttribute("aria-pressed",x===w));return}
     if(!e.target.closest("[data-wsave]"))return;
     const q=r2(parseFloat(String($("#wQ").value).replace(",","."))*1000||0)/1000;if(!(q>0)){toast("कितना खराब हुआ — लिखें");return}
+    if(it.track){const have=+(S.pstock[it.id]?.qty)||0;if(q>have+0.001){toast("स्टॉक में "+fq(have,it.unit)+" ही हैं");return}}
     const items=S.stock.items||(S.stock.items={});const o=items[it.id]||(items[it.id]={});o.waste=r2((+o.waste||0)+q);
     (S.stock.wlog||(S.stock.wlog=[])).push({id:it.id,name:it.name,unit:it.unit,qty:q,reason:why,ts:Date.now(),by:S.uid||"",byName:biller()});
-    await saveStock();closeSheet();toast("🗑️ "+it.name+" "+fq(q,it.unit)+" खराबी दर्ज ("+why+")");try{renderPane()}catch(err){}
+    if(it.track){(S.stock.wlog[S.stock.wlog.length-1]).cost=window.SF?SF.costOf(it):(+it.cost||0);await adjStock([[it.id,-q]],"खराब: "+why)}
+    await saveStock();closeSheet();toast("🗑️ "+it.name+" "+fq(q,it.unit)+" हटाया ("+why+")");try{renderPane()}catch(err){}
   };
   setTimeout(()=>{const x=$("#wQ");if(x)x.focus()},60);
 };

@@ -560,6 +560,19 @@ html.camon header{top:0}
 .mhnote{display:grid;gap:4px;border:1.5px solid #0ea5e9;background:#f0f9ff}
 .qexp{display:flex;align-items:center;gap:8px}.qexp input{flex:1;font-size:17px}
 .mhslip{white-space:pre-wrap;font:15px/1.5 "Mukta","Noto Sans Devanagari",sans-serif;background:#fffdf5;border:1px dashed #cbd5e1;border-radius:12px;padding:12px;margin:0 0 10px;max-height:46vh;overflow:auto}
+
+/* Part 6 — स्टॉक */
+.skstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin:0 0 12px}
+.skstats>div{background:var(--surface,#fff);border-radius:14px;padding:10px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.skstats b{display:block;font-size:20px}.skstats span{font-size:12px;color:var(--muted,#64748b)}
+.skstats .bad b{color:var(--chili)}.skstats .warn b{color:#b45309}
+.xpb{font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:#fef3c7;color:#92400e;white-space:nowrap}.xpb.dead{background:#dc2626;color:#fff}.xpb.chk{background:#e0e7ff;color:#3730a3}
+.cnthead{display:flex;align-items:center;justify-content:space-between}.cnthead>b{font-size:22px;color:var(--leaf)}
+.cntrow{display:flex;align-items:center;gap:10px}.cntrow .tile{width:44px;height:44px;flex:none;border-radius:10px;overflow:hidden}
+.cntrow .mid{flex:1;min-width:0}.cntrow.ok{background:#f0fdf4}.cntrow.flash{background:#bbf7d0}
+.cstep2{display:flex;align-items:center;gap:4px}.cstep2 button{width:36px;height:40px;border:0;border-radius:10px;background:var(--line,#e2e8f0);font-size:20px;font-weight:800}
+.cstep2 input{width:60px;text-align:center;font-size:18px;font-weight:800;padding:6px}
+.cntbar{display:flex;gap:8px;background:var(--bg)}.cntbar .big:first-child{flex:0 0 30%}.cntbar .big:last-child{flex:1}
 </style>
 
 <header class="px">
@@ -590,6 +603,7 @@ html.camon header{top:0}
   <section id="p-kharid" hidden></section>
   <section id="p-label" hidden></section>
   <section id="p-route" hidden></section>
+  <section id="p-stock" hidden></section>
 </main>
 
 <div class="cartbar px" id="cartbar" hidden>
@@ -702,15 +716,15 @@ $("#btabs").onclick=e=>{
 };
 
 /* ---------- tabs ---------- */
-function tabsList(){const t=[["bill","बिलिंग"],["kharid","खरीद"],["udhar","उधार खाता"],["bills","आज के बिल"],["day","दिन का हिसाब"]];t.push(["label","लेबल"]);if(S.isOwner)t.push(["route","रूट"]);const _cr=(S.cancelReqs||[]).length;if(S.isOwner)t.push(["report","रिपोर्ट"+(guardOpen()+_cr?" 🔴"+(guardOpen()+_cr):"")],["set","रेट व सेटिंग"]);return t}
+function tabsList(){const t=[["bill","बिलिंग"],["kharid","माल आया"],["stock","स्टॉक"+(window.SK&&SK.counting()?" 🔢":"")],["udhar","उधार खाता"],["bills","आज के बिल"],["day","दिन का हिसाब"]];t.push(["label","लेबल"]);const _cr=(S.cancelReqs||[]).length;if(S.isOwner)t.push(["report","रिपोर्ट"+(guardOpen()+_cr?" 🔴"+(guardOpen()+_cr):"")],["set","रेट व सेटिंग"]);return t}
 function renderTabs(){
-  const TI={bill:"🧾",kharid:"🛒",udhar:"📒",bills:"📋",day:"🌙",label:"🏷️",route:"📍",report:"📈",set:"⚙️"};$("#tabs").innerHTML=tabsList().map(([k,v])=>`<button role="tab" aria-selected="${S.tab===k}" data-tab="${k}"><span class="ti">${TI[k]||""}</span> ${v}</button>`).join("");{const a=$("#tabs [aria-selected=\"true\"]");if(a&&a.scrollIntoView)try{a.scrollIntoView({inline:"center",block:"nearest"})}catch(e){}}
+  const TI={stock:"📦",bill:"🧾",kharid:"🚚",udhar:"📒",bills:"📋",day:"🌙",label:"🏷️",route:"📍",report:"📈",set:"⚙️"};$("#tabs").innerHTML=tabsList().map(([k,v])=>`<button role="tab" aria-selected="${S.tab===k}" data-tab="${k}"><span class="ti">${TI[k]||""}</span> ${v}</button>`).join("");{const a=$("#tabs [aria-selected=\"true\"]");if(a&&a.scrollIntoView)try{a.scrollIntoView({inline:"center",block:"nearest"})}catch(e){}}
   $("#who").textContent="👤 "+(biller()||"नाम डालें");
 }
 $("#tabs").onclick=e=>{const b=e.target.closest("[data-tab]");if(!b)return;S.tab=b.dataset.tab;showTab()};
 function showTab(){
   renderTabs();
-  ["bill","udhar","bills","day","report","set","kharid","label","route"].forEach(k=>$("#p-"+k).hidden=S.tab!==k);$("#sbar").hidden=S.tab==="kharid"||S.tab==="label"||S.tab==="route";
+  ["bill","udhar","bills","day","report","set","kharid","label","route","stock"].forEach(k=>$("#p-"+k).hidden=S.tab!==k);$("#sbar").hidden=S.tab==="kharid"||S.tab==="label"||S.tab==="route"||S.tab==="stock";
   if(S.tab!=="day")S.scanIn=false;
   renderPane(true);renderCart();renderBillTabs();window.scrollTo(0,0);document.body.scrollTop=0;camAuto();
 }
@@ -723,6 +737,7 @@ function renderPane(force){
   else if(S.tab==="kharid"){if(window.SF)SF.renderKharid()}
   else if(S.tab==="label"){if(window.SF)SF.renderLabel()}
   else if(S.tab==="route"){if(window.SR)SR.renderRoute()}
+  else if(S.tab==="stock"){if(window.SK)SK.render()}
   else if(S.tab==="set"){const p=$("#p-set");if(force||!p.contains(document.activeElement))renderSettings()}
 }
 
@@ -1142,6 +1157,7 @@ async function handleScan(code){
     if(vw.kind==="fix"&&vw.it.unit!=="pc"){beep(true);openQty(vw.it);return}quickAdd(vw.it,vw.qty);return}
   const it=findByCode(code);beep(!!it);
   if(!it){unknownCode(code);return}
+  if(S.tab==="stock"&&window.SK&&SK.counting()){SK.scanCount(it);return}
   if(S.tab==="kharid"&&!S.scanIn&&window.SF&&SF.scanAdd){SF.scanAdd(it);return}
   if(S.scanIn){
     await adjStock([[it.id,1]],"माल आया");
@@ -1214,7 +1230,7 @@ function camUi(on){document.documentElement.classList.toggle("camon",on);$("#cam
   const tb=$("#camTorch");tb.hidden=!(on&&SE.cam.canTorch);tb.textContent="🔦";}
 $("#camOff").onclick=()=>camOff(true);
 $("#camTorch").onclick=async()=>{const t=await SE.cam.toggleTorch();$("#camTorch").textContent=t?"🔦 बंद":"🔦"};
-function camAuto(){const want=(S.tab==="bill"||S.tab==="kharid"||(S.tab==="day"&&S.scanIn));if(!want&&SE.cam.on)camOff(false);else if(want&&!SE.cam.on&&SE.isNative&&lsGet("se_cam")==="1"&&!document.hidden)camOn()}
+function camAuto(){const want=(S.tab==="bill"||S.tab==="kharid"||(S.tab==="stock"&&window.SK&&SK.counting())||(S.tab==="day"&&S.scanIn));if(!want&&SE.cam.on)camOff(false);else if(want&&!SE.cam.on&&SE.isNative&&lsGet("se_cam")==="1"&&!document.hidden)camOn()}
 document.addEventListener("visibilitychange",()=>{if(document.hidden){if(SE.cam.on){SE.cam.stop();camUi(false);camAuto._resume=true}}else if(camAuto._resume){camAuto._resume=false;camAuto()}});
 async function liveScan(){
   if(SE.cam.on){camOff(true);return}
@@ -1248,13 +1264,8 @@ document.addEventListener("keydown",e=>{
   W.buf+=e.key;W.t=now;
 },true);
 function pstockHTML(){
-  const tr=S.items.filter(i=>i.track);
-  return `<div class="card2"><h3>पैक्ड सामान का स्टॉक (बारकोड)</h3>
-  <p class="note" style="margin:0">माल आए तो नीचे बटन चालू करें और हर पैकेट स्कैन करते जाएँ, हर स्कैन पर स्टॉक +1 होगा। बिल बनते ही स्टॉक अपने-आप घटेगा।</p>
-  <button class="big ${S.scanIn?"haldi":"ghost"}" data-scanin>${S.scanIn?"✓ माल चढ़ाना चालू है — स्कैन करते जाएँ (बंद करने के लिए दबाएँ)":"📦 माल आया — स्कैन करके स्टॉक चढ़ाएँ"}</button>
-  ${S.scanIn?'<button class="big ghost" data-camin>📷 कैमरा चालू करें (लगातार स्कैन)</button>':""}
-  ${tr.length?`<div class="list" style="margin:0">${tr.map(it=>{const q=+(S.pstock[it.id]?.qty)||0;return `<div class="li"><div class="mid"><b>${esc(it.name)}</b><span class="code">${esc(codes(it).join(", ")||"बारकोड नहीं")}</span></div><div class="rt" style="color:${q<=3?"var(--chili)":"var(--ink)"}">${fq(q,it.unit)}<small>${q<=0?"खत्म":q<=3?"कम है":"स्टॉक"}</small>${S.isOwner?`<input class="inp" id="ps-${esc(it.id)}" data-ps="${esc(it.id)}" inputmode="decimal" placeholder="सही गिनती" aria-label="${esc(it.name)} की सही गिनती" style="width:96px;padding:4px 6px;font-size:13px;margin-top:4px">`:""}</div></div>`}).join("")}</div>`:'<p class="note" style="margin:0">अभी कोई बारकोड वाला सामान नहीं है। कोई भी पैकेट स्कैन करें, ऐप नया सामान जोड़ने का फॉर्म खोल देगा।</p>'}
-  </div>`;
+  const T=S.items.filter(i=>i.track&&i.active!==false),low=T.filter(isLow).length;
+  return `<div class="card2"><h3>📦 पैकेट वाला माल</h3><p class="note" style="margin:0">${T.length} सामान · ${low?`<b style="color:var(--chili)">⚠ ${low} कम</b>`:"सब पूरा"} — गिनती, कम स्टॉक और एक्सपायरी "स्टॉक" टैब में।</p><button class="big ghost" data-gostock>📦 स्टॉक खोलें</button></div>`;
 }
 
 /* ---------- staff PIN login ---------- */
@@ -1444,6 +1455,7 @@ $("#p-day").addEventListener("change",async e=>{
     const v=t.value.trim();if(v==="")delete o[t.dataset.sk];else o[t.dataset.sk]=parseFloat(v)||0;await saveStock();renderDay();return}
 });
 $("#p-day").addEventListener("click",async e=>{
+  if(e.target.closest("[data-gostock]")){S.tab="stock";showTab();return}
   if(e.target.closest("[data-scanin]")){S.scanIn=!S.scanIn;renderDay();toast(S.scanIn?"अब हर स्कैन स्टॉक में जुड़ेगा":"माल चढ़ाना बंद — अब स्कैन बिल में जाएगा");if(!S.scanIn)camAuto();return}
   if(e.target.closest("[data-camin]")){liveScan();return}
   const q=e.target.closest("[data-kq]");if(q){$("#kName").value=q.dataset.kq;$("#kAmt").focus();return}
@@ -1721,6 +1733,7 @@ async function boot(){
   renderTabs();
   SE.watchPhotos(()=>renderPane());
   if(window.SF)SF.onDb(db);
+  if(window.SK)SK.onDb(db);
   if(S.isOwner)db.collection("staff").onSnapshot(s=>{S.staffDocs=s.docs.map(d=>({id:d.id,...d.data()}));if(S.tab==="set"&&!$("#p-set").contains(document.activeElement))renderSettings()},()=>{});
   setTimeout(()=>SE.checkUpdate(toast),4000);
   const sortItems=a=>a.sort((x,y)=>(x.order??999)-(y.order??999)||x.name.localeCompare(y.name,"hi"));
@@ -1752,5 +1765,7 @@ boot();
 <script src="se-route.js"></script>
 <script src="se-pay.js"></script>
 <script src="se-bill.js"></script>
+<script src="se-stock.js"></script>
+<script>if(window.SK)SK.bind();</script>
 
 </body></html>
