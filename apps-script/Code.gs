@@ -104,7 +104,7 @@ const ist_ = ts => ts ? Utilities.formatDate(new Date(ts), 'Asia/Kolkata', 'dd-M
 
 function syncBills_(ss) {
   const B = sheet_(ss, 'बिल', ['बिल नं', 'तारीख', 'समय', 'प्रकार', 'ग्राहक/संस्था', 'मोबाइल', 'बिलर', 'कुल', 'नकद', 'UPI', 'उधार', 'छूट', 'खरीद लागत', 'रेट बदला', 'रद्द', 'रद्द की वजह']);
-  const L = sheet_(ss, 'बिल की लाइनें', ['चाबी', 'बिल नं', 'तारीख', 'प्रकार', 'सब्ज़ी', 'मात्रा', 'इकाई', 'भाव', 'बोर्ड भाव', 'रकम', 'खरीद भाव', 'भाव बदला', 'मुफ्त', 'रद्द']);
+  const L = sheet_(ss, 'बिल की लाइनें', ['चाबी', 'बिल नं', 'तारीख', 'प्रकार', 'सामान', 'मात्रा', 'इकाई', 'भाव', 'बोर्ड भाव', 'रकम', 'खरीद भाव', 'भाव बदला', 'मुफ्त', 'रद्द']);
   const bRows = [], lRows = [];
   days_().forEach(d => fsList_('days/' + d + '/bills').forEach(b => {
     const p = b.pay || {};
@@ -117,7 +117,7 @@ function syncBills_(ss) {
 }
 function syncItems_(ss) {
   const today = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
-  const S = sheet_(ss, 'भाव (रोज़)', ['चाबी', 'तारीख', 'सब्ज़ी', 'बिक्री भाव', 'खरीद भाव', 'इकाई', 'चालू']);
+  const S = sheet_(ss, 'भाव (रोज़)', ['चाबी', 'तारीख', 'सामान', 'बिक्री भाव', 'खरीद भाव', 'इकाई', 'चालू']);
   const rows = fsList_('items').map(it => [today + '|' + it._id, today, it.name, it.sale || 0, it.cost || 0, it.unit || '', it.active === false ? 'बंद' : 'चालू']);
   if (rows.length) upsert_(S, 1, rows);
   const P = sheet_(ss, 'स्टॉक (पैक्ड)', ['सामान', 'मात्रा', 'आखिरी बदलाव', 'किसने', 'क्यों']);
