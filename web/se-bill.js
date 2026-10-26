@@ -34,8 +34,8 @@ SB.settleSheet=function(b,offline){
     if(needParty){
       const q=st.q.trim().toLowerCase();const L=S.parties.filter(p=>!q||(p.name||"").toLowerCase().includes(q)||String(p.phone||"").includes(q)||String(p.qtr||"").toLowerCase().includes(q)).slice(0,6);
       ui+=party?`<div class="sb-party">📒 <b>${esc(party.name)}</b> <span class="note">अभी बाकी ${rs(bal(party.id))}</span><button class="lnk" data-sbpch>बदलें</button></div>`
-        :`<div class="udbox"><b>उधार किसके नाम?</b><input class="inp" id="sbPq" placeholder="नाम, क्वार्टर या मोबाइल से खोजें" value="${esc(st.q)}" autocomplete="off">
-          <div class="udlist">${L.map(p=>`<button data-sbp="${esc(p.id)}"><div>${esc(p.name)}<br><span>${p.qtr?"क्वार्टर "+esc(p.qtr)+" · ":""}${esc(p.phone||"नंबर नहीं")}</span></div><span>${bal(p.id)>0?"बाकी "+rs(bal(p.id)):"साफ़"}</span></button>`).join("")||'<p class="note" style="margin:4px">कोई नहीं मिला</p>'}</div>
+        :`<div class="udbox"><b>उधार किसके नाम?</b><input class="inp" id="sbPq" placeholder="नाम, यूनिट या मोबाइल से खोजें" value="${esc(st.q)}" autocomplete="off">
+          <div class="udlist">${L.map(p=>`<button data-sbp="${esc(p.id)}"><div>${esc(p.name)}<br><span>${p.qtr?esc(p.qtr)+" · ":""}${esc(p.phone||"नंबर नहीं")}</span></div><span>${bal(p.id)>0?"बाकी "+rs(bal(p.id)):"साफ़"}</span></button>`).join("")||'<p class="note" style="margin:4px">कोई नहीं मिला</p>'}</div>
           <button class="big ghost" data-sbnewp>+ नया उधार खाता</button></div>`;
     }
     const ok=!(needParty&&!party)&&!(st.pay==="upi"&&!upiId());

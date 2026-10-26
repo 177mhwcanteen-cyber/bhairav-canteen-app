@@ -332,6 +332,9 @@ function viewPurchase(p){
     if(e.target.closest("[data-mhagain]")){mhSlip(p,pNo(p,idx||1));return}
     if(e.target.closest("[data-paddphoto]")){pickPhoto(async blob=>{const k=p.id+"_x"+Date.now();await IDB.put({k,pid:p.id,date:p.date,name:`${p.date}_${p.supName}_x.jpg`,blob,ts:Date.now()});S.db.doc("purchases/"+p.id).update({photoPending:firebase.firestore.FieldValue.increment(1)}).catch(()=>{});toast("फोटो जुड़ी — नेट मिलते ही Drive पर जाएगी");closeSheet();SF.flushPhotos()})}};
 }
+/* बिल की फोटो: छोटी (लगभग 40KB) — Firestore में अलग जगह, बिल हल्का रहे */
+function smallPhoto(blob){return new Promise((res,rej)=>{const img=new Image(),u=URL.createObjectURL(blob);img.onload=()=>{const m=640,sc=Math.min(1,m/Math.max(img.width,img.height));const cv=document.createElement("canvas");cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);URL.revokeObjectURL(u);res(cv.toDataURL("image/jpeg",.62))};img.onerror=rej;img.src=u})}
+function confirmPhotoRetake(){return false}
 function pickPhoto(cb){const fi=document.createElement("input");fi.type="file";fi.accept="image/*";fi.capture="environment";
   fi.onchange=async()=>{const f=fi.files[0];if(!f)return;try{toast("फोटो छोटी कर रहे हैं…");cb(await shrinkPhoto(f))}catch(e){toast("फोटो नहीं ली जा सकी")}};fi.click()}
 function supPaySheet(sid){
@@ -1002,7 +1005,8 @@ SF.drawCheckout=function(){
     ${overLim?`<div class="warn">⚠ ${esc(party.name)} की उधार सीमा ${rs(party.limit)} है। इस बिल के बाद बाकी ${rs(bal(party.id)+tot)} हो जाएगा।</div>`:""}
     ${SF.compactPaperHTML(b,{editable:true,qr:S.mode!=="inst",anim:!c.shown})}
     <p class="note" style="text-align:center;margin:0 0 10px">सामान पर टैप करके मात्रा बदलें · ✕ से हटाएँ</p>
-    <div class="pp-actions"><button data-ckedit>✏️<span>एडिट</span></button><button data-ckshare>📤<span>शेयर (PDF)</span></button><button data-ckprint>🖨️<span>प्रिंट</span></button></div>
+    <div class="pp-actions pa4"><button data-ckedit>✏️<span>एडिट</span></button><button data-ckphoto class="${c.photo?"done":S.mode==="udhar"||c.pay==="udhar"?"nudge":""}">📷<span>${c.photo?"फोटो ✓":"फोटो"}</span></button><button data-ckshare>📤<span>शेयर (PDF)</span></button><button data-ckprint>🖨️<span>प्रिंट</span></button></div>
+    ${(S.mode==="udhar"||c.pay==="udhar")&&!c.photo?`<p class="note" style="margin:4px 0 0;text-align:center">📷 उधार बिल है — सामान की एक फोटो ले लें, बाद में हिसाब साफ़ रहेगा</p>`:""}
     <button class="big" data-billsave ${(tot<=0&&S.mode!=="inst")||S.saving||c.no==="…"?"disabled":""}>${S.saving?"⏳ सेव हो रहा है…":S.mode==="inst"?"💾 संस्था बिल सेव करें · "+rs(tot):"💾 बिल सेव करें · "+rs(tot)}</button>
     <button class="big ghost" data-hold style="margin-top:8px">+ दूसरा ग्राहक (यह बिल ऊपर टैब में खुला रहेगा)</button>`;
   }else{
@@ -1035,13 +1039,12 @@ SF.drawCheckout=function(){
     if(e.target.closest("[data-unsettle]")){c.stage="bill";c.udPick=null;SF.drawCheckout();return}
     if(e.target.closest("[data-ckedit]")){closeSheet();toast("✏️ सामान जोड़ें/बदलें, फिर नीचे 'बिल देखें' दबाएँ");return}
     if(e.target.closest("[data-ckshare]")){if(c.no==="…"){toast("बिल नंबर बन रहा है, एक पल…");return}SF.shareBill(draftBill(),b.custPhone,false);return}
+    if(e.target.closest("[data-ckphoto]")){if(c.photo&&!confirmPhotoRetake()){c.photo=null;SF.drawCheckout();toast("फोटो हटाई");return}
+      pickPhoto(async blob=>{try{c.photo=await smallPhoto(blob);SF.drawCheckout();toast("📷 फोटो बिल के साथ जुड़ेगी")}catch(err){toast("फोटो नहीं ली जा सकी")}});return}
     if(e.target.closest("[data-ckprint]")){if(c.no==="…"){toast("बिल नंबर बन रहा है, एक पल…");return}printBill(draftBill());return}
     const p=e.target.closest("[data-pay]");if(p&&!p.disabled){const k=p.dataset.pay;c.payPicked=true;if((k==="udhar"||k==="split")&&S.mode==="walk"){c.udPick=k;c.udQ=S.cust.phone||S.cust.name||"";SF.drawCheckout();const f=$("#udQ");if(f)f.focus();return}c.udPick=null;c.pay=k;SF.drawCheckout();return}
     const up=e.target.closest("[data-udp]");if(up){pickUdhar(up.dataset.udp);return}
-    if(e.target.closest("[data-udnew]")){const name=$("#udName").value.trim(),phone=$("#udPh").value.replace(/\D/g,"").slice(-10),qtr=$("#udQtr").value.trim();
-      if(!name){toast("नाम लिखें");return}if(phone&&phone.length!==10){toast("मोबाइल नंबर 10 अंक का होना चाहिए");return}
-      const id="p"+Date.now().toString(36);
-      try{if(S.demo)S.parties.push({id,name,phone,qtr});else{await S.db.collection("parties").doc(id).set({name,phone,qtr,ts:Date.now(),by:S.uid||"",byName:biller()});if(!S.parties.find(x=>x.id===id))S.parties.push({id,name,phone,qtr})}toast(name+" का उधार खाता बना");pickUdhar(id)}catch(err){toast("खाता नहीं बना, दोबारा कोशिश करें")}return}
+    if(e.target.closest("[data-udnew]")){const id=await createParty({name:$("#udName").value,phone:$("#udPh").value,qtr:$("#udQtr").value,open:$("#udOpen").value});if(id)pickUdhar(id);return}
     const d=e.target.closest("[data-del]");if(d){e.stopPropagation();S.cart.splice(+d.dataset.del,1);refreshAfterCart();if(!S.cart.length)closeSheet();else SF.drawCheckout();return}
     const edr=e.target.closest("[data-edit]");if(edr){const l=S.cart[+edr.dataset.edit];const it=item(l.id);if(it)openQty(it,+edr.dataset.edit);return}
     if(e.target.closest("[data-billsave]")){if(c.no==="…"){toast("बिल नंबर बन रहा है, एक पल…");return}c.pay=S.mode==="inst"?"inst":"pending";c.udPick=null;saveBill();return}

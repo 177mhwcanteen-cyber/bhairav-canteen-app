@@ -573,6 +573,33 @@ html.camon header{top:0}
 .cstep2{display:flex;align-items:center;gap:4px}.cstep2 button{width:36px;height:40px;border:0;border-radius:10px;background:var(--line,#e2e8f0);font-size:20px;font-weight:800}
 .cstep2 input{width:60px;text-align:center;font-size:18px;font-weight:800;padding:6px}
 .cntbar{display:flex;gap:8px;background:var(--bg)}.cntbar .big:first-child{flex:0 0 30%}.cntbar .big:last-child{flex:1}
+
+/* Part 7 — लैपटॉप पैनल, फोटो */
+#side{display:none}
+@media (min-width:1100px){
+  body.hasside #side{display:flex;flex-direction:column;position:fixed;right:0;top:0;bottom:0;width:360px;z-index:6;background:var(--surface,#fff);border-left:1px solid var(--line,#e2e8f0);box-shadow:-6px 0 24px rgba(15,23,42,.06)}
+  body.hasside header,body.hasside main{margin-right:360px}
+  body.hasside #cartbar{display:none!important}
+  html.camon body.hasside #side{top:var(--camh)}
+  html.camon #camwin{right:360px}
+}
+.sdh{padding:14px 16px 10px;border-bottom:1px solid var(--line,#e2e8f0);display:flex;justify-content:space-between;align-items:baseline;gap:8px}.sdh b{font-size:18px}.sdh span{font-size:13px;color:var(--muted,#64748b);text-align:right}
+.sdl{flex:1;overflow-y:auto;padding:6px 10px}
+.sdr{display:grid;grid-template-columns:1fr auto 64px 26px;align-items:center;gap:6px;padding:8px 4px;border-bottom:1px dashed var(--line,#e2e8f0)}
+.sdn{min-width:0}.sdn b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sdn span{font-size:12px;color:var(--muted,#64748b)}
+.sdq{display:flex;align-items:center;gap:4px}.sdq button{width:28px;height:28px;border:0;border-radius:8px;background:var(--line,#e2e8f0);font-weight:800;font-size:16px;cursor:pointer}.sdq button.wide{width:auto;padding:0 8px;font-size:13px}.sdq b{min-width:20px;text-align:center}
+.sda{text-align:right;font-weight:800}.sdx{border:0;background:none;color:var(--chili);font-size:15px;cursor:pointer}
+.sdf{padding:12px 14px 16px;border-top:1px solid var(--line,#e2e8f0);display:grid;gap:8px}
+.sdt{display:flex;justify-content:space-between;align-items:baseline}.sdt b{font-size:30px}.sdsv{color:#15803d;font-weight:700;text-align:center}
+.sdf .big small{opacity:.75;font-size:12px;margin-left:6px}
+kbd{border:1px solid #cbd5e1;border-bottom-width:2px;border-radius:5px;padding:0 5px;font-size:12px;background:#f8fafc}
+.pp-actions.pa4{grid-template-columns:repeat(4,1fr)}
+.pp-actions button.nudge{outline:2px solid #f59e0b;background:#fff7ed}.pp-actions button.done{outline:2px solid #22c55e;background:#f0fdf4}
+.bphoto{margin:8px 0;text-align:center;color:var(--muted,#64748b)}.bphoto img{max-width:100%;border-radius:12px}
+.pinlock{position:fixed;inset:0;z-index:95;background:linear-gradient(140deg,var(--hdr1),var(--hdr2) 60%,var(--hdr3));color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;text-align:center}
+.pinlock input{width:200px;text-align:center;font-size:34px;letter-spacing:14px;border-radius:16px;border:0;padding:12px}
+.pinlock .lnk{color:#fff;opacity:.85}
+.paper.pp-c .ppc-tag{background:#fff;border-color:#fff}
 </style>
 
 <header class="px">
@@ -606,6 +633,7 @@ html.camon header{top:0}
   <section id="p-stock" hidden></section>
 </main>
 
+<aside id="side" aria-label="चालू बिल"></aside>
 <div class="cartbar px" id="cartbar" hidden>
   <button class="cartbtn" id="cartbtn" type="button"><span class="c" id="cartc"></span><span class="t" id="cartt"></span><span class="go">बिल देखें →</span></button>
 </div>
@@ -893,7 +921,32 @@ function openQty(it,lineIdx){if(it&&it.id==="xyz"&&window.SR)return SR.xyzSheet(
 function closeSheet(){$("#sheet").innerHTML="";$("#sheet").onclick=null;$("#sheet").oninput=null;$("#sheet").onchange=null;$("#sheet").onkeydown=null}
 function refreshAfterCart(){renderCart();if(S.tab==="bill")renderBill()}
 function cartTotal(){return r2(S.cart.reduce((a,l)=>a+l.amt,0))}
+function renderSide(){
+  const el=$("#side");if(!el)return;const on=S.tab==="bill";document.body.classList.toggle("hasside",on);if(!on){el.innerHTML="";return}
+  const tot=cartTotal(),sv=savedOf({mode:S.mode,lines:S.cart});
+  el.innerHTML=`<div class="sdh"><b>🧾 चालू बिल</b><span>${S.mode==="inst"?"🏢 "+esc(S.inst||"संस्था"):S.mode==="udhar"?"📒 "+esc((S.parties.find(p=>p.id===S.partyId)||{}).name||"उधार"):"⭐ VIP ग्राहक"}</span></div>
+  <div class="sdl">${S.cart.length?S.cart.map((l,i)=>{const it=item(l.id),pc=isPc(l.unit);return `<div class="sdr"><div class="sdn"><b>${esc(l.name)}</b><span>₹${l.rate}${pc?"":"/"+(UNITS[l.unit]||l.unit)}</span></div>
+    <div class="sdq">${pc&&!l.changed&&!l.free?`<button data-sdec="${esc(l.id)}" aria-label="एक कम">−</button><b>${l.qty}</b><button data-sinc="${esc(l.id)}" aria-label="एक और">+</button>`:`<button data-sedit="${i}" class="wide">${fq(l.qty,l.unit)}</button>`}</div>
+    <div class="sda">₹${l.amt}</div><button class="sdx" data-sdel="${i}" aria-label="${esc(l.name)} हटाएँ">✕</button></div>`}).join(""):`<p class="note" style="text-align:center;margin:30px 8px">स्कैन करें, कोड लिखें या सामान पर क्लिक करें<br><br><kbd>/</kbd> खोज · <kbd>F9</kbd> बिल · <kbd>Esc</kbd> बंद</p>`}</div>
+  <div class="sdf">${sv>0?`<div class="sdsv">🎉 MRP से ₹${sv} की बचत</div>`:""}<div class="sdt"><span>${S.cart.length} सामान</span><b>${rs(tot)}</b></div>
+  <button class="big" data-sgo ${S.cart.length?"":"disabled"}>💾 बिल बनाएँ <small>F9</small></button></div>`;
+}
+$("#side").addEventListener("click",e=>{
+  const d=e.target.closest("[data-sdec]");if(d){decItem(d.dataset.sdec);return}
+  const i=e.target.closest("[data-sinc]");if(i){const x=item(i.dataset.sinc);if(x)quickAdd(x,1);return}
+  const ed=e.target.closest("[data-sedit]");if(ed){const l=S.cart[+ed.dataset.sedit],x=l&&item(l.id);if(x)openQty(x,+ed.dataset.sedit);return}
+  const x=e.target.closest("[data-sdel]");if(x){S.cart.splice(+x.dataset.sdel,1);refreshAfterCart();return}
+  if(e.target.closest("[data-sgo]")&&S.cart.length)openCheckout();
+});
+/* लैपटॉप के बटन: / खोज · F9 या Ctrl+Enter बिल/सेव · Esc बंद */
+document.addEventListener("keydown",e=>{
+  const inInput=e.target&&(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"||e.target.tagName==="SELECT");
+  if(e.key==="F9"||(e.key==="Enter"&&(e.ctrlKey||e.metaKey))){if(S.tab!=="bill")return;e.preventDefault();const sv=document.querySelector("#sheet [data-billsave]:not([disabled]),#sheet [data-save]:not([disabled])");if(sv){sv.click();return}if(S.cart.length&&!$("#sheet").innerHTML.trim())openCheckout();return}
+  if(e.key==="Escape"&&$("#sheet").innerHTML.trim()){e.preventDefault();closeSheet();return}
+  if(e.key==="/"&&!inInput&&S.tab==="bill"&&!$("#sheet").innerHTML.trim()){e.preventDefault();const q=$("#q");if(q){q.focus();q.select()}}
+});
 function renderCart(){
+  renderSide();
   const show=S.tab==="bill"&&S.cart.length>0;$("#cartbar").hidden=!show;renderBillTabs();if(!show)return;
   $("#cartc").innerHTML=`${S.cart.length} चीज़ें<br>${S.mode==="inst"?"संस्था बिल":S.mode==="udhar"?"उधार खाता":"VIP ग्राहक"}`;
   $("#cartt").textContent=rs(cartTotal());
@@ -901,7 +954,7 @@ function renderCart(){
 $("#cartbtn").onclick=()=>openCheckout();
 
 /* ---------- checkout ---------- */
-function newBillNo(){const d=new Date(),p=n=>String(n).padStart(2,"0");return "SE"+p(d.getDate())+p(d.getMonth()+1)+"-"+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())+Math.random().toString(36).slice(2,4).toUpperCase()}
+function newBillNo(){const d=new Date(),p=n=>String(n).padStart(2,"0");return "BW"+p(d.getDate())+p(d.getMonth()+1)+"-"+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())+Math.random().toString(36).slice(2,4).toUpperCase()}
 function openCheckout(){
   if(S.mode==="udhar"&&!S.partyId){toast("पहले ऊपर उधार खाता चुनें");return}
   if(S.mode==="inst"&&!S.inst){toast("पहले ऊपर संस्था चुनें");return}
@@ -945,10 +998,7 @@ function drawCheckout(){if(window.SF&&SF.drawCheckout)return SF.drawCheckout();
     if(e.target.matches("[data-close]")){closeSheet();return}
     const p=e.target.closest("[data-pay]");if(p&&!p.disabled){const k=p.dataset.pay;if((k==="udhar"||k==="split")&&S.mode==="walk"){c.udPick=k;c.udQ=S.cust.phone||S.cust.name||"";drawCheckout();const f=$("#udQ");if(f)f.focus();return}c.udPick=null;c.pay=k;drawCheckout();return}
     const up=e.target.closest("[data-udp]");if(up){pickUdhar(up.dataset.udp);return}
-    if(e.target.closest("[data-udnew]")){const name=$("#udName").value.trim(),phone=$("#udPh").value.replace(/\D/g,"").slice(-10),qtr=$("#udQtr").value.trim();
-      if(!name){toast("नाम लिखें");return}if(phone&&phone.length!==10){toast("मोबाइल नंबर 10 अंक का होना चाहिए");return}
-      const id="p"+Date.now().toString(36);
-      try{if(S.demo)S.parties.push({id,name,phone,qtr});else{await S.db.collection("parties").doc(id).set({name,phone,qtr,ts:Date.now(),by:S.uid||"",byName:biller()});if(!S.parties.find(x=>x.id===id))S.parties.push({id,name,phone,qtr})}toast(name+" का उधार खाता बना");pickUdhar(id)}catch(err){toast("खाता नहीं बना, दोबारा कोशिश करें")}return}
+    if(e.target.closest("[data-udnew]")){const id=await createParty({name:$("#udName").value,phone:$("#udPh").value,qtr:$("#udQtr").value,open:$("#udOpen").value});if(id)pickUdhar(id);return}
     const d=e.target.closest("[data-del]");if(d){S.cart.splice(+d.dataset.del,1);refreshAfterCart();if(!S.cart.length)closeSheet();else drawCheckout();return}
     const ed=e.target.closest("[data-edit]");if(ed){const l=S.cart[+ed.dataset.edit];const it=item(l.id);if(it)openQty(it,+ed.dataset.edit);return}
     if(e.target.closest("[data-hold]")){holdCurrent();return}
@@ -961,14 +1011,15 @@ function drawCheckout(){if(window.SF&&SF.drawCheckout)return SF.drawCheckout();
   };
 }
 function udListHTML(q){q=String(q||"").trim().toLowerCase();const ps=S.parties.filter(p=>!q||(p.name||"").toLowerCase().includes(q)||String(p.phone||"").includes(q)||String(p.qtr||"").toLowerCase().includes(q)).slice(0,6);
-  return ps.length?ps.map(p=>`<button data-udp="${esc(p.id)}"><div>${esc(p.name)}<br><span>${p.qtr?"क्वार्टर "+esc(p.qtr)+" · ":""}${esc(p.phone||"नंबर नहीं")}</span></div><span style="color:${bal(p.id)>0?"var(--chili)":"var(--leaf)"};font-weight:800">${bal(p.id)>0?"बाकी "+rs(bal(p.id)):"साफ़"}</span></button>`).join(""):'<p class="note" style="margin:0">कोई पुराना खाता नहीं मिला — नीचे नया बनाएँ।</p>'}
+  return ps.length?ps.map(p=>`<button data-udp="${esc(p.id)}"><div>${esc(p.name)}<br><span>${p.qtr?esc(p.qtr)+" · ":""}${esc(p.phone||"नंबर नहीं")}</span></div><span style="color:${bal(p.id)>0?"var(--chili)":"var(--leaf)"};font-weight:800">${bal(p.id)>0?"बाकी "+rs(bal(p.id)):"साफ़"}</span></button>`).join(""):'<p class="note" style="margin:0">कोई पुराना खाता नहीं मिला — नीचे नया बनाएँ।</p>'}
 function udBoxHTML(){const c=S.chk,ph=S.cust.phone,nm=S.cust.name;
   return `<div class="udbox"><b>उधार किसके नाम लिखें?</b>
-  <input class="inp" id="udQ" placeholder="नाम, क्वार्टर नंबर या मोबाइल से खोजें" value="${esc(c.udQ||"")}" autocomplete="off">
+  <input class="inp" id="udQ" placeholder="नाम, यूनिट या मोबाइल से खोजें" value="${esc(c.udQ||"")}" autocomplete="off">
   <div class="udlist" id="udList">${udListHTML(c.udQ)}</div>
   <span class="note" style="margin-top:4px">या नया उधार खाता बनाएँ:</span>
   <input class="inp" id="udName" placeholder="नाम (जैसे हवलदार रमेश जी)" value="${esc(nm)}">
-  <div class="row3"><input class="inp" id="udPh" inputmode="tel" placeholder="मोबाइल (10 अंक)" value="${esc(ph)}"><input class="inp" id="udQtr" placeholder="क्वार्टर नं." ></div>
+  <div class="row3"><input class="inp" id="udPh" inputmode="tel" placeholder="मोबाइल (ज़रूरी)" value="${esc(ph)}"><input class="inp" id="udQtr" placeholder="यूनिट (जैसे 15 भैरव)"></div>
+  <input class="inp" id="udOpen" inputmode="decimal" placeholder="पिछला बाकी ₹ (हो तो)">
   <button class="big" data-udnew style="background:var(--chili);color:var(--surface)">खाता बनाकर ${c.udPick==="split"?"बाकी रकम":"पूरा बिल"} उधार में डालें</button></div>`}
 function pickUdhar(pid){const c=S.chk;S.mode="udhar";S.partyId=pid;c.pay=c.udPick||"udhar";c.udPick=null;syncTab();renderBill();renderCart();drawCheckout();toast("उधार खाता लग गया — अब बिल सेव करें")}
 async function saveBill(){
@@ -984,7 +1035,8 @@ async function saveBill(){
   if(c.no==="…"&&window.SF)c.no=await SF.reserveBillNo();
   const bill={no:c.no,ts:now,date,by:S.uid||"",byName:biller(),mode:S.mode,partyId:S.mode==="udhar"?S.partyId:"",partyName:S.mode==="udhar"?(party?.name||""):S.mode==="inst"?S.inst:(cnm||"VIP ग्राहक"),custPhone:cph,custName:cnm,
     lines,sub:cartTotal(),disc:+c.disc||0,total:S.mode==="inst"?cartTotal():tot,pay,payMode:c.pay,cost,
-    rateChanged:lines.some(l=>l.changed),cancelled:false,settled:c.pay!=="pending"};if(window.SR)SR.stamp(bill);
+    rateChanged:lines.some(l=>l.changed),cancelled:false,settled:c.pay!=="pending",...(c.photo?{photo:true}:{})};if(window.SR)SR.stamp(bill);
+  if(c.photo){const ph={d:c.photo,no:c.no,date,ts:now,by:S.uid||"",byName:biller()};S.billPhotos=S.billPhotos||{};S.billPhotos[c.no]=c.photo;if(!S.demo)S.db.collection("billPhotos").doc(c.no).set(ph).catch(()=>{})}
   S.saving=true;drawCheckout();
   if(S.demo){S.dayBills=[bill,...S.dayBills];if(pay.udhar>0)S.ledger.push({id:c.no,ts:now,date,partyId:bill.partyId,partyName:bill.partyName,type:"udhar",amt:pay.udhar,billNo:c.no,byName:biller()});await adjStock(trackedPairs(lines,-1),"बिल "+c.no);S.saving=false;closeCurTab();refreshAfterCart();if(bill.settled===false&&window.SB)SB.settleSheet(bill);else showReceipt(bill,true);return}
   const item={bill,done:{}};let offline=false;
@@ -1023,11 +1075,15 @@ function receiptHTML(b){if(window.SF)return SF.paperHTML(b,{});
   <div class="meta" style="margin-top:6px">${b.mode==="inst"?'<span class="pill blue">संस्था · खरीद रेट</span>':""}${b.pay.cash?`<span class="pill green">नकद ${rs(b.pay.cash)}</span>`:""}${b.pay.upi?`<span class="pill blue">UPI ${rs(b.pay.upi)}</span>`:""}${b.pay.udhar?`<span class="pill red">उधार ${rs(b.pay.udhar)}</span>`:""}${b.cancelled?`<span class="pill red">रद्द${b.cancelReason?" · "+esc(b.cancelReason):""}</span>`:""}</div></div>`;
 }
 function waLink(text,phone){const p=String(phone||"").replace(/\D/g,"").slice(-10);return (p.length===10?"https://wa.me/91"+p:"https://wa.me/")+"?text="+encodeURIComponent(text)}
+async function loadBillPhoto(no){const box=()=>$("#bphoto");S.billPhotos=S.billPhotos||{};let d=S.billPhotos[no];
+  if(!d&&!S.demo){try{const x=await S.db.doc("billPhotos/"+no).get();d=x.exists?x.data().d:"";S.billPhotos[no]=d}catch(e){}}
+  const b=box();if(b)b.innerHTML=d?`<img src="${d}" alt="बिल के सामान की फोटो">`:"📷 फोटो अभी नहीं मिली (शायद उस फोन से जानी बाकी है)"}
 function showReceipt(b,fresh,offline){
   const party=S.parties.find(p=>p.id===b.partyId);
   $("#sheet").innerHTML=`<div class="scrim" data-close><div class="sheet px" role="dialog" aria-label="बिल रसीद"><div class="grab"></div>
     ${fresh?`<div class="done"><div class="tick">✓</div><h3 style="margin:0;font-family:var(--f-display);font-size:24px">बिल सेव हो गया</h3>${offline||b.pending?'<p class="note" style="margin:4px 0 0;color:var(--chili);font-weight:700">📴 फोन में सेव है — इंटरनेट मिलते ही अपने-आप भेज दिया जाएगा</p>':""}</div>`:`<div class="sh-head"><h3>बिल ${esc(b.no)}</h3><button class="x" data-close aria-label="बंद करें">✕</button></div>`}
     ${receiptHTML(b)}
+    ${b.photo?`<div class="bphoto" id="bphoto">📷 फोटो लोड हो रही है…</div>`:""}
     ${window.SB?SB.receiptActionsHTML(b):""}
     ${S.isOwner&&window.SF&&SF.billLabel(b.no)?`<p class="note" style="margin:6px 0 0;text-align:center">🔐 ${esc(SF.billLabel(b.no))} (यह सिर्फ़ आपको दिखता है)</p>`:""}
     ${(party?.phone||b.custPhone)?`<div class="btnrow"><a class="big" style="background:#25d366;color:#04230f" target="_blank" rel="noopener" href="${waLink(receiptText(b),party?.phone||b.custPhone)}">💬 WhatsApp पर भेजें</a><button class="big haldi" data-close>${fresh?"नया बिल":"बंद करें"}</button></div>`
@@ -1036,6 +1092,7 @@ function showReceipt(b,fresh,offline){
     ${window.SF?SF.cancelReqHTML(b,fresh):""}
     ${!fresh&&S.isOwner&&!b.cancelled&&!S.demo?`<label class="fld" style="margin-top:10px">रद्द करने की वजह<input class="inp" id="cReason" placeholder="जैसे ग्राहक ने सामान लौटाया"></label><button class="big ghost" data-cancel style="margin-top:8px">यह बिल रद्द करें</button>`:""}
   </div></div>`;
+  if(b.photo)loadBillPhoto(b.no);
   $("#sheet").oninput=e=>{if(e.target.id==="waPh"){const ph=e.target.value.replace(/\D/g,"").slice(-10),go=$("#waGo");go.setAttribute("aria-disabled",ph.length===10?"false":"true");go.href=ph.length===10?waLink(receiptText({...b,custPhone:ph}),ph):"#"}};
   $("#sheet").onclick=async e=>{
     if(e.target.matches("[data-close]")){closeSheet();return}
@@ -1052,6 +1109,22 @@ function showReceipt(b,fresh,offline){
 }
 
 /* ---------- people / udhar ---------- */
+/* उधार खाता: नाम + मोबाइल (ज़रूरी) + पिछला बाकी + यूनिट */
+async function createParty(o){
+  const name=String(o.name||"").trim(),phone=String(o.phone||"").replace(/\D/g,"").slice(-10),qtr=String(o.qtr||"").trim(),open=r2(parseFloat(String(o.open||"").replace(",","."))||0);
+  if(!name){toast("नाम लिखें");return null}
+  if(phone.length!==10){toast("उधार खाते के लिए 10 अंक का मोबाइल नंबर ज़रूरी है");return null}
+  const dup=S.parties.find(p=>String(p.phone||"")===phone);if(dup){toast("यह नंबर पहले से "+dup.name+" के खाते में है — वही खाता लगा दिया");return dup.id}
+  if(open<0){toast("पिछला बाकी 0 या उससे ज़्यादा लिखें");return null}
+  const id="p"+Date.now().toString(36),d={name,phone,qtr,ts:Date.now(),by:S.uid||"",byName:biller(),...(open>0?{open}:{})};
+  try{
+    if(!S.demo)await S.db.collection("parties").doc(id).set(d);
+    if(!S.parties.find(x=>x.id===id))S.parties.push({id,...d});
+    if(open>0){const ent={ts:Date.now(),date:today(),partyId:id,partyName:name,type:"udhar",amt:open,billNo:"पिछला बाकी",note:"खाता खुलते समय पिछला बाकी",by:S.uid||"",byName:biller()};
+      if(S.demo)S.ledger.push({id:"o"+id,...ent});else await S.db.collection("ledger").doc("o"+id).set(ent)}
+    toast(name+" का उधार खाता बना"+(open>0?" · पिछला बाकी "+rs(open):""));return id;
+  }catch(err){toast("खाता नहीं बना, दोबारा कोशिश करें");return null}
+}
 function bal(pid){return r2(S.ledger.filter(l=>l.partyId===pid).reduce((a,l)=>a+(l.type==="udhar"?l.amt:-l.amt),0))}
 function renderUdhar(){
   const rows=S.parties.map(p=>({...p,b:bal(p.id)})).sort((a,b)=>b.b-a.b);
@@ -1059,7 +1132,7 @@ function renderUdhar(){
   $("#p-udhar").innerHTML=`<h2 class="sec">उधार खाता</h2>
   <div class="kpis"><div class="kpi hero"><span>कुल बकाया (सबका मिलाकर)</span><b>${rs(total)}</b></div></div>
   ${window.SR?SR.udharTopHTML():""}
-  <div class="list">${rows.length?rows.map(r=>`<button class="li" data-party="${esc(r.id)}"><div class="mid"><b>${esc(r.name)}</b><span>${r.qtr?"क्वार्टर "+esc(r.qtr)+" · ":""}${r.phone?esc(r.phone):"नंबर नहीं"}${r.b>0&&udharAge(r.id)!=null?` · <span class="pill ${udharAge(r.id)>15?"red":"blue"}">${udharAge(r.id)} दिन से बाकी</span>`:""}${+r.limit>0?` · सीमा ${rs(r.limit)}`:""}</span></div><div class="rt" style="color:${r.b>0?"var(--chili)":"var(--leaf)"}">${rs(r.b)}<small>${r.b>0?"बाकी":"साफ़"}</small></div></button>`).join(""):`<div class="empty"><b>कोई खाता नहीं</b>नीचे बटन से पहला खाता जोड़ें।</div>`}</div>
+  <div class="list">${rows.length?rows.map(r=>`<button class="li" data-party="${esc(r.id)}"><div class="mid"><b>${esc(r.name)}</b><span>${r.qtr?esc(r.qtr)+" · ":""}${r.phone?esc(r.phone):"नंबर नहीं"}${r.b>0&&udharAge(r.id)!=null?` · <span class="pill ${udharAge(r.id)>15?"red":"blue"}">${udharAge(r.id)} दिन से बाकी</span>`:""}${+r.limit>0?` · सीमा ${rs(r.limit)}`:""}</span></div><div class="rt" style="color:${r.b>0?"var(--chili)":"var(--leaf)"}">${rs(r.b)}<small>${r.b>0?"बाकी":"साफ़"}</small></div></button>`).join(""):`<div class="empty"><b>कोई खाता नहीं</b>नीचे बटन से पहला खाता जोड़ें।</div>`}</div>
   <button class="big ghost" data-newparty ${S.demo?"":""}>+ नया उधार खाता</button>`;
 }
 $("#p-udhar").addEventListener("click",e=>{
@@ -1070,16 +1143,15 @@ function openNewParty(done){
   $("#sheet").innerHTML=`<div class="scrim" data-close><div class="sheet px" role="dialog" aria-label="नया खाता"><div class="grab"></div>
   <div class="sh-head"><h3>नया उधार खाता</h3><button class="x" data-close aria-label="बंद करें">✕</button></div>
   <label class="fld" style="margin-bottom:10px">नाम (जैसे JCO मेस)<input class="inp" id="npName"></label>
-  <label class="fld" style="margin-bottom:10px">मोबाइल नंबर (WhatsApp बिल के लिए)<input class="inp" id="npPhone" inputmode="tel" placeholder="10 अंक"></label>
-  <label class="fld" style="margin-bottom:14px">क्वार्टर नंबर<input class="inp" id="npQtr" placeholder="जैसे 12/B"></label>
+  <label class="fld" style="margin-bottom:10px">मोबाइल नंबर (ज़रूरी)<input class="inp" id="npPhone" inputmode="tel" placeholder="10 अंक"></label>
+  <label class="fld" style="margin-bottom:10px">यूनिट<input class="inp" id="npQtr" placeholder="जैसे 15 भैरव / 177 MH"></label>
+  <label class="fld" style="margin-bottom:14px">पिछला बाकी ₹ (पुराने रजिस्टर से, हो तो)<input class="inp" id="npOpen" inputmode="decimal" placeholder="0"></label>
   <button class="big" data-ok>खाता बनाएँ</button></div></div>`;
   $("#sheet").onclick=async e=>{
     if(e.target.matches("[data-close]")){closeSheet();return}
     if(e.target.closest("[data-ok]")){
-      const name=$("#npName").value.trim();const phone=$("#npPhone").value.replace(/\D/g,"").slice(-10);const qtr=$("#npQtr").value.trim();
-      if(!name){toast("नाम लिखें");return}
-      const id="p"+Date.now().toString(36);
-      try{if(S.demo)S.parties.push({id,name,phone,qtr});else await S.db.collection("parties").doc(id).set({name,phone,qtr,ts:Date.now()});closeSheet();toast(name+" का खाता बना");done&&done(id)}catch(err){toast("खाता नहीं बना, दोबारा कोशिश करें")}
+      const id=await createParty({name:$("#npName").value,phone:$("#npPhone").value,qtr:$("#npQtr").value,open:$("#npOpen").value});
+      if(id){closeSheet();done&&done(id)}
     }
   };
 }
@@ -1090,7 +1162,7 @@ function openParty(pid){
   const st={mode:"cash"};
   const draw=()=>{
     $("#sheet").innerHTML=`<div class="scrim" data-close><div class="sheet px" role="dialog" aria-label="${esc(p.name)} का खाता"><div class="grab"></div>
-    <div class="sh-head"><div><h3>${esc(p.name)}</h3><span class="note">${p.qtr?"क्वार्टर "+esc(p.qtr)+" · ":""}${p.phone?esc(p.phone):"नंबर नहीं"}</span></div><button class="x" data-close aria-label="बंद करें">✕</button></div>
+    <div class="sh-head"><div><h3>${esc(p.name)}</h3><span class="note">${p.qtr?esc(p.qtr)+" · ":""}${p.phone?esc(p.phone):"नंबर नहीं"}</span></div><button class="x" data-close aria-label="बंद करें">✕</button></div>
     <div class="amtline"><span>कुल बाकी</span><b style="color:${b>0?"var(--chili)":"var(--leaf)"}">${rs(b)}</b></div>
     <h4 style="margin:4px 0 6px">पैसा जमा करें</h4>
     <div class="row2"><label class="fld">रकम (₹)<input class="inp" id="jAmt" inputmode="decimal" placeholder="${b>0?b:""}"></label>
@@ -1273,7 +1345,26 @@ function hkey(x){let h=5381;for(const c of String(x))h=(h*33+c.codePointAt(0))>>
 async function pinHash(name,pin){try{const d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("se|"+name+"|"+pin));return [...new Uint8Array(d)].map(b=>b.toString(16).padStart(2,"0")).join("")}catch(e){return "x"+hkey(name+"|"+pin)}}
 function staffList(){return Array.isArray(S.settings.staff)?S.settings.staff:[]}
 function sessionOk(){const n=lsGet("se_staff"),h=lsGet("se_auth");const st=staffList().find(x=>x.name===n);return !!(st&&h&&st.pinHash===h)}
-function checkLock(){$("#lock").hidden=true}
+function checkLock(){$("#lock").hidden=true;pinGate()}
+/* कर्मचारी से PIN दिन में ज़्यादा से ज़्यादा 2 बार — हर 12 घंटे पर */
+const PIN_MS=12*3600*1000;
+function pinGate(){
+  if(S.demo||S.isOwner||!S.uid)return;
+  const h=lsGet("se_pinh"),ph=lsGet("se_pinph");if(!h||!ph)return;
+  if(Date.now()-(+lsGet("se_act")||0)<PIN_MS)return;
+  if(document.querySelector(".pinlock"))return;
+  const d=document.createElement("div");d.className="pinlock";
+  d.innerHTML=`<div style="font-size:44px">🔐</div><h2 style="margin:0">${esc((b=>/जी$/.test(b)?b:b+" जी")(biller()||""))}, अपना PIN डालें</h2><p style="margin:0;opacity:.85">दिन में एक-दो बार PIN पूछा जाता है ताकि आपके नाम से कोई और बिल न बनाए।</p>
+  <input id="pgIn" type="password" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="4 अंक का PIN"><p id="pgErr" style="margin:0;min-height:20px;color:#fecaca;font-weight:700"></p><button class="lnk" data-pgout>दूसरे नाम से लॉगिन करें</button>`;
+  document.body.appendChild(d);let bad=0;const inp=d.querySelector("#pgIn");setTimeout(()=>inp.focus(),80);
+  inp.oninput=async()=>{inp.value=inp.value.replace(/\D/g,"");if(inp.value.length<4)return;
+    const ok=(await SE.pinHash(ph,inp.value))===h;
+    if(ok){lsSet("se_act",String(Date.now()));d.remove();toast("✓ स्वागत है "+(biller()||""))}
+    else{bad++;inp.value="";d.querySelector("#pgErr").textContent=bad>=5?"5 बार गलत — दोबारा लॉगिन करें":"PIN गलत है ("+bad+"/5)";if(navigator.vibrate)navigator.vibrate(120);if(bad>=5)setTimeout(()=>SE.logout(),1200)}};
+  d.querySelector("[data-pgout]").onclick=()=>SE.logout();
+}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)pinGate()});
+setInterval(pinGate,10*60*1000);
 function showLock(){}
 function logoutStaff(){SE.logout()}
 
