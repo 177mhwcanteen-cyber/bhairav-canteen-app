@@ -9,7 +9,7 @@ const SE=window.SE={version:window.SE_BUILD||"dev",isNative:!!N.isNative,cfg:CFG
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
-const STAFF_DOMAIN="staff.sabjiexpress.in";
+const STAFF_DOMAIN="staff.bhairavcanteen.in";
 const staffEmail=(ph,v)=>`${ph}.v${v||1}@${STAFF_DOMAIN}`;
 const staffPass=(ph,pin)=>`se-${pin}-${ph}`;
 // मालिक की ईमेल कोड में साफ़ नहीं लिखी — सिर्फ़ उसकी "छाप" (SHA-256), ताकि Public कोड में ईमेल न दिखे
@@ -221,6 +221,38 @@ function webLiveScan(){
     }catch(e){end(undefined)}
   });
 }
+/* ---------- लगातार कैमरा (बिलिंग में खुला रहता है) ----------
+   Android: ML Kit startScan — कैमरा WebView के पीछे, ऊपर की खिड़की पारदर्शी
+   Chrome: <video> + BarcodeDetector, ~7 फ्रेम/सेकंड (फोन गरम न हो)
+   एक ही पैकेट कैमरे के सामने रुका रहे तो एक ही बार जुड़ेगा; हटाकर फिर दिखाएँ तो फिर जुड़ेगा */
+SE.cam={on:false,torch:false,_seen:{},_h:[],_stream:null,_t:0,GAP:900,
+  canTorch:false,
+  _emit(code,cb){const now=Date.now(),last=this._seen[code];this._seen[code]=now;if(last&&now-last<this.GAP)return;
+    for(const k in this._seen)if(now-this._seen[k]>5000)delete this._seen[k];
+    if(document.hidden)return;cb(code)},
+  async start(cb,video){
+    if(this.on)return true;this._seen={};
+    if(SE.isNative){const B=N.BarcodeScanner,F=N.BarcodeFormat;
+      const pm=await B.checkPermissions().catch(()=>({}));if(pm.camera!=="granted"){const r=await B.requestPermissions().catch(()=>({}));if(r.camera!=="granted")throw {msg:"कैमरे की अनुमति नहीं मिली — फोन की सेटिंग में भैरव कैंटीन को कैमरा दें"}}
+      this._h.push(await B.addListener("barcodesScanned",ev=>{const b=ev&&ev.barcodes&&ev.barcodes[0];if(b&&b.rawValue)this._emit(String(b.rawValue),cb)}));
+      document.documentElement.classList.add("camnative");
+      await B.startScan({formats:[F.Ean13,F.Ean8,F.UpcA,F.UpcE,F.Code128,F.Code39,F.Code93,F.Itf,F.QrCode]});
+      try{this.canTorch=!!(await B.isTorchAvailable()).available}catch(e){this.canTorch=false}
+      this.on=true;return true}
+    if(!("BarcodeDetector" in window)||!navigator.mediaDevices)return false;
+    const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}},audio:false});
+    this._stream=st;video.srcObject=st;await video.play().catch(()=>{});
+    const tr=st.getVideoTracks()[0];try{this.canTorch=!!(tr.getCapabilities&&tr.getCapabilities().torch)}catch(e){this.canTorch=false}
+    const bd=new BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e","code_128","code_39","itf","qr_code"]});
+    this.on=true;let busy=false;
+    const tick=async()=>{if(!this.on)return;if(!busy&&!document.hidden&&video.readyState>=2){busy=true;try{const r=await bd.detect(video);if(r&&r[0])this._emit(String(r[0].rawValue),cb)}catch(e){}busy=false}this._t=setTimeout(tick,140)};tick();
+    return true},
+  async stop(){if(!this.on&&!this._stream)return;this.on=false;this.torch=false;clearTimeout(this._t);
+    if(SE.isNative){try{await N.BarcodeScanner.stopScan()}catch(e){}for(const h of this._h)try{h.remove()}catch(e){}this._h=[];document.documentElement.classList.remove("camnative")}
+    if(this._stream){try{this._stream.getTracks().forEach(t=>t.stop())}catch(e){}this._stream=null}},
+  async toggleTorch(){try{if(SE.isNative){await N.BarcodeScanner.toggleTorch();this.torch=!this.torch}
+    else if(this._stream){this.torch=!this.torch;await this._stream.getVideoTracks()[0].applyConstraints({advanced:[{torch:this.torch}]})}}catch(e){}return this.torch}
+};
 SE.canLiveScan=()=>SE.isNative||("BarcodeDetector" in window&&!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia));
 /* null = बंद किया, undefined = यह फोन लाइव स्कैन नहीं कर सकता */
 SE.scan=async function(){
