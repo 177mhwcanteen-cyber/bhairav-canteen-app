@@ -189,8 +189,9 @@ SE.bundled=new Set(window.SE_PHOTOS||[]);
 SE.photos={};
 SE.photoSrc=function(it){if(!it)return "";if(SE.photos[it.id])return SE.photos[it.id];if(it.photo&&SE.bundled.has(it.id))return "img/"+it.id+".jpg";return ""};
 SE.watchPhotos=function(onChange){if(!db)return;db.collection("photos").onSnapshot(s=>{SE.photos={};s.docs.forEach(d=>{const x=d.data();if(x&&x.d)SE.photos[d.id]=x.d});onChange&&onChange()},()=>{})};
-SE.savePhoto=async function(id,blob){
-  const url=await new Promise((res,rej)=>{const img=new Image(),u=URL.createObjectURL(blob);img.onload=()=>{const m=420,sc=Math.min(1,m/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL("image/jpeg",.8))};img.onerror=rej;img.src=u});
+SE.savePhoto=async function(id,blob,max,q){
+  /* ऐप में फोटो छोटी (लगभग 8-12 KB) — ताकि ऐप हल्का रहे */
+  const url=await new Promise((res,rej)=>{const img=new Image(),u=URL.createObjectURL(blob);img.onload=()=>{const m=max||240,sc=Math.min(1,m/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL("image/jpeg",q||.7))};img.onerror=rej;img.src=u});
   await db.doc("photos/"+id).set({d:url,ts:Date.now()});SE.photos[id]=url;return "fs"+Date.now();
 };
 

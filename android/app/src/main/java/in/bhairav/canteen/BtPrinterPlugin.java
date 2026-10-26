@@ -319,6 +319,30 @@ public class BtPrinterPlugin extends Plugin {
         } catch (Exception e) { call.reject("SMS नहीं खुला: " + e.getMessage()); }
     }
 
+    /* कोई भी फाइल (जैसे AI वाली PDF) — base64 से बनाकर भेजना/सेव करना */
+    @PluginMethod
+    public void shareBytes(PluginCall call) {
+        try {
+            String name = call.getString("name", "file").replaceAll("[^A-Za-z0-9_.-]", "_");
+            byte[] bytes = Base64.decode(call.getString("data", ""), Base64.DEFAULT);
+            File dir = new File(getContext().getCacheDir(), "share");
+            dir.mkdirs();
+            File f = new File(dir, name);
+            FileOutputStream os = new FileOutputStream(f);
+            os.write(bytes);
+            os.close();
+            Uri uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", f);
+            Intent it = new Intent(Intent.ACTION_SEND);
+            it.setType(call.getString("mime", "application/pdf"));
+            it.putExtra(Intent.EXTRA_STREAM, uri);
+            it.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            Intent ch = Intent.createChooser(it, "PDF भेजें / सेव करें");
+            ch.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            getActivity().startActivity(ch);
+            call.resolve();
+        } catch (Exception e) { call.reject("फाइल नहीं बनी: " + e.getMessage()); }
+    }
+
     /* टेक्स्ट फाइल (AI ऑडिट पैक) बनाकर भेजना/सेव करना */
     @PluginMethod
     public void shareText(PluginCall call) {

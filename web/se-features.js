@@ -116,6 +116,7 @@ function pGridHTML(){
   +`<button class="card addnew" data-pitem=""><span class="tile"><span class="em">📦</span></span><span class="nm">दूसरा सामान<small class="en">पॉलीथीन, रस्सी…</small></span><span class="pr">लिस्ट में नहीं</span></button>`;
 }
 SF.renderKharid=function(force){
+  if(window.SI&&SI.active())return SI.render($("#p-kharid"));
   if(!P)loadDraft();if(P.shop==null)P.shop="";if(P.phone==null)P.phone="";
   const el=$("#p-kharid");if(!el)return;
   if(!force&&el.contains(document.activeElement)&&document.activeElement.matches("input#pq,input#pShop,input#pPh"))return;
@@ -124,6 +125,7 @@ SF.renderKharid=function(force){
   const names=[...new Set(S.suppliers.map(x=>x.name).filter(Boolean))].slice(0,80);
   const mh=P.src==="mh";
   el.innerHTML=`<div class="daterow"><h2 class="sec" style="margin:0;flex:1">📦 माल आया</h2><span class="pill blue" style="font-size:14px">नया: ${nextNo}</span></div>
+  ${window.SI?SI.cardHTML():""}
   <div class="paym srcsel" style="margin:0 0 10px"><button data-psrc="shop" aria-pressed="${!mh}">🏪 दुकान / सप्लायर से</button><button data-psrc="mh" aria-pressed="${mh}">🏥 177 MH से आया</button></div>
   ${window.SR&&SR.quickStripHTML?SR.quickStripHTML():""}
   ${SF.morningHTML()}

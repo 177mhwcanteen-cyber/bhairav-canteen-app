@@ -32,8 +32,8 @@ SK.render=function(){
   const val=r2(T.reduce((a,it)=>a+Math.max(0,qOf(it))*costOf(it),0)),mrpVal=r2(T.reduce((a,it)=>a+Math.max(0,qOf(it))*(+it.mrp||+it.sale||0),0));
   const seen=+lsGet("bh_cnt_seen")||0,fresh=S.counts.filter(c=>c.ts>seen).length;
   el.innerHTML=`<h2 class="sec">📦 स्टॉक</h2>
-  <div class="skstats"><div><b>${T.length}</b><span>सामान</span></div><div class="${low.length?"bad":""}"><b>${low.length}</b><span>⚠ कम स्टॉक</span></div><div class="${xp.length?"warn":""}"><b>${xp.length}</b><span>⏰ एक्सपायरी</span></div>
-  ${S.isOwner?`<div><b>${rs(val)}</b><span>माल की लागत</span></div>`:""}</div>
+  <div class="skstats"><div><i class="ic">📦</i><b>${T.length}</b><span>सामान</span></div><div class="${low.length?"bad":""}"><i class="ic">⚠️</i><b>${low.length}</b><span>कम स्टॉक</span></div><div class="${xp.length?"warn":""}"><i class="ic">⏰</i><b>${xp.length}</b><span>एक्सपायरी</span></div>
+  ${S.isOwner?`<div><i class="ic">💰</i><b>${rs(val)}</b><span>माल की लागत</span></div>`:""}</div>
   ${S.isOwner&&T.some(it=>qOf(it)>0&&!costOf(it))?`<p class="note" style="margin:-4px 0 6px;color:var(--chili)">⚠ ${T.filter(it=>qOf(it)>0&&!costOf(it)).length} सामान का खरीद भाव नहीं भरा — "रेट व सेटिंग" में "खरीद ₹" भरें, या अगली बार "माल आया" में भाव लिखें</p>`:""}
   ${S.isOwner&&mrpVal>0?`<p class="note" style="margin:-4px 0 10px">इसी माल की MRP कीमत ${rs(mrpVal)} · बिकने पर लगभग फायदा ${rs(r2(T.reduce((a,it)=>a+Math.max(0,qOf(it))*((+it.sale||0)-costOf(it)),0)))}</p>`:""}
   <button class="big" data-skstart>🔢 गिनती शुरू करें</button>
@@ -52,7 +52,8 @@ SK.render=function(){
 function drawList(){
   const box=$("#sklist");if(!box)return;const q=Q.trim().toLowerCase();
   box.innerHTML=tracked().filter(it=>hit(it,q)).map(it=>{const v=qOf(it),e=expInfo(it);
-    return `<div class="li"><div class="mid"><b>${esc(it.name)}</b><span>#${esc(it.code||"")}${e?` · <span class="xpb ${e.k}">${e.t}</span>`:""}</span></div><div class="rt" style="color:${isLow(it)?"var(--chili)":"var(--ink)"}">${v<=0?"खत्म":fq(v,it.unit)}${S.isOwner?`<small>${rs(r2(Math.max(0,v)*costOf(it)))}</small>`:""}</div></div>`}).join("")||'<p class="note">कुछ नहीं मिला</p>';
+    const pc=Math.max(0,Math.min(100,Math.round(v/(lowOf(it)*3)*100))),lv=v<=0||isLow(it)?"low":pc<60?"mid":"";
+    return `<div class="li"><span class="sith">${SE.photoSrc(it)?`<img src="${esc(SE.photoSrc(it))}" alt="" loading="lazy">`:esc(it.emoji||"📦")}</span><div class="mid"><b>${esc(it.name)}</b><span>#${esc(it.code||"")}${e?` · <span class="xpb ${e.k}">${e.t}</span>`:""}</span><span class="skbar ${lv}"><i style="width:${v<=0?4:Math.max(6,pc)}%"></i></span></div><div class="rt" style="color:${isLow(it)?"var(--chili)":"var(--ink)"}">${v<=0?"खत्म":fq(v,it.unit)}${S.isOwner?`<small>${rs(r2(Math.max(0,v)*costOf(it)))}</small>`:""}</div></div>`}).join("")||'<p class="note">कुछ नहीं मिला</p>';
 }
 function orderText(low){
   return `🛒 *भैरव कैंटीन — ऑर्डर लिस्ट*\n${fdate(today())}\n────────\n`+low.map((it,i)=>`${i+1}. ${it.name}${it.size&&!String(it.name).includes(it.size)?" "+it.size:""} — बचे ${qOf(it)<=0?0:qOf(it)} · मँगाएँ ${need(it)}${it.supplier?" ("+it.supplier+")":""}`).join("\n")+`\n────────\n${biller()?"भेजा: "+biller():""}`;

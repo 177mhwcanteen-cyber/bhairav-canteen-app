@@ -601,6 +601,61 @@ kbd{border:1px solid #cbd5e1;border-bottom-width:2px;border-radius:5px;padding:0
 .pinlock .lnk{color:#fff;opacity:.85}
 .paper.pp-c .ppc-tag{background:#fff;border-color:#fff}
 .nightcard{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;border:1.5px solid #22c55e}.nightcard>div{display:grid;gap:2px}.nightcard .lnk{grid-column:1/-1;justify-self:start}
+
+/* 📸 फोटो से माल */
+.sicard{display:flex;align-items:center;gap:12px;width:100%;border:0;border-radius:18px;padding:14px 16px;margin:0 0 12px;text-align:left;cursor:pointer;color:#fff;
+  background:linear-gradient(120deg,#4f46e5,#7c3aed 55%,#db2777);box-shadow:0 10px 26px rgba(79,70,229,.35)}
+.sicard-ic{font-size:30px;background:rgba(255,255,255,.18);border-radius:14px;width:52px;height:52px;display:grid;place-items:center;flex:none}
+.sicard b{display:block;font-size:17px}.sicard small{display:block;opacity:.9;font-size:13px;margin-top:2px}.sicard .go{margin-left:auto;font-size:26px;opacity:.85}
+.sicard .ai{font-style:normal;font-size:11px;background:#fff;color:#7c3aed;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:middle}
+.sihead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px}
+.sihero{display:flex;gap:12px;align-items:center;background:linear-gradient(135deg,#eef2ff,#fdf4ff)}.sihero-ic{font-size:40px}
+.sisrc{display:grid;gap:8px}.sisrc .big{font-size:17px;padding:16px}
+.sislots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sislot{position:relative;aspect-ratio:1;border:2px dashed #c7d2fe;border-radius:16px;background:#f8faff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;overflow:hidden;padding:4px}
+.sislot .ic{font-size:30px}.sislot .lb{font-size:12px;font-weight:700;color:#4338ca;text-align:center;line-height:1.2;z-index:1;background:rgba(255,255,255,.85);border-radius:6px;padding:1px 4px}
+.sislot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.sislot.ok{border:2px solid #22c55e}
+.sislot .tick{position:absolute;top:6px;right:6px;background:#22c55e;color:#fff;border-radius:50%;width:22px;height:22px;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:13px}
+.sibar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}.sibar .scanbtn{margin-left:auto;padding:8px 12px}
+.sinums .fld{font-size:12px}.siact{display:grid;gap:8px;margin-top:12px}
+.sith{width:44px;height:44px;border-radius:10px;overflow:hidden;flex:none;display:grid;place-items:center;background:#f1f5f9;font-size:22px}.sith img{width:100%;height:100%;object-fit:cover}
+.silist .li,.sipv .li{display:flex;align-items:center;gap:10px}
+.sirow.off{opacity:.45}.sirow.warn{background:#fffbeb}.sichk input{width:20px;height:20px}
+.sipvt{display:flex;gap:6px;align-items:center}.sirow .inp{padding:6px 8px;font-size:14px;margin:4px 0}
+.sipr{width:84px;font-size:11px}.sipr .inp{padding:6px;text-align:center;font-weight:800}
+.sinote{display:block;color:#b45309;font-size:12px;margin-top:2px}
+.tilecol{display:flex;flex-direction:column;align-items:center;gap:2px}.gem{font-size:11px;white-space:nowrap}
+
+/* ✨ ग्राफिक्स */
+.greet{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:10px 14px;border-radius:16px;color:#fff;background:linear-gradient(120deg,#0ea5e9,#6366f1 55%,#a855f7);box-shadow:0 8px 22px rgba(99,102,241,.28)}
+.greet[hidden]{display:none}.greet .gi{font-size:28px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}.greet .gt{display:grid;line-height:1.25}.greet .gt b{font-size:16px}.greet .gt span{font-size:13px;opacity:.92}
+.greet .gb{margin-left:auto;font-size:11px;font-weight:700;background:rgba(255,255,255,.2);padding:3px 8px;border-radius:999px;white-space:nowrap}
+.card{transition:transform .18s ease,box-shadow .18s ease}
+@media (hover:hover){.card:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(15,23,42,.14)}}
+.card.pop{animation:pop .38s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.06)}100%{transform:scale(1)}}
+#cartbtn.pop,.sdt b.pop{animation:pulse .5s ease}
+@keyframes pulse{0%{transform:scale(1)}35%{transform:scale(1.04);filter:brightness(1.12)}100%{transform:scale(1)}}
+.card .tile img{transition:transform .3s ease}@media (hover:hover){.card:hover .tile img{transform:scale(1.05)}}
+.card .offp{background:linear-gradient(90deg,#16a34a,#22c55e);color:#fff!important;border-radius:6px;padding:1px 6px;box-shadow:0 2px 6px rgba(22,163,74,.35)}
+.cats .chip{transition:transform .12s ease}.cats .chip:active{transform:scale(.95)}
+.done{position:relative;overflow:hidden}
+.done .tick{animation:tickin .5s cubic-bezier(.3,1.6,.5,1)}@keyframes tickin{0%{transform:scale(.2);opacity:0}100%{transform:scale(1);opacity:1}}
+.confetti{position:absolute;inset:0;pointer-events:none}
+.confetti i{position:absolute;top:-10px;left:calc(var(--i)*4.5%);width:8px;height:12px;border-radius:2px;opacity:0;
+  background:hsl(calc(var(--i)*47),85%,58%);animation:conf 1.6s ease-out calc(var(--i)*.03s) 1 forwards}
+@keyframes conf{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(170px) rotate(calc(var(--i)*40deg))}}
+.skstats>div{position:relative;overflow:hidden}.skstats .ic{display:block;font-size:22px;margin-bottom:2px}
+.skbar{display:block;height:5px;border-radius:9px;background:#e2e8f0;margin-top:5px;overflow:hidden;max-width:160px}.skbar i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,#22c55e,#16a34a)}
+.skbar.mid i{background:linear-gradient(90deg,#f59e0b,#fbbf24)}.skbar.low i{background:linear-gradient(90deg,#ef4444,#f87171)}
+.empty{position:relative;padding-top:64px!important}.empty::before{content:"🛒";position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:44px;opacity:.85}
+#lock{background:radial-gradient(circle at 15% 0%,#e0e7ff 0,transparent 55%),radial-gradient(circle at 100% 100%,#fae8ff 0,transparent 50%),var(--bg)!important}
+#lock>div:first-child{animation:floaty 3s ease-in-out infinite;filter:drop-shadow(0 8px 14px rgba(99,102,241,.35))}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+#sklist .li{display:flex;align-items:center;gap:10px}#sklist .mid{flex:1;min-width:0}
+.card .offp{white-space:nowrap;display:inline-block}.card .pr{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 4px}
+.skstats{grid-template-columns:repeat(auto-fit,minmax(74px,1fr))}.skstats b{font-size:18px}
 </style>
 
 <header class="px">
@@ -616,6 +671,7 @@ kbd{border:1px solid #cbd5e1;border-bottom-width:2px;border-radius:5px;padding:0
 <main class="px" id="main">
   <div class="netbar" id="netbar" hidden></div>
   <section id="p-bill">
+    <div id="greet" class="greet"></div>
     <div id="demo" class="demo" hidden>डेमो मोड: यहाँ बने बिल सेव नहीं होंगे। Firebase जुड़ते ही असली ऐप चलेगा।</div>
     <div class="modes" id="modes"></div>
     <div id="custbox"></div>
@@ -663,7 +719,7 @@ const DEMO_ITEMS=[
 const UPI_FIXED={upi:"8696283600@okbizaxis",payee:"CHARAN KANCHAN NAKHATDAN"};
 function upiId(){return UPI_FIXED.upi}
 const CATS=[["all","सब"],["kirana","🛒 किराना"],["fast","🍔 फास्ट फूड"],["sabzi","🥬 सब्ज़ी-फल"]];
-const SUBS={kirana:[["namkeen","नमकीन-चिप्स"],["dryfruit","ड्राई फ्रूट"],["achar","अचार-चटनी"],["rashan","आटा-दाल-राशन"],["drinks","कोल्ड ड्रिंक-पेय"],["sweet","बिस्किट-चॉकलेट-मिठाई"],["clean","साबुन-सफाई"]],fast:[["nashta","नाश्ता"],["meal","खाना-थाली"],["chai","चाय-कॉफी"]],sabzi:[["sabzi","सब्ज़ी"],["fruit","फल"]]};
+const SUBS={kirana:[["namkeen","🥨 नमकीन-चिप्स"],["dryfruit","🥜 ड्राई फ्रूट"],["achar","🌶️ अचार-चटनी"],["rashan","🌾 आटा-दाल-राशन"],["drinks","🥤 कोल्ड ड्रिंक-पेय"],["sweet","🍫 बिस्किट-मिठाई"],["clean","🧼 साबुन-सफाई"]],fast:[["nashta","🍳 नाश्ता"],["meal","🍛 खाना-थाली"],["chai","☕ चाय-कॉफी"]],sabzi:[["sabzi","🥬 सब्ज़ी"],["fruit","🍎 फल"]]};
 const OLDCAT={packed:"kirana",patta:"sabzi",fal:"sabzi",biryani:"fast",nonveg:"fast",veg:"fast",chinese:"fast",drinks:"fast"};
 const UNITS={pc:"पीस",pk:"पैकेट",kg:"कि.ग्रा",pl:"प्लेट",dz:"दर्जन",gd:"गड्डी"};
 function mcat(it){return OLDCAT[it.cat]||it.cat||"kirana"}
@@ -676,6 +732,16 @@ function nextCode(cat){const base={kirana:1000,fast:2000,sabzi:3000}[cat||"kiran
 function canSell(it){if(expInfo(it)?.k==="dead"){beep(false);toast("⚠ "+it.name+" एक्सपायर है — इसे काउंटर से हटाएँ, बिल में नहीं जुड़ेगा");return false}return true}
 /* MRP से ग्राहक की बचत (संस्था बिल में नहीं) */
 function savedOf(b){if(!b||b.mode==="inst")return 0;return r2((b.lines||[]).reduce((a,l)=>{const m=+l.mrp||+(S.items.find(x=>x.id===l.id)?.mrp)||0;return a+(m>l.rate&&!l.free?(m-l.rate)*l.qty:0)},0)+(+b.disc||0))}
+/* ✨ ऊपर का स्वागत: समय के हिसाब से + आज की बिक्री */
+function greetHTML(){
+  const h=new Date().getHours(),g=h<5?["🌙","शुभ रात्रि"]:h<12?["🌅","सुप्रभात"]:h<17?["☀️","नमस्ते"]:h<21?["🌇","शुभ संध्या"]:["🌙","शुभ रात्रि"];
+  const me=biller(),bl=(S.dayBills||[]).filter(b=>!b.cancelled&&b.date===today()&&b.mode!=="inst"&&(S.isOwner||b.byName===me));
+  const tot=r2(bl.reduce((a,b)=>a+(+b.total||0),0));
+  return `<span class="gi">${g[0]}</span><div class="gt"><b>${g[1]}${me?" "+esc(me):""}</b><span>${S.isOwner?"आज कैंटीन में":"आज आपने"} ${bl.length} बिल · ${rs(tot)}</span></div><span class="gb">🛒 भैरव कैंटीन</span>`;
+}
+/* सामान जुड़ते ही कार्ड उछले, बिल-बटन चमके */
+function popItem(id){requestAnimationFrame(()=>{const c=document.querySelector('#grid [data-item="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]');
+  for(const el of [c,$("#cartbtn"),document.querySelector("#side .sdt b")]){if(!el)continue;el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop")}})}
 function isPc(u){return u==="pc"||u==="pk"||u==="pl"}
 const S={db:null,user:null,assets:null,demo:false,isOwner:false,uid:null,meName:"",staff:"",staffDocs:[],
   items:[],settings:{},parties:[],ledger:[],dayBills:[],billsDate:today(),repDate:today(),
@@ -805,6 +871,7 @@ function renderBill(){
   const tip=$("#qtip");tip.hidden=!searching;S.qq=bl.qq;
   if(searching){tip.className="qtip"+(bl.list.length===1||bl.qq?" go":"");tip.textContent=bl.list.length?(bl.qq?`टैप करें → ${bl.qq} ${bl.list.length===1&&bl.list[0].unit!=="kg"?"पीस":"कि.ग्रा"} सीधा बिल में`:`${bl.list.length} मिलीं · टैप करके मात्रा चुनें`)+(bl.list.length===1?" · या ✓/Enter दबाएँ":""):""}
   const act=S.items.filter(i=>i.active!==false),nLow=act.filter(isLow).length,nExp=act.filter(i=>expInfo(i)).length;
+  $("#greet").hidden=searching;if(!searching)$("#greet").innerHTML=greetHTML();
   $("#cats").innerHTML=(window.SR?SR.rateChipHTML():"")+CATS.map(([k,v])=>`<button class="chip" aria-pressed="${!S.flt&&S.cat===k}" data-cat="${k}">${v}</button>`).join("")+(nLow?`<button class="chip warnc" aria-pressed="${S.flt==="low"}" data-flt="low">⚠ कम स्टॉक ${nLow}</button>`:"")+(nExp?`<button class="chip warnc" aria-pressed="${S.flt==="exp"}" data-flt="exp">⏰ एक्सपायरी ${nExp}</button>`:"")+`<button class="chip" aria-pressed="${S.sortTop}" data-sorttop>⭐ टॉप सेलिंग ऊपर</button><button class="chip" data-view>${S.view==="list"?"▦ फोटो":"☰ लिस्ट"}</button>`;
   const subs=!S.flt&&SUBS[S.cat]?SUBS[S.cat].filter(([k])=>act.some(i=>mcat(i)===S.cat&&i.sub===k)):[];
   $("#cats2").hidden=searching||!subs.length;
@@ -875,7 +942,7 @@ function quickAdd(it,q){if(it&&it.id==="xyz"&&window.SR)return SR.xyzSheet(q);if
   const ex=S.cart.find(l=>l.id===it.id&&!l.changed&&!l.free);
   if(ex){ex.qty=Math.round((ex.qty+q)*1000)/1000;ex.amt=r2(ex.qty*ex.rate)}
   else S.cart.push({key:Math.random().toString(36).slice(2),id:it.id,name:it.name,emoji:it.emoji,unit:it.unit,qty:q,rate:p,board:p,cost:(window.SF?SF.costOf(it):(+it.cost||0)),changed:false,free:false,amt:r2(q*p)});
-  clearSearch();refreshAfterCart();beep(true);toast("✓ "+it.name+" "+fq(q,it.unit)+" · "+rs(r2(q*p)));
+  clearSearch();refreshAfterCart();popItem(it.id);beep(true);toast("✓ "+it.name+" "+fq(q,it.unit)+" · "+rs(r2(q*p)));
 }
 function setMode(m){
   if(m===S.mode)return;S.mode=m;
@@ -1082,7 +1149,7 @@ async function loadBillPhoto(no){const box=()=>$("#bphoto");S.billPhotos=S.billP
 function showReceipt(b,fresh,offline){
   const party=S.parties.find(p=>p.id===b.partyId);
   $("#sheet").innerHTML=`<div class="scrim" data-close><div class="sheet px" role="dialog" aria-label="बिल रसीद"><div class="grab"></div>
-    ${fresh?`<div class="done"><div class="tick">✓</div><h3 style="margin:0;font-family:var(--f-display);font-size:24px">बिल सेव हो गया</h3>${offline||b.pending?'<p class="note" style="margin:4px 0 0;color:var(--chili);font-weight:700">📴 फोन में सेव है — इंटरनेट मिलते ही अपने-आप भेज दिया जाएगा</p>':""}</div>`:`<div class="sh-head"><h3>बिल ${esc(b.no)}</h3><button class="x" data-close aria-label="बंद करें">✕</button></div>`}
+    ${fresh?`<div class="done"><div class="confetti" aria-hidden="true">${Array.from({length:22},(_,i)=>`<i style="--i:${i}"></i>`).join("")}</div><div class="tick">✓</div><h3 style="margin:0;font-family:var(--f-display);font-size:24px">बिल सेव हो गया</h3>${offline||b.pending?'<p class="note" style="margin:4px 0 0;color:var(--chili);font-weight:700">📴 फोन में सेव है — इंटरनेट मिलते ही अपने-आप भेज दिया जाएगा</p>':""}</div>`:`<div class="sh-head"><h3>बिल ${esc(b.no)}</h3><button class="x" data-close aria-label="बंद करें">✕</button></div>`}
     ${receiptHTML(b)}
     ${b.photo?`<div class="bphoto" id="bphoto">📷 फोटो लोड हो रही है…</div>`:""}
     ${window.SB?SB.receiptActionsHTML(b):""}
@@ -1224,6 +1291,7 @@ async function adjStock(pairs,why){
 function trackedPairs(lines,sign){return lines.filter(l=>item(l.id)?.track).map(l=>[l.id,sign*l.qty])}
 async function handleScan(code){
   code=String(code||"").trim();if(!code)return;
+  if(S.tab==="kharid"&&window.SI&&SI.active()&&SI.scan(code))return;
   const vw=window.SF&&!S.scanIn&&!findByCode(code)?SF.parseVW(code):null;
   if(vw){if(vw.bad){beep(false);toast("लेबल का सामान (कोड "+vw.plu+") लिस्ट में नहीं");return}
     if(S.tab!=="bill"){S.tab="bill";showTab()}if(vw.it.active===false){toast(vw.it.name+" अभी बंद है");return}if(!(priceOf(vw.it)>0)){toast(vw.it.name+" का रेट नहीं डाला गया");return}
@@ -1244,7 +1312,7 @@ async function handleScan(code){
   const ex=S.cart.find(l=>l.id===it.id&&!l.changed&&!l.free);
   if(ex){ex.qty=r2(ex.qty+1);ex.amt=r2(ex.qty*ex.rate)}
   else S.cart.push({key:Math.random().toString(36).slice(2),id:it.id,name:it.name,emoji:it.emoji,unit:it.unit,qty:1,rate:p,board:p,cost:(window.SF?SF.costOf(it):(+it.cost||0)),changed:false,free:false,amt:p});
-  clearSearch();refreshAfterCart();
+  clearSearch();refreshAfterCart();popItem(it.id);
   const inCart=S.cart.filter(l=>l.id===it.id).reduce((a,l)=>a+l.qty,0),left=it.track?r2((+(S.pstock[it.id]?.qty)||0)-inCart):null;
   toast("✓ "+it.name+" · "+rs(p)+(inCart>1?" · कुल "+inCart:"")+(left!=null&&left<0?" · ⚠ स्टॉक में इतना नहीं दिखता":""));
 }
@@ -1303,7 +1371,7 @@ function camUi(on){document.documentElement.classList.toggle("camon",on);$("#cam
   const tb=$("#camTorch");tb.hidden=!(on&&SE.cam.canTorch);tb.textContent="🔦";}
 $("#camOff").onclick=()=>camOff(true);
 $("#camTorch").onclick=async()=>{const t=await SE.cam.toggleTorch();$("#camTorch").textContent=t?"🔦 बंद":"🔦"};
-function camAuto(){const want=(S.tab==="bill"||S.tab==="kharid"||(S.tab==="stock"&&window.SK&&SK.counting())||(S.tab==="day"&&S.scanIn));if(!want&&SE.cam.on)camOff(false);else if(want&&!SE.cam.on&&SE.isNative&&lsGet("se_cam")==="1"&&!document.hidden)camOn()}
+function camAuto(){const want=(S.tab==="bill"||(S.tab==="kharid"&&!(window.SI&&SI.active()))||(S.tab==="stock"&&window.SK&&SK.counting())||(S.tab==="day"&&S.scanIn));if(!want&&SE.cam.on)camOff(false);else if(want&&!SE.cam.on&&SE.isNative&&lsGet("se_cam")==="1"&&!document.hidden)camOn()}
 document.addEventListener("visibilitychange",()=>{if(document.hidden){if(SE.cam.on){SE.cam.stop();camUi(false);camAuto._resume=true}}else if(camAuto._resume){camAuto._resume=false;camAuto()}});
 async function liveScan(){
   if(SE.cam.on){camOff(true);return}
@@ -1681,7 +1749,7 @@ function renderSettings(){
   <div class="card2"><h3>📦 पुराने ऐप का डेटा</h3><p class="note" style="margin:0">पुराने (आर्टिफ़ैक्ट) ऐप का सामान, भाव, खरीद इतिहास, उधार खाते और संस्थाएँ यहाँ लाएँ। जो पहले से है वह नहीं बदलेगा।</p><button class="big ghost" data-migrate>पुराना डेटा लाएँ</button></div>
   <h3 style="margin:0 0 4px">सामान और भाव</h3><p class="note" style="margin:0 0 8px">MRP = पैकेट पर छपा · बिक्री = ग्राहक से लेंगे · खरीद = हमें पड़ा। फोटो बदलने के लिए फोटो पर टैप करें। ${(()=>{const n=S.items.filter(i=>!i.photo).length;return n?`<b style="color:var(--chili)">${n} सामान की असली फोटो अभी बाकी है।</b> अच्छी रोशनी में ऊपर से फोटो खींचकर लगाएँ।`:'<b style="color:var(--leaf)">सबकी फोटो लग चुकी है।</b>'})()}</p>
   <div class="list">${S.items.filter(i=>!i.virtual).map(it=>`<div class="setitem" data-sid="${esc(it.id)}">
-    <button class="tile" data-photo="${esc(it.id)}" style="--h:${+(it.hue??120)}" aria-label="${esc(it.name)} की फोटो बदलें">${SE.photoSrc(it)?`<img src="${esc(SE.photoSrc(it))}" alt="">`:`<span class="em">${esc(it.emoji||"🛒")}</span>`}</button>
+    <div class="tilecol"><button class="tile" data-photo="${esc(it.id)}" style="--h:${+(it.hue??120)}" aria-label="${esc(it.name)} की फोटो बदलें">${SE.photoSrc(it)?`<img src="${esc(SE.photoSrc(it))}" alt="">`:`<span class="em">${esc(it.emoji||"🛒")}</span>`}</button><button class="lnk gem" data-gem="${esc(it.id)}" title="Gemini से सुंदर फोटो बनवाने का प्रॉम्प्ट">🎨 Gemini</button></div>
     <div style="min-width:0"><div class="flds">
       <label class="fld">नाम<input class="inp" id="n-${esc(it.id)}" data-if="name" value="${esc(it.name)}"></label>
       <label class="fld">बिक्री ₹<input class="inp ${(+it.sale)>0?"":"bad"}" id="s-${esc(it.id)}" data-if="sale" inputmode="decimal" value="${it.sale||""}"></label>
@@ -1734,6 +1802,7 @@ $("#p-set").addEventListener("click",async e=>{
   const ps=e.target.closest("[data-prnset]");if(ps){SE.printer.pick(ps.dataset.prnset,ps.dataset.n,ps.dataset.w);renderSettings();toast("प्रिंटर चुन लिया: "+ps.dataset.n);return}
   if(e.target.closest("[data-prntest]")){printBill({no:"TEST",date:today(),ts:Date.now(),partyName:"टेस्ट",lines:[{name:"आलू",qty:1.5,unit:"kg",rate:20,amt:30}],total:30,pay:{cash:30},byName:biller()});return}
   if(e.target.closest("[data-migrate]")){migrateOld();return}
+  const gm=e.target.closest("[data-gem]");if(gm){if(window.SI)SI.copyGemini(gm.dataset.gem);return}
   const ph=e.target.closest("[data-photo]");if(ph){const fi=$("#photoIn");fi.dataset.for=ph.dataset.photo;fi.click();return}
   if(e.target.closest("[data-additem]")){
     const name=$("#ni-name").value.trim();if(!name){toast("नाम लिखें");return}
@@ -1860,6 +1929,7 @@ boot();
 <script src="se-pay.js"></script>
 <script src="se-bill.js"></script>
 <script src="se-stock.js"></script>
-<script>if(window.SK)SK.bind();</script>
+<script src="se-intake.js"></script>
+<script>if(window.SK)SK.bind();if(window.SI)SI.bind();</script>
 
 </body></html>
