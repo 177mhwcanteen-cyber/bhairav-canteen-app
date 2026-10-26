@@ -430,7 +430,7 @@ main{padding-block:10px 120px}
 .sb-pend{background:#fff7e6;border:1.5px solid #f59e0b;border-radius:14px;padding:8px 10px;margin:0 0 10px;color:#7c2d12}.sb-pend>div{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.sb-pend button{border:0;border-radius:999px;background:#f59e0b;color:#fff;font-weight:800;padding:6px 12px}
 .sb-ract{margin:8px 0;display:grid;gap:6px}
 .paper.pp-c{border-radius:14px;overflow:hidden;padding:0 0 12px;box-shadow:0 10px 26px rgba(0,0,0,.22)}
-.paper.pp-c .ppc-head{background:linear-gradient(135deg,#14532d,#1f8a4c);color:#fff;border:0;padding:9px 12px}.paper.pp-c .ppc-head b{color:#fff}
+.paper.pp-c .ppc-head{background:linear-gradient(120deg,var(--hdr1),var(--hdr2));color:#fff;border:0;padding:9px 12px}.paper.pp-c .ppc-head b{color:#fff}
 .paper.pp-c .ppc-meta,.paper.pp-c .ppc-t,.paper.pp-c .pp-row{margin-left:12px;margin-right:12px;width:auto}.paper.pp-c .ppc-t{width:calc(100% - 24px)}
 .paper.pp-c .ppc-meta b{background:#ecfdf5;color:#14532d;border-radius:6px;padding:0 6px}
 .ppc-t tbody tr:nth-child(even) td{background:#f7faf7}
@@ -550,6 +550,10 @@ html.camon body{position:fixed;left:0;right:0;bottom:0;top:var(--camh);overflow-
 html.camon body::before{display:none}
 html.camon header{top:0}
 #scanBtn[aria-pressed="true"]{background:#22c55e;color:#fff}
+
+/* Part 4 — बचत */
+.pp-save{margin:6px 0 2px;text-align:center;border:1.5px dashed #16a34a;color:#15803d;border-radius:10px;padding:6px;font-weight:700}
+.ppc-save{display:block;color:#15803d;font-weight:700;margin-top:2px}
 </style>
 
 <header class="px">
@@ -596,7 +600,7 @@ html.camon header{top:0}
 <script>
 const ALIAS={aloo:"potato aalu",pyaj:"onion pyaz",tamatar:"tomato",kheera:"cucumber",adrak:"ginger",shimla:"capsicum",gajar:"carrot",phoolgobhi:"cauliflower gobhi",harimirch:"chilli mirchi",dhaniya:"coriander",palak:"spinach",nimbu:"lemon",kela:"banana",anar:"pomegranate",nariyal:"coconut"};
 const DEMO_ITEMS=[
- ["k1001","Bikaji Navratan 400g","🥨","kirana","pc",120,100,0,"2000000100104","namkeen","1001",120],
+ ["k1001","Bikaji Navratan 400g","🥨","kirana","pc",120,100,0,"2000000100104","namkeen","1001",120,"400g"],
  ["k1009","Lays Wavy C&O 25","🥔","kirana","pc",25,20,30,"8901491981682","namkeen","1009",25],
  ["k1010","20-20 Pista 250g","🥜","kirana","pc",398,300,40,"8906079510407","dryfruit","1010",599],
  ["k1017","20-20 Kaju 250g","🥜","kirana","pc",560,450,60,"8906079510261","dryfruit","1017",599],
@@ -621,6 +625,8 @@ function expInfo(it){if(!it.exp)return it.chk?{k:"chk",t:"तारीख जा
 function ean13(s12){let t=0;for(let i=0;i<12;i++)t+=(+s12[i])*(i%2?3:1);return s12+((10-t%10)%10)}
 function nextCode(cat){const base={kirana:1000,fast:2000,sabzi:3000}[cat||"kirana"]||1000;return String(S.items.reduce((a,i)=>{const c=+i.code||0;return c>base&&c<base+1000?Math.max(a,c):a},base)+1)}
 function canSell(it){if(expInfo(it)?.k==="dead"){beep(false);toast("⚠ "+it.name+" एक्सपायर है — इसे काउंटर से हटाएँ, बिल में नहीं जुड़ेगा");return false}return true}
+/* MRP से ग्राहक की बचत (संस्था बिल में नहीं) */
+function savedOf(b){if(!b||b.mode==="inst")return 0;return r2((b.lines||[]).reduce((a,l)=>{const m=+l.mrp||+(S.items.find(x=>x.id===l.id)?.mrp)||0;return a+(m>l.rate&&!l.free?(m-l.rate)*l.qty:0)},0)+(+b.disc||0))}
 function isPc(u){return u==="pc"||u==="pk"||u==="pl"}
 const S={db:null,user:null,assets:null,demo:false,isOwner:false,uid:null,meName:"",staff:"",staffDocs:[],
   items:[],settings:{},parties:[],ledger:[],dayBills:[],billsDate:today(),repDate:today(),
@@ -911,7 +917,7 @@ function drawCheckout(){if(window.SF&&SF.drawCheckout)return SF.drawCheckout();
     <button class="big ghost" data-hold style="margin-bottom:8px">+ दूसरा ग्राहक (यह बिल ऊपर टैब में खुला रहेगा)</button>
     <button class="big ${c.pay==="upi"?"haldi":""}" data-save ${c.udPick||S.saving||(c.pay==="upi"&&!upiId())||tot<=0&&S.mode!=="inst"?"disabled":""}>${S.saving?"सेव हो रहा है…":c.pay==="upi"?"✓ पैसा आ गया · बिल सेव करें":"✓ बिल सेव करें"}</button>
   </div></div>`;
-  if(c.pay==="upi"&&upiId()&&window.QRCode){const upi=`upi://pay?pa=${encodeURIComponent(upiId())}&pn=${encodeURIComponent(UPI_FIXED.payee)}&am=${tot.toFixed(2)}&cu=INR&tn=${encodeURIComponent("Sabji Express | Bill No "+c.no)}`;try{new QRCode($("#qr"),{text:upi,width:208,height:208,correctLevel:QRCode.CorrectLevel.M})}catch(e){}}
+  if(c.pay==="upi"&&upiId()&&window.QRCode){const upi=`upi://pay?pa=${encodeURIComponent(upiId())}&pn=${encodeURIComponent(UPI_FIXED.payee)}&am=${tot.toFixed(2)}&cu=INR&tn=${encodeURIComponent("Bhairav Canteen | Bill No "+c.no)}`;try{new QRCode($("#qr"),{text:upi,width:208,height:208,correctLevel:QRCode.CorrectLevel.M})}catch(e){}}
   const sh=$("#sheet");
   sh.oninput=e=>{if(e.target.id==="udQ"){c.udQ=e.target.value;const l=$("#udList");if(l)l.innerHTML=udListHTML(c.udQ)}};
   sh.onclick=async e=>{
@@ -951,7 +957,7 @@ async function saveBill(){
   if(c.pay==="cash")pay.cash=tot;else if(c.pay==="upi")pay.upi=tot;else if(c.pay==="udhar")pay.udhar=tot;
   else if(c.pay==="split"){const cp=Math.min(tot,parseFloat(c.cashPart)||0);pay.cash=cp;pay.udhar=r2(tot-cp)}
   const now=Date.now(),date=today();
-  const lines=S.cart.map(l=>({id:l.id,name:l.name,emoji:l.emoji||"",unit:l.unit,qty:l.qty,rate:l.rate,board:l.board,cost:l.cost,amt:l.amt,changed:!!l.changed,free:!!l.free,...(l.note?{note:l.note}:{})}));
+  const lines=S.cart.map(l=>({id:l.id,name:l.name,emoji:l.emoji||"",unit:l.unit,qty:l.qty,rate:l.rate,board:l.board,cost:l.cost,amt:l.amt,mrp:+(S.items.find(x=>x.id===l.id)?.mrp)||0,changed:!!l.changed,free:!!l.free,...(l.note?{note:l.note}:{})}));
   const cph=S.mode==="walk"?S.cust.phone:"",cnm=S.mode==="walk"?S.cust.name:"";
   const cost=r2(lines.reduce((a,l)=>a+l.cost*l.qty,0));
   if(c.no==="…"&&window.SF)c.no=await SF.reserveBillNo();
@@ -1552,7 +1558,7 @@ function renderSettings(){
   <div class="card2"><h3>🔐 कर्मचारी (लॉगिन खाते)</h3>
     <p class="note" style="margin:0">हर व्यक्ति अपने मोबाइल नंबर + 4 अंक के PIN से लॉगिन करेगा। बिल उसी के नाम से बनेंगे। किसी को हटाना हो तो "बंद करें" — उसका पुराना हिसाब कभी नहीं मिटेगा।</p>
     <div>${S.staffDocs.filter(x=>!x.owner).length?S.staffDocs.filter(x=>!x.owner).map(x=>`<div class="staffrow"><b>👤 ${esc(x.name)}</b><span class="note">${esc(x.phone||"")} · ${x.active===false?"बंद":"चालू"}</span>${window.SR&&x.active!==false?SR.pinHTML(x):""}<button class="lnk" data-staffon="${esc(x.id)}" data-on="${x.active===false?1:0}" style="color:${x.active===false?"var(--leaf)":"var(--chili)"}">${x.active===false?"चालू करें":"बंद करें"}</button></div>`).join(""):'<p class="note" style="margin:0">अभी कोई कर्मचारी नहीं जोड़ा।</p>'}</div>
-    <input class="inp" id="stName" placeholder="नाम (जैसे कमल भाई)" aria-label="नाम">
+    <input class="inp" id="stName" placeholder="नाम (जैसे दिनेश जी)" aria-label="नाम">
     <div class="row2" style="margin:0"><input class="inp" id="stPhone" inputmode="tel" maxlength="20" placeholder="मोबाइल नंबर" aria-label="मोबाइल नंबर"><input class="inp" id="stPin" inputmode="numeric" maxlength="4" placeholder="4 अंक PIN" aria-label="4 अंक का PIN"></div>
     <button class="big ghost" data-staffadd>+ कर्मचारी जोड़ें / PIN बदलें</button></div>
   <div class="card2"><h3>🖨️ ब्लूटूथ प्रिंटर</h3>
@@ -1670,7 +1676,7 @@ function openBiller(next){
   $("#sheet").innerHTML=`<div class="scrim" data-close><div class="sheet px" role="dialog" aria-label="बिलर का नाम"><div class="grab"></div>
   <div class="sh-head"><h3>बिल कौन बना रहा है?</h3><button class="x" data-close aria-label="बंद करें">✕</button></div>
   <p class="note" style="margin-top:-6px">यह नाम हर बिल पर लिखा जाएगा और मालिक की रिपोर्ट में दिखेगा।</p>
-  <label class="fld" style="margin-bottom:14px">आपका नाम<input class="inp" id="bName" value="${esc(biller())}" placeholder="जैसे कमल भाई"></label>
+  <label class="fld" style="margin-bottom:14px">आपका नाम<input class="inp" id="bName" value="${esc(biller())}" placeholder="जैसे दिनेश जी"></label>
   <button class="big" data-ok>सेव करें</button></div></div>`;
   $("#sheet").onclick=e=>{if(e.target.matches("[data-close]")){closeSheet();return}if(e.target.closest("[data-ok]")){const v=$("#bName").value.trim();if(!v){toast("नाम लिखें");return}S.staff=v;lsSet("se_staff",v);closeSheet();renderTabs();next&&next()}};
 }

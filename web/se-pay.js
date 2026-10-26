@@ -99,7 +99,7 @@ ${ST.accts.map(a=>`<tr><td>…${e(a.last4)}</td><td>${e(a.label)}</td></tr>`).jo
 SP.makeFile=async function(){
   if(Date.now()-ST.loaded>60000)await loadPurch();
   const N=need();if(!N.length){toast("✓ अभी कोई भुगतान मिलान के लिए बाकी नहीं");return}
-  const name="SabjiExpress_UPI_Milan_"+today()+".html";
+  const name="BhairavCanteen_UPI_Milan_"+today()+".html";
   if(window.SR&&SR.saveFile)await SR.saveFile(name,SP.aiHTML(),"text/html");
   toast("📄 फाइल बनी — इसे और UPI स्क्रीनशॉट Claude में डालें, फिर उसका जवाब यहाँ चिपकाएँ");
 };

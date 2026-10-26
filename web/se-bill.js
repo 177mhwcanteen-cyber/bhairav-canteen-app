@@ -48,7 +48,7 @@ SB.settleSheet=function(b,offline){
     <button class="big ${st.pay==="upi"?"haldi":""}" data-sbok ${ok?"":"disabled"}>${st.pay==="upi"?"✓ पैसा आ गया · सेटल करें":"✓ सेटल करें · "+rs(tot)}</button>
     <div class="sb-row"><button class="big ghost" data-sbedit2>✏️ बिल बदलें</button><button class="big ghost" data-sblater>⏳ बाद में</button></div>
     </div></div>`;
-    if(st.pay==="upi"&&upiId()&&window.QRCode){const el=$("#sbqr");try{new QRCode(el,{text:`upi://pay?pa=${encodeURIComponent(upiId())}&pn=${encodeURIComponent(UPI_FIXED.payee)}&am=${tot.toFixed(2)}&cu=INR&tn=${encodeURIComponent("Sabji Express | Bill No "+b.no)}`,width:150,height:150,correctLevel:QRCode.CorrectLevel.M})}catch(e){}}
+    if(st.pay==="upi"&&upiId()&&window.QRCode){const el=$("#sbqr");try{new QRCode(el,{text:`upi://pay?pa=${encodeURIComponent(upiId())}&pn=${encodeURIComponent(UPI_FIXED.payee)}&am=${tot.toFixed(2)}&cu=INR&tn=${encodeURIComponent("Bhairav Canteen | Bill No "+b.no)}`,width:150,height:150,correctLevel:QRCode.CorrectLevel.M})}catch(e){}}
   };
   draw();
   const sh=$("#sheet");

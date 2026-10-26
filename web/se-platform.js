@@ -305,6 +305,7 @@ SE.receiptCanvas=function(b,o,widthPx){
   const sub=r2(b.sub!=null?b.sub:(b.lines||[]).reduce((a,l)=>a+(l.amt||0),0));
   if(b.disc){LR("जोड़",`₹${sub}`,fs(18));LR("छूट",`−₹${b.disc}`,fs(18))}
   LR("कुल रकम",`₹${b.total}`,fs(30),true);
+  if(o.saved>0){const h=fs(32);x.lineWidth=Math.max(2,fs(2));x.strokeRect(P,y,W-2*P,h);x.font=`800 ${fs(19)}px ${FB}`;const st="🎉 आपने MRP से ₹"+o.saved+" बचाए",sw=x.measureText(st).width;x.fillText(st,(W-sw)/2,y+fs(5));y+=h+fs(6)}
   if(b.pay&&o.paid!==false){const p=b.pay;const parts=[p.cash?"नकद ₹"+p.cash:"",p.upi?"UPI ₹"+p.upi:"",p.udhar?"उधार ₹"+p.udhar:""].filter(Boolean);if(parts.length)T("भुगतान: "+parts.join(" · "),fs(16),"l")}
   if(o.balance!=null)LR("खाते में कुल बाकी",`₹${o.balance}`,fs(18),true);
   if(o.qr){DASH();T("स्कैन करके भुगतान करें",fs(17),"c",true);const q=o.qr,s=Math.min(W*0.55,q.width*3);x.imageSmoothingEnabled=false;x.drawImage(q,(W-s)/2,y,s,s);y+=s+fs(4);if(o.upi)T(o.upi+(o.payee?" · "+o.payee:""),fs(14),"c")}
@@ -366,7 +367,7 @@ SE.printReceipt=async function(b,o){
 /* बिल PDF बनाकर ग्राहक के WhatsApp पर */
 SE.shareReceipt=async function(b,o,phone,text){
   const cv=SE.receiptCanvas(b,o,768);const png=cv.toDataURL("image/png").split(",")[1];
-  const name="SabjiExpress_"+String(b.no||"bill").replace(/[^A-Za-z0-9]/g,"");
+  const name="BhairavCanteen_"+String(b.no||"bill").replace(/[^A-Za-z0-9]/g,"");
   if(SE.isNative){
     try{await N.BtPrinter.shareFile({data:png,name,pdf:true,phone:phone||"",text:text||""});return "pdf"}
     catch(e){const m=String(e&&e.message||"");if(/not implemented|UNIMPLEMENTED/i.test(m))throw {code:"oldapk",msg:"PDF शेयर के लिए नई APK इंस्टॉल करें (लिंक वही है)"};throw e}

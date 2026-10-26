@@ -587,7 +587,7 @@ SF.auditCopy=async function(){
 };
 SF.auditFile=async function(){
   toast("⏳ ऑडिट फाइल बन रही है…");const t=await SF.auditPack();
-  if(window.SR)await SR.saveFile("SabjiExpress_Audit_"+S.billsDate+".txt",t,"text/plain");
+  if(window.SR)await SR.saveFile("BhairavCanteen_Audit_"+S.billsDate+".txt",t,"text/plain");
 };
 
 /* =============== 🏷️ बारकोड लेबल =============== */
@@ -611,8 +611,9 @@ const SIZES={"50x25":[50,25],"40x30":[40,30],"38x25":[38,25],"60x40":[60,40],"75
 /* दो तरह के लेबल:
    🛒 सब्ज़ी — टोकरी/लोरी के खाने पर एक बार चिपकाओ: नाम + भाव/किलो + बारकोड (स्कैन पर वज़न पूछेगा)
    🛒 किराना — हर पैकेट पर पक्का: दुकान का नाम, सामान, पैकेट की मात्रा, कीमत, एक्सपायरी, बारकोड */
-let L={id:"",type:"",copies:"1",size:LS.get("se_lsize")||"50x25",pack:"",price:"",exp:"",mfg:"",q:""};
-const isKirana=it=>it&&(it.cat==="packed"||it.unit==="pc"&&it.cat!=="sabzi"&&it.cat!=="patta"&&it.cat!=="fal");
+let L={id:"",type:"kirana",copies:"1",size:LS.get("se_lsize")||"50x25",pack:"",price:"",exp:"",mfg:"",q:""};
+const isKirana=it=>it&&(it.cat==="kirana"||it.cat==="packed"||isPc(it.unit)&&it.cat!=="sabzi"&&it.cat!=="patta"&&it.cat!=="fal"&&it.cat!=="fast");
+const ownBar=it=>/^2000000\d{6}$/.test(String(it.barcode||"").split(",")[0]);
 function itemCode(it){
   const own=String(it.barcode||"").split(",").map(x=>x.trim()).filter(Boolean)[0];
   if(own)return own;                       // कंपनी का अपना बारकोड (पैकेट पर पहले से छपा)
@@ -621,10 +622,13 @@ function itemCode(it){
 function labelSpec(){
   const it=item(L.id);if(!it)return null;
   const kir=L.type==="kirana";
+  return specOf(it,kir,{price:num(L.price),pack:L.pack,exp:L.exp,mfg:L.mfg});
+}
+function specOf(it,kir,o){o=o||{};const ex=o.exp!=null&&o.exp!==""?o.exp:(it.exp||"");
   return {it,kir,code:itemCode(it),name:it.name,
-    price:kir?(num(L.price)||+it.sale||0):(+it.sale||0),unit:it.unit,
-    pack:kir?(String(L.pack||it.pack||"").trim()):"",
-    exp:kir&&L.exp?fdate(L.exp):"",mfg:kir&&L.mfg?fdate(L.mfg):""};
+    price:kir?(o.price||+it.sale||0):(+it.sale||0),mrp:+it.mrp||0,icode:it.code||"",unit:it.unit,
+    pack:kir?(String(o.pack||it.size||it.pack||"").trim()):"",
+    exp:kir&&ex?fdate(ex):"",mfg:kir&&o.mfg?fdate(o.mfg):""};
 }
 SF.labelCanvas=function(sp,sizeKey){
   const [wmm,hmm]=SIZES[sizeKey||L.size]||SIZES["50x25"];const W=wmm*8,H=hmm*8,P=10;
@@ -635,11 +639,13 @@ SF.labelCanvas=function(sp,sizeKey){
   const ctr=(t,y,sz,w)=>{const s=font(t,sz,W-2*P,w);const tw=x.measureText(t).width;x.fillText(t,(W-tw)/2,y);return s};
   let y=4;
   if(sp.kir){
-    y+=ctr("भैरव कैंटीन · जसाई, बाड़मेर",y,Math.round(H*.075),600)+1;x.fillRect(P,y,W-2*P,2);y+=4;
+    y+=ctr("भैरव कैंटीन · जसाई"+(sp.icode?"   #"+sp.icode:""),y,Math.round(H*.075),600)+1;x.fillRect(P,y,W-2*P,2);y+=4;
     y+=ctr(sp.name,y,Math.round(H*.13),800)+1;
-    const row=[sp.pack,"₹"+sp.price].filter(Boolean);
-    const s=font(row.join("    "),Math.round(H*.12),W-2*P,800);
-    if(sp.pack)x.fillText(sp.pack,P,y);const pw=x.measureText("₹"+sp.price).width;x.fillText("₹"+sp.price,W-P-pw,y);y+=s+1;
+    const pr="₹"+sp.price,mr=sp.mrp>sp.price?"MRP ₹"+sp.mrp:"";
+    const s=font([sp.pack,mr,pr].filter(Boolean).join("   "),Math.round(H*.12),W-2*P,800);
+    if(sp.pack)x.fillText(sp.pack,P,y);const pw=x.measureText(pr).width;x.fillText(pr,W-P-pw,y);
+    if(mr){const sv=x.font;x.font=`600 ${Math.round(s*.72)}px ${F}`;const mw=x.measureText(mr).width,mx=W-P-pw-mw-8,my=y+Math.round(s*.2);x.fillText(mr,mx,my);const mm=x.measureText(mr);x.fillRect(mx,Math.round(my+(mm.actualBoundingBoxDescent-mm.actualBoundingBoxAscent)/2),mw,2);x.font=sv}
+    y+=s+1;
     const dt=[sp.mfg?"पैक: "+sp.mfg:"",sp.exp?"एक्सपायरी: "+sp.exp:""].filter(Boolean).join("   ");
     if(dt)y+=ctr(dt,y,Math.round(H*.068),700)+2;
   }else{
@@ -683,18 +689,19 @@ SF.renderLabel=function(force){
   if(!force&&el.contains(document.activeElement)&&document.activeElement.matches("input"))return SF.drawPreview();
   const it=item(L.id),qq=(L.q||"").trim().toLowerCase();
   const head=`<h2 class="sec">🏷️ बारकोड लेबल</h2>
-  <div class="paym" style="margin:0 0 12px"><button data-ltype="sabzi" aria-pressed="${L.type==="sabzi"}">🛒 सब्ज़ी की टोकरी</button><button data-ltype="kirana" aria-pressed="${L.type==="kirana"}">🛒 किराना पैकेट</button></div>`;
+  <div class="paym" style="margin:0 0 12px"><button data-ltype="kirana" aria-pressed="${L.type==="kirana"}">🛒 किराना पैकेट</button><button data-ltype="sabzi" aria-pressed="${L.type==="sabzi"}">🥬 सब्ज़ी-फल (वज़न)</button></div>`;
   if(!L.type){el.innerHTML=head+`<div class="card2"><p class="note" style="margin:0"><b>🛒 सब्ज़ी:</b> लोरी/टोकरी के खाने पर एक बार चिपकाएँ — नाम, भाव और बारकोड। स्कैन करने पर ऐप वज़न पूछेगा।<br><b>🛒 किराना:</b> हर पैकेट पर पक्का लेबल — दुकान का नाम, सामान, मात्रा (जैसे ½ किलो), कीमत, एक्सपायरी और बारकोड। स्कैन करते ही बिल में।</p></div>`;return}
   if(!it){el.innerHTML=head+`<div class="card2"><h3>${L.type==="kirana"?"कौन-सा किराना सामान?":"कौन-सी सब्ज़ी?"}</h3>
     <input class="inp" id="lq" type="search" placeholder="🔍 खोजें" value="${esc(L.q||"")}" autocomplete="off" aria-label="खोजें">
     <div class="ppick">${pickList(L.type,qq)||'<p class="note">कोई सामान नहीं मिला।</p>'}</div></div>
+    ${L.type==="kirana"?SF.batchHTML():""}
     ${L.type==="kirana"&&S.isOwner?`<div class="card2"><h3>+ नया किराना सामान</h3>
-      <input class="inp" id="kNm" placeholder="नाम (जैसे चीनी, मूंग दाल)">
-      <div class="row2" style="margin:0"><input class="inp" id="kPk" placeholder="मात्रा (जैसे 500 ग्राम)"><input class="inp" id="kPr" inputmode="decimal" placeholder="बिक्री ₹"></div>
+      <input class="inp" id="kNm" placeholder="छोटा नाम (जैसे Moong Dal 500g)">
+      <div class="row2" style="margin:0"><input class="inp" id="kPk" placeholder="साइज़ (जैसे 500g)"><input class="inp" id="kPr" inputmode="decimal" placeholder="बिक्री ₹"></div>
       <div class="row2" style="margin:0"><input class="inp" id="kCo" inputmode="decimal" placeholder="खरीद ₹ (ज़रूरी नहीं)"><input class="inp" id="kBc" inputmode="numeric" placeholder="कंपनी का बारकोड (हो तो)"></div>
       <button class="big ghost" data-knew>सामान जोड़ें</button></div>`:""}`;return}
   const kir=L.type==="kirana";
-  el.innerHTML=head+`<div class="card2"><div class="supsel">${tileHTML(it)}<b>${esc(it.name)}</b><span class="note">${it.barcode?"कंपनी बारकोड":"कोड "+(it.plu||"—")} · ${rs(+it.sale||0)}${kir?"":"/"+(UNITS[it.unit]||it.unit)}</span><button class="lnk" data-lpick="">बदलें</button></div>
+  el.innerHTML=head+`<div class="card2"><div class="supsel">${tileHTML(it)}<b>${esc(it.name)}</b><span class="note">${it.code?"#"+esc(it.code)+" · ":""}${ownBar(it)?"अपना बारकोड":it.barcode?"कंपनी बारकोड":"कोड "+(it.plu||"—")} · ${rs(+it.sale||0)}${kir?"":"/"+(UNITS[it.unit]||it.unit)}</span><button class="lnk" data-lpick="">बदलें</button></div>
     ${kir?`<div class="row2" style="margin:0"><label class="fld">पैकेट की मात्रा<input class="inp" id="lPack" value="${esc(L.pack||it.pack||"")}" placeholder="जैसे 500 ग्राम"></label><label class="fld">कीमत ₹<input class="inp" id="lPrice" inputmode="decimal" value="${esc(L.price||it.sale||"")}"></label></div>
     <div class="row2" style="margin:0"><label class="fld">पैक तारीख (ज़रूरी नहीं)<input class="inp" id="lMfg" type="date" value="${esc(L.mfg)}"></label><label class="fld">एक्सपायरी<input class="inp" id="lExp" type="date" value="${esc(L.exp)}"></label></div>`
     :`<p class="note" style="margin:0">भाव "रेट व सेटिंग" वाला ही छपेगा। भाव बदले तो नया लेबल छापकर पुराने के ऊपर चिपका दें — बारकोड वही रहेगा।</p>`}
@@ -715,19 +722,41 @@ SF.bindLabel=function(){
     const map={lPack:"pack",lPrice:"price",lCopies:"copies",lExp:"exp",lMfg:"mfg"};if(map[t.id]){L[map[t.id]]=t.value;SF.drawPreview()}});
   el.addEventListener("click",async e=>{
     const ty=e.target.closest("[data-ltype]");if(ty){L.type=ty.dataset.ltype;L.id="";L.q="";SF.renderLabel(1);return}
-    const p=e.target.closest("[data-lpick]");if(p){L.id=p.dataset.lpick;L.q="";const it=item(L.id);L.pack=it&&it.pack||"";L.price="";SF.renderLabel(1);return}
+    const p=e.target.closest("[data-lpick]");if(p){L.id=p.dataset.lpick;L.q="";const it=item(L.id);L.pack=it&&(it.size||it.pack)||"";L.exp=it&&it.exp||"";L.price="";SF.renderLabel(1);return}
     const s=e.target.closest("[data-lsize]");if(s){L.size=s.dataset.lsize;LS.set("se_lsize",L.size);SF.renderLabel(1);return}
     const o=e.target.closest("[data-lout]");if(o){LS.set("se_lout",o.dataset.lout);SF.renderLabel(1);return}
     if(e.target.closest("[data-lprint]")){printLabels();return}
+    const bm=e.target.closest("[data-lbatch]");if(bm){SF.batchA4(bm.dataset.lbatch);return}
     if(e.target.closest("[data-knew]")){
       const name=$("#kNm").value.trim(),pack=$("#kPk").value.trim(),sale=num($("#kPr").value),cost=num($("#kCo").value),bc=$("#kBc").value.replace(/\s/g,"");
       if(!name||!(sale>0)){toast("नाम और बिक्री ₹ लिखें");return}
       if(bc&&findByCode(bc)){toast("यह बारकोड पहले से "+findByCode(bc).name+" में है");return}
       const id="k"+uid(),used=S.items.map(i=>+i.plu||0);
-      const it={name,pack,emoji:"🛒",cat:"packed",unit:"pc",sale,cost,hue:210,order:S.items.length+1,active:true,barcode:bc,track:true,alias:"",plu:Math.max(100,...used)+1};
+      const code=nextCode("kirana");
+      const it={name,size:pack,pack,emoji:"🛒",cat:"kirana",unit:"pc",sale,cost,code,min:5,hue:210,order:S.items.length+1,active:true,barcode:bc||ean13("2000000"+code+"0"),track:true,alias:"",plu:Math.max(100,...used)+1};
       try{if(!S.demo)await S.db.collection("items").doc(id).set(it);if(!item(id))S.items.push({id,...it});if(!S.demo&&window.logPrice)logPrice(id,"sale",0,sale);
         L.id=id;L.pack=pack;SF.renderLabel(1);toast(name+" जुड़ गया — अब लेबल छापें")}catch(err){toast("नहीं जुड़ा — सिर्फ़ विक्रम जी जोड़ सकते हैं")}}
   });
+};
+/* 📄 एक साथ: जिन सामान का अपना (2000000…) बारकोड है, उन सबके स्टिकर एक A4 शीट पर */
+SF.batchHTML=function(){
+  const own=S.items.filter(i=>i.active!==false&&isKirana(i)&&ownBar(i)).length;
+  return `<div class="card2"><h3>📄 सब सामान के स्टिकर एक साथ</h3>
+  <p class="note" style="margin:0 0 8px">जिन ${own} सामान पर कंपनी का बारकोड नहीं है (हमारा अपना 2000000… वाला), उनके स्टिकर एक A4 शीट पर — काटकर पैकेट/रैक पर चिपकाएँ।</p>
+  <div class="row2" style="margin:0"><button class="big ghost" data-lbatch="one">हर सामान का 1 स्टिकर</button><button class="big ghost" data-lbatch="stock">जितना स्टॉक, उतने स्टिकर</button></div>
+  <button class="big ghost" data-lbatch="all" style="margin-top:6px">सभी सामान (कंपनी बारकोड वाले भी) · 1-1</button></div>`;
+};
+SF.batchA4=async function(mode){
+  const list=S.items.filter(i=>i.active!==false&&isKirana(i)&&(mode==="all"||ownBar(i))&&itemCode(i)).sort((a,b)=>(+a.code||9999)-(+b.code||9999));
+  if(!list.length){toast("कोई सामान नहीं मिला");return}
+  const [w,h]=SIZES[L.size]||SIZES["50x25"];let n=0;const imgs=[];
+  for(const it of list){const c=mode==="stock"?Math.max(0,Math.min(60,Math.round(+(S.pstock[it.id]?.qty)||0))):1;if(!c)continue;
+    const url=SF.labelCanvas(specOf(it,true),L.size).toDataURL("image/png");for(let i=0;i<c;i++){imgs.push(url);n++}}
+  if(!n){toast("स्टॉक शून्य है — '1 स्टिकर' वाला चुनें");return}
+  if(n>400){imgs.length=400;n=400;toast("एक बार में 400 तक — बाकी दोबारा छापें")}
+  await SE.printA4("बारकोड स्टिकर · "+n+" लेबल",`<style>.lg{display:flex;flex-wrap:wrap;gap:2mm}.lg img{width:${w}mm;height:${h}mm;border:0.2mm dashed #bbb}</style><div class="lg">${imgs.map(u=>`<img src="${u}">`).join("")}</div>`);
+  toast("📄 "+n+" स्टिकर की शीट खुल गई");
+  if(!S.demo)S.db.collection("labelLog").doc("l"+uid()).set({batch:mode,copies:n,date:today(),ts:Date.now(),by:S.uid||"",byName:biller()}).catch(()=>{});
 };
 /* सेटिंग में लेबल प्रिंटर */
 SF.labelSettingsHTML=function(){
@@ -798,10 +827,10 @@ SF.chartsHTML=function(){
 
 /* =============== बिल नंबर: हर दिन 1 से, पर ग्राहक/बाहर वाले को तारीख या गिनती नहीं दिखती =============== */
 /* अंदर: (दिन-क्रमांक × 10 + फोन) × 1000 + आज का क्रम → गुप्त गुणा → 6 अक्षर।  ऐप वापस खोलकर तारीख और क्रम बता देता है। */
-const BN={M:2176782336n,A:1000000007n,B:777777777n,AI:1863926711n,E:Date.UTC(2026,0,1)};
+const BN={M:2176782336n,A:1000000007n,B:555555555n,AI:1863926711n,E:Date.UTC(2026,0,1)};
 const dayIdx=d=>Math.round((Date.UTC(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10))-BN.E)/864e5);
-SF.encodeBill=function(date,serial,dev){const x=BigInt((dayIdx(date)*10+(dev||0))*1000+serial);const y=(BN.A*x+BN.B)%BN.M;return "SE-"+y.toString(36).toUpperCase().padStart(6,"0")};
-SF.decodeBill=function(no){const m=/^SE-([0-9A-Z]{6})$/.exec(String(no||""));if(!m)return null;
+SF.encodeBill=function(date,serial,dev){const x=BigInt((dayIdx(date)*10+(dev||0))*1000+serial);const y=(BN.A*x+BN.B)%BN.M;return "BW-"+y.toString(36).toUpperCase().padStart(6,"0")};
+SF.decodeBill=function(no){const m=/^BW-([0-9A-Z]{6})$/.exec(String(no||""));if(!m)return null;
   const y=BigInt(parseInt(m[1],36));const x=Number((((y-BN.B)%BN.M+BN.M)%BN.M*BN.AI)%BN.M);
   const serial=x%1000,dev=Math.floor(x/1000)%10,di=Math.floor(x/10000);if(di<0||di>40000||serial<1)return null;
   const dt=new Date(BN.E+di*864e5);const date=dt.getUTCFullYear()+"-"+String(dt.getUTCMonth()+1).padStart(2,"0")+"-"+String(dt.getUTCDate()).padStart(2,"0");
@@ -825,7 +854,7 @@ SF.reserveBillNo=async function(){
 /* =============== 🧾 कागज़ जैसी रसीद + सेटल + शेयर =============== */
 SF.qrCanvas=function(amount,no){
   if(!window.QRCode||!upiId())return null;const box=document.createElement("div");
-  const upi=`upi://pay?pa=${encodeURIComponent(upiId())}&pn=${encodeURIComponent(UPI_FIXED.payee)}${amount>0?"&am="+(+amount).toFixed(2):""}&cu=INR&tn=${encodeURIComponent("Sabji Express | Bill No "+no)}`;
+  const upi=`upi://pay?pa=${encodeURIComponent(upiId())}&pn=${encodeURIComponent(UPI_FIXED.payee)}${amount>0?"&am="+(+amount).toFixed(2):""}&cu=INR&tn=${encodeURIComponent("Bhairav Canteen | Bill No "+no)}`;
   try{new QRCode(box,{text:upi,width:240,height:240,correctLevel:QRCode.CorrectLevel.M})}catch(e){return null}
   return box.querySelector("canvas");
 };
@@ -837,7 +866,7 @@ SF.rcptOpts=function(b,withQr){
   const due=b.pay?(b.pay.udhar||0):b.total;
   return {shop:"भैरव कैंटीन",tag:"किराना · फास्ट फूड · सब्ज़ी",addr:"जसाई, बाड़मेर",phone:SF.fmtPh(SF.orderPh()),custTag:SF.custTag(b),vip:b.mode!=="inst"&&b.mode!=="udhar",
     date:fdate(b.date||today())+"  "+ftime(b.ts||Date.now()),fq,qr:withQr&&b.mode!=="inst"?SF.qrCanvas(due,b.no):null,upi:upiId(),payee:UPI_FIXED.payee,
-    balance:b.partyId?r2(bal(b.partyId)+(b.pay?0:0)):null,paid:!!b.pay};
+    balance:b.partyId?r2(bal(b.partyId)+(b.pay?0:0)):null,paid:!!b.pay,saved:savedOf(b)};
 };
 SF.nutriHTML=function(b){
   const t=window.SN&&SN.ofBill(b);if(!t)return "";
@@ -862,7 +891,7 @@ SF.compactPaperHTML=function(b,o){
   </tbody></table>
   ${b.disc?`<div class="pp-row"><span>जोड़ ₹${sub}</span><span>छूट −₹${b.disc}</span></div>`:""}
   <div class="ppc-foot${qr?"":" noqr"}">${qr?`<div class="ppc-qr" id="${o.qrId||"ppqr"}"></div>`:""}
-    <div class="ppc-tot"><span>कुल रकम · ${(b.lines||[]).length} सामान</span><b>₹${b.total}</b>${qr?`<small>📱 स्कैन करके भुगतान<br>${esc(UPI_FIXED.payee)}</small>`:""}</div></div>
+    <div class="ppc-tot"><span>कुल रकम · ${(b.lines||[]).length} सामान</span><b>₹${b.total}</b>${savedOf(b)>0?`<small class="ppc-save">🎉 MRP से ₹${savedOf(b)} की बचत</small>`:""}${qr?`<small>📱 स्कैन करके भुगतान<br>${esc(UPI_FIXED.payee)}</small>`:""}</div></div>
   </div>`;
 };
 SF.paperHTML=function(b,o){
@@ -881,6 +910,7 @@ SF.paperHTML=function(b,o){
   <div class="pp-dash"></div>
   ${b.disc?`<div class="pp-row"><span>जोड़</span><span>₹${sub}</span></div><div class="pp-row"><span>छूट</span><span>−₹${b.disc}</span></div>`:""}
   <div class="pp-total"><span>कुल रकम</span><b>₹${b.total}</b></div>
+  ${savedOf(b)>0?`<div class="pp-save">🎉 आपने MRP से <b>₹${savedOf(b)}</b> बचाए</div>`:""}
   <div class="pp-row note"><span>${(b.lines||[]).length} सामान</span><span>${b.partyId&&!ed?"खाते में कुल बाकी ₹"+r2(bal(b.partyId)):""}</span></div>
   ${stamp?`<div class="pp-stamp${b.cancelled?" red":""}">${b.cancelled?"रद्द · "+esc(b.cancelReason||""):"✓ "+esc(stamp)}</div>`:""}
   ${o.qr&&b.mode!=="inst"&&upiId()?`<div class="pp-qr"><div id="${o.qrId||"ppqr"}"></div><b>स्कैन करके भुगतान करें · ₹${o.qrAmt!=null?o.qrAmt:b.total}</b><span>${esc(UPI_FIXED.payee)} · ${esc(upiId())}</span></div>`:""}
@@ -891,7 +921,7 @@ SF.paperHTML=function(b,o){
   </div>`;
 };
 function drawQR(id,amt,no,size){const el=document.getElementById(id);if(!el||!window.QRCode||!upiId())return;el.innerHTML="";
-  try{new QRCode(el,{text:`upi://pay?pa=${encodeURIComponent(upiId())}&pn=${encodeURIComponent(UPI_FIXED.payee)}&am=${(+amt).toFixed(2)}&cu=INR&tn=${encodeURIComponent("Sabji Express | Bill No "+no)}`,width:size||190,height:size||190,correctLevel:QRCode.CorrectLevel.M})}catch(e){}}
+  try{new QRCode(el,{text:`upi://pay?pa=${encodeURIComponent(upiId())}&pn=${encodeURIComponent(UPI_FIXED.payee)}&am=${(+amt).toFixed(2)}&cu=INR&tn=${encodeURIComponent("Bhairav Canteen | Bill No "+no)}`,width:size||190,height:size||190,correctLevel:QRCode.CorrectLevel.M})}catch(e){}}
 function draftBill(){
   const c=S.chk,party=S.parties.find(p=>p.id===S.partyId);
   const custName=S.mode==="inst"?S.inst:S.mode==="udhar"?(party?party.name:""):(S.cust.name||(S.cust.phone?"ग्राहक "+S.cust.phone:"VIP ग्राहक"));
