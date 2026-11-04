@@ -83,6 +83,8 @@ service cloud.firestore {
     match /openings/{id}  { allow read, write: if isOwner(); }
     // ↩️ माल वापसी: कर्मचारी जोड़ सकते हैं, बदल/मिटा सिर्फ़ मालिक
     match /returns/{id}   { allow read: if active(); allow create: if active() && request.resource.data.by == request.auth.uid; allow update, delete: if isOwner(); }
+    // 🏢 दूसरी फर्मों (177 MH, रसोई, डोसा) की हाथ से लिखी रोज़ की बिक्री — सिर्फ़ मालिक
+    match /firmDays/{d}   { allow read, write: if isOwner(); }
     match /batches/{id}   { allow read, create: if active(); allow update, delete: if isOwner(); }
     match /presence/{id}  { allow read, write: if active(); }
 

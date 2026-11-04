@@ -24,6 +24,6 @@ function mkAuth(){const ls=[];const a={currentUser:null,
  async createUserWithEmailAndPassword(e,p){if(U[e])throw {code:"auth/email-already-in-use"};const uid="u"+Object.keys(U).length+Date.now()%1000;U[e]={uid,pw:p,v:true};a.currentUser={uid,email:e,emailVerified:true,sendEmailVerification:async()=>{},reload:async()=>{},getIdToken:async()=>"t"};a._fire();return {user:a.currentUser}},
  async signOut(){a.currentUser=null;a._fire()},async sendPasswordResetEmail(){}};return a}
 const main=mkAuth();
-const fb={apps:[],initializeApp(cfg,name){const app={name:name||"[DEFAULT]",auth:name?(()=>{const x=mkAuth();return ()=>x})():()=>main};fb.apps.push(app);return app},
+const fb={apps:[],initializeApp(cfg,name){const app={name:name||"[DEFAULT]",auth:name?(()=>{const x=mkAuth();return ()=>x})():()=>main,firestore:()=>fb.firestore()};fb.apps.push(app);return app},
  firestore:Object.assign(()=>db,{FieldValue:{increment:n=>({__inc:n}),arrayUnion:(...a)=>({__union:a})}}),auth:()=>main};
 window.firebase=fb;window.SENative={isNative:false};})();

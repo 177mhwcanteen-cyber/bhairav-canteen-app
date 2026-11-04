@@ -232,6 +232,19 @@ async def main():
         await pg.click('[data-tab="report"]'); await pg.wait_for_timeout(600)
         txt = await pg.evaluate("SK.ownerText()")
         assert "बिक्री" in txt and "मुनाफ़ा" in txt and "177 MH" in txt, txt
+        await pg.wait_for_selector(".sfm"); await pg.wait_for_timeout(600)
+        if await pg.locator("#sfmPw").count():
+            await pg.fill("#sfmPw", "secret123"); await pg.click("[data-sfmlogin]"); await pg.wait_for_timeout(1500)
+        print("sabzi state", await pg.evaluate("SFM.st.sabzi.state"), await pg.evaluate("JSON.stringify(SFM.st.sabzi.d[today()]||null)"))
+        await pg.click('[data-sfmman="mh"]'); await pg.wait_for_selector("#mfS"); await pg.fill("#mfS", "5400"); await pg.fill("#mfC", "3000"); await pg.fill("#mfU", "2400"); await pg.click("[data-mfsave]"); await pg.wait_for_timeout(500)
+        assert (await pg.evaluate("window.__MOCK__"))["firmDays"][await pg.evaluate("today()")]["mh"]["sale"] == 5400
+        ftxt = await pg.text_content(".sfm"); assert "₹5,400" in ftxt, ftxt
+        await pg.locator(".sfm").screenshot(path=f"{SHOTS}/15-firms.png")
+        await pg.click("[data-mhst]"); await pg.wait_for_timeout(800)
+        mh = await pg.evaluate("SFM.mhData(today().slice(0,7)).then(x=>[x.P.length,x.tot,x.ret,x.net])")
+        assert mh[0] >= 1 and mh[2] > 0 and abs(mh[3] - (mh[1] - mh[2])) < 1e-6, mh
+        await pg.screenshot(path=f"{SHOTS}/16-mh-month.png"); await pg.evaluate("closeSheet()")
+        print("firms ok · MH month", mh)
         await pg.screenshot(path=f"{SHOTS}/8-owner-report.png")
         await pg.click('[data-tab="stock"]'); await pg.wait_for_timeout(500)
         assert await pg.locator("[data-skview]").count() >= 1, "owner should see count report"

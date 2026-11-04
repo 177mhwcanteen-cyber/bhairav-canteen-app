@@ -1744,7 +1744,7 @@ function renderReport(){
   const topC=[...S.customers].sort((a,b)=>(b.spent||0)-(a.spent||0)).slice(0,5);
   const waText=`*भैरव कैंटीन · ${fdate(date)}*\nबिक्री: ${rs(salesTot)} (${sale.length} बिल)\nनकद ${rs(cash)} · UPI ${rs(upi)} · उधार ${rs(ud)}\nवसूली: ${rs(jc+ju)}\nखर्चा: ${rs(cc.khAll)}\nमुनाफ़ा (खर्चे के बाद): ${rs(net)}\nगल्ला: ${cc.diff==null?"गिना नहीं":Math.abs(cc.diff)<=5?"पूरा मिला":rs(cc.diff)}\nमाल में कमी: ${rs(shortTot)}\nरेट बदले/छूट: ${flags.length} बिल`;
   const rows=Object.values(items).sort((a,b)=>b.amt-a.amt);
-  $("#p-report").innerHTML=(window.SK?SK.reportBtnHTML():"")+(window.SX&&SX.toolsHTML?SX.toolsHTML():"")+(window.SF&&SF.rangeHTML?SF.rangeHTML():"")+(window.SQ?SQ.html():"")+(window.SF?SF.cancelReqsHTML():"")+(window.SF&&SF.ownerBriefHTML?SF.ownerBriefHTML():"")+(window.SB?SB.editsHTML()+(SB.udharHTML?SB.udharHTML():""):"")+(window.SR?SR.pendingItemsHTML():"")+guardHTML()+`<div class="daterow"><h2 class="sec" style="margin:0;flex:1">मालिक की रिपोर्ट</h2><input class="inp" type="date" id="repDate" value="${date}" aria-label="तारीख"></div>
+  $("#p-report").innerHTML=(window.SFM?SFM.html():"")+(window.SK?SK.reportBtnHTML():"")+(window.SX&&SX.toolsHTML?SX.toolsHTML():"")+(window.SF&&SF.rangeHTML?SF.rangeHTML():"")+(window.SQ?SQ.html():"")+(window.SF?SF.cancelReqsHTML():"")+(window.SF&&SF.ownerBriefHTML?SF.ownerBriefHTML():"")+(window.SB?SB.editsHTML()+(SB.udharHTML?SB.udharHTML():""):"")+(window.SR?SR.pendingItemsHTML():"")+guardHTML()+`<div class="daterow"><h2 class="sec" style="margin:0;flex:1">मालिक की रिपोर्ट</h2><input class="inp" type="date" id="repDate" value="${date}" aria-label="तारीख"></div>
   <button class="big ghost" data-a4 style="margin-bottom:10px">🖨️ A4 रिपोर्ट प्रिंट / PDF</button>
   ${window.SF?SF.chartsHTML():""}
   <div class="kpis">
@@ -2013,6 +2013,7 @@ boot();
 <script src="se-return.js"></script>
 <script src="se-items.js"></script>
 <script src="se-order.js"></script>
+<script src="se-firms.js"></script>
 <script src="se-stock.js"></script>
 <script src="se-intake.js"></script>
 <script>if(window.SK)SK.bind();if(window.SI)SI.bind();</script>
