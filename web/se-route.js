@@ -70,10 +70,11 @@ SR.start=async function(){
       e=>{if(e.code===1)SR.st.perm=false;else if(e.code===2)SR.st.gps=false;SR.st.running=false;SR.banner()},{enableHighAccuracy:true,maximumAge:30000,timeout:60000})}catch(e){}
   }
   SR.tick();setInterval(SR.tick,90000);
+  if(SR.st.native)setInterval(async()=>{if(document.hidden||SR.st.unsupported)return;try{const r=await BP().trackStatus();const was=SR.gateOn();apply(r);if(was!==SR.gateOn()){SR.banner();if(!SR.gateOn())setTimeout(SR.tick,500)}}catch(e){}},20000);
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(SR.tick,800)});
 };
 /* लोकेशन का सारा काम सिर्फ़ मालिक का — बिलर के फोन पर कोई पट्टी/संदेश नहीं; कमी मालिक को "रूट" टैब में दिखती है */
-SR.banner=function(){{const x=document.getElementById("locbar");if(x)x.hidden=true}if(!SR.SHOW_BAR)return;
+SR.banner=function(){{const x=document.getElementById("locbar");if(x)x.hidden=true}try{SR.gate()}catch(e){}if(!SR.SHOW_BAR)return;
   if(S.isOwner||S.demo)return;let el=document.getElementById("locbar");
   if(!el){el=document.createElement("button");el.id="locbar";el.className="locbar";el.type="button";const nb=document.getElementById("netbar");if(nb)nb.insertAdjacentElement("afterend",el);else document.body.prepend(el);el.onclick=SR.fixLoc}
   const s=SR.st;let t="";
@@ -83,6 +84,26 @@ SR.banner=function(){{const x=document.getElementById("locbar");if(x)x.hidden=tr
   else if(s.native&&s.running===false&&s.perm)t="📍 लोकेशन चालू करें — यहाँ दबाएँ";
   el.hidden=!t;el.textContent=t;
 };
+/* 🔒 लोकेशन बंद/अनुमति नहीं → बिलिंग रुकी (सिर्फ़ नई APK पर; मालिक "लोकेशन" टैब से बंद कर सकते हैं) */
+const locReq=()=>(S.settings||{}).locReq!==false;
+SR.gateOn=function(){const s=SR.st;return !S.isOwner&&!S.demo&&s.native&&!s.unsupported&&locReq()&&(s.perm===false||s.gps===false)};
+SR.gate=function(){let el=document.getElementById("locgate");const on=SR.gateOn();
+  if(!on){if(el)el.hidden=true;return}
+  if(!el){el=document.createElement("div");el.id="locgate";el.className="locgate";el.setAttribute("role","alertdialog");document.body.appendChild(el);
+    el.addEventListener("click",e=>{if(e.target.closest("[data-locfix]"))SR.fixLoc()})}
+  const s=SR.st;
+  el.innerHTML=`<div class="lg-box"><div class="lg-ic">📍</div><h2>लोकेशन चालू करें</h2>
+    <p>${s.perm===false?"ऐप चलाने के लिए <b>लोकेशन की अनुमति</b> देनी होगी — नीचे दबाकर “Allow / अनुमति दें” चुनें।":"ऐप चलाने के लिए फोन की <b>लोकेशन (GPS)</b> चालू होनी चाहिए।"}</p>
+    <button class="big" data-locfix>📍 ${s.perm===false?"अनुमति दें":"लोकेशन चालू करें"}</button>
+    <p class="note">चालू करते ही ऐप अपने-आप खुल जाएगा</p></div>`;
+  el.hidden=false;try{if(document.activeElement)document.activeElement.blur()}catch(e){}
+};
+/* मालिक: किसी कर्मचारी के फोन में लोकेशन बंद/अनुमति नहीं → तुरंत सूचना (हर बदलाव पर एक बार) */
+const liveSeen={};let liveInit=false;
+function liveAlerts(L){
+  (L||[]).forEach(v=>{const bad=v.perm===false?"perm":v.gps===false?"gps":"";const k=bad+"|"+(v.seen?Math.floor(v.seen/36e5):0);const was=liveSeen[v.id];liveSeen[v.id]=bad;
+    if(liveInit&&bad&&was!==bad&&Date.now()-(+v.seen||0)<15*60000){toast("📍 "+(v.name||"कर्मचारी")+" के फोन में "+(bad==="perm"?"ऐप की लोकेशन अनुमति बंद है":"लोकेशन (GPS) बंद है")+" — उनकी बिलिंग रुकी है");try{beep(false)}catch(e){}}});
+  liveInit=true}
 SR.fixLoc=async function(){
   const s=SR.st;
   if(!s.native){toast("Chrome में इस साइट को लोकेशन की अनुमति दें");return}
@@ -232,11 +253,12 @@ document.addEventListener("click",async e=>{
 
 /* ======================= 📍 मालिक का रूट डैशबोर्ड ======================= */
 const R={date:null,map:null,live:[],day:null,raw:null,agg:null,loading:false,custQ:"",custAll:false,liveLayer:null,who:"",sat:LSx.get("se_rsat")!=="0",lbl:LSx.get("se_rlbl")!=="0",big:false,placeQ:"",play:{t:0,on:false,spd:5,timer:null},bcache:{}};
-const HOME={lat:25.79024,lng:71.39961};/* सरदारपुरा, बिदासर (Q9RX+3RX) — नक्शे का शुरुआती इलाका */
+const HOME={lat:25.7521,lng:71.3967};/* बाड़मेर — नक्शे का शुरुआती इलाका (पॉइंट आते ही नक्शा उन पर आ जाता है) */
 const COLORS=["#22c55e","#f59e0b","#a855f7","#06b6d4","#ef4444"];
 SR.onDb=function(db){
   if(S.isOwner)db.collection("places").onSnapshot(s=>{SR.places=s.docs.map(d=>({id:d.id,...d.data()}));if(S.tab==="route"&&R.raw){R.day=dayFor();SR.renderRoute()}},()=>{});
-  if(S.isOwner)db.collection("live").onSnapshot(s=>{R.live=s.docs.map(d=>({id:d.id,...d.data()}));if(S.tab==="route")SR.updateLive()},()=>{});
+  if(S.isOwner)db.collection("live").onSnapshot(s=>{R.live=s.docs.map(d=>({id:d.id,...d.data()}));liveAlerts(R.live);if(S.tab==="route")SR.updateLive()},()=>{});
+  if(!S.isOwner)setTimeout(SR.start,1500);   // कर्मचारी के फोन पर लोकेशन अपने-आप चालू
   // भैरव: सब्ज़ी एक्सप्रेस का पुराना डेटा (कॉपी/बोर्ड/संस्था) यहाँ कभी नहीं चढ़ता
 };
 function parse(docs){
@@ -422,6 +444,7 @@ SR.renderRoute=function(){
   <div class="rt-f"><div class="rt-chips">${[[today(),"आज"],[yd,"कल"]].map(([v,t])=>`<button class="chip" data-rday="${v}" aria-pressed="${R.date===v}">${t}</button>`).join("")}<input class="inp" type="date" id="rDate" value="${R.date}" aria-label="तारीख"></div>
     ${P.length?`<div class="rt-chips"><button class="chip" data-rwho="" aria-pressed="${!R.who}">👥 सब</button>${P.map(([u,n])=>`<button class="chip" data-rwho="${esc(u)}" aria-pressed="${R.who===u}"><i class="rdot" style="background:${colorOf(u)}"></i>${esc(n||"फोन")}</button>`).join("")}</div>`:""}</div>
   <div class="card2 rlive" id="rLive">${liveHTML()}</div>
+  <div class="seg" style="margin:0 0 10px"><span class="note" style="align-self:center">लोकेशन बंद हो तो कर्मचारी की बिलिंग रोकें:</span><button class="chip" data-locreq="1" aria-pressed="${locReq()}">✅ हाँ, रोकें</button><button class="chip" data-locreq="0" aria-pressed="${!locReq()}">नहीं</button></div>
   <div class="rmapw${R.big?" big":""}" id="rmapw"><div id="rmap" class="rmap" role="img" aria-label="कर्मचारी का रास्ता नक्शे पर"></div>
     <div class="rctl"><button data-rsat>${R.sat?"🗺️ सादा":"🛰️ सैटेलाइट"}</button><button data-rlbl aria-pressed="${R.lbl}">🏷️ नाम</button><button data-rme>📍 मैं</button><button data-rbig>${R.big?"✕ छोटा":"⛶ बड़ा"}</button></div></div>
   ${d&&d.pts.some(u=>u.P.length>1)?playHTML(d):""}
@@ -799,6 +822,7 @@ function rateAlerts(){
   rateInit=true;
 }
 document.addEventListener("click",e=>{
+  const lr=e.target.closest("[data-locreq]");if(lr&&S.isOwner){saveSetting({locReq:lr.dataset.locreq==="1"});setTimeout(()=>{if(S.tab==="route")SR.renderRoute()},400);return}
   if(e.target.closest("[data-qwaste]")){SR.wasteSheet();return}
   if(e.target.closest("[data-qkharch]")){SR.kharchSheet();return}
   if(e.target.closest("[data-qnight]")){if(S.billsDate!==today()){toast("रात का स्टॉक आज का ही — दिन का हिसाब में आज की तारीख चुनें");return}if(window.SF&&SF.nightSheet)SF.nightSheet();return}

@@ -10,7 +10,7 @@ const W = path.join(R, "web"), OUT = path.join(R, "www"), DIST = path.join(R, "d
 const now = new Date(), p = n => String(n).padStart(2, "0");
 const VERSION = process.env.SE_VERSION ||
   `${now.getFullYear()}.${p(now.getMonth() + 1)}${p(now.getDate())}.${p(now.getHours())}${p(now.getMinutes())}`;
-const NATIVE_MIN = 1; // जब Android में नई मशीनी सुविधा जुड़े तब बढ़ाएँ — तब नई APK चाहिए
+const NATIVE_MIN = 2; // जब Android में नई मशीनी सुविधा जुड़े तब बढ़ाएँ — तब नई APK चाहिए
 
 const rm = d => fs.rmSync(d, { recursive: true, force: true });
 const cp = (a, b) => { fs.mkdirSync(path.dirname(b), { recursive: true }); fs.cpSync(a, b, { recursive: true }); };
