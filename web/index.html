@@ -425,6 +425,7 @@ main{padding-block:10px 120px}
 .sb-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .sbe-list{display:grid;gap:6px}.sbe-row{display:grid;grid-template-columns:1fr auto 64px;gap:8px;align-items:center;background:var(--surface);border-radius:12px;padding:8px 10px;box-shadow:var(--shadow)}.sbe-row.gone{opacity:.45}
 .sbe-n{display:grid}.sbe-n b{font-size:16px}.sbe-n span{font-size:12px;color:var(--muted)}
+.sbe-r{border:0;background:var(--chip-bg,#eef2ff);color:var(--ink);font-size:12.5px;font-weight:700;border-radius:8px;padding:3px 8px;justify-self:start;margin-top:2px}.sbe-r.chg{background:#fee2e2;color:#b91c1c}.sbe-r s{opacity:.7;font-weight:500}.sbe-rate{grid-column:1/-1;background:var(--surface2,#f8fafc);border:1.5px dashed var(--line);border-radius:12px;padding:10px;margin:-2px 0 8px}
 .sbe-q{display:flex;align-items:center;gap:4px}.sbe-q button{width:36px;height:36px;border:0;border-radius:10px;background:var(--bg);font-size:22px;font-weight:800;color:var(--ink)}.sbe-q input{width:64px;text-align:center;border:1.5px solid var(--line);border-radius:10px;padding:6px 2px;font-size:17px;font-weight:800;background:var(--bg);color:var(--ink)}
 .sbe-a{text-align:right}.sbe-add{margin-top:10px}
 .sb-pend{background:#fff7e6;border:1.5px solid #f59e0b;border-radius:14px;padding:8px 10px;margin:0 0 10px;color:#7c2d12}.sb-pend>div{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.sb-pend button{border:0;border-radius:999px;background:#f59e0b;color:#fff;font-weight:800;padding:6px 12px}
@@ -953,7 +954,7 @@ function renderBill(){
 }
 $("#p-bill").addEventListener("click",e=>{
   if(e.target.closest("[data-ratemode]")){S.rateMode=!S.rateMode;renderBill();if(S.rateMode)toast("✏️ अब जिस सामान का भाव बदलना है, उसे दबाएँ");return}
-  const rmi=S.rateMode&&e.target.closest("[data-item]");if(rmi&&window.SR){const x=item(rmi.dataset.item);if(!S.isOwner&&!x.flex){beep(false);toast(x.name+" का भाव सिर्फ़ विक्रम जी बदल सकते हैं");return}SR.rateSheet(x);return}
+  const rmi=S.rateMode&&e.target.closest("[data-item]");if(rmi&&window.SR){const x=item(rmi.dataset.item);if(!S.isOwner&&!x.flex){beep(false);toast("पक्का भाव विक्रम जी बदलेंगे — सिर्फ़ इस ग्राहक का भाव बदलना है तो बिल में ✏️ एडिट → भाव पर दबाएँ");return}SR.rateSheet(x);return}
   const ni=e.target.closest("[data-newitem]");if(ni&&window.SR){SR.newItemSheet(ni.dataset.newitem);return}
   const m=e.target.closest("[data-mode]");if(m){setMode(m.dataset.mode);return}
   const c=e.target.closest("[data-cat]");if(c){S.cat=c.dataset.cat;S.sub="all";S.flt="";renderBill();return}
@@ -1361,6 +1362,7 @@ function trackedPairs(lines,sign){return lines.filter(l=>item(l.id)?.track).map(
 async function handleScan(code){
   code=String(code||"").trim();if(!code)return;
   if(S.tab==="kharid"&&window.SI&&SI.active()&&SI.scan(code))return;
+  if(window.SO&&SO.active()){const it=findByCode(code);beep(!!it);if(!it){unknownCode(code);return}SO.scan(it);return}
   const vw=window.SF&&!S.scanIn&&!findByCode(code)?SF.parseVW(code):null;
   if(vw){if(vw.bad){beep(false);toast("लेबल का सामान (कोड "+vw.plu+") लिस्ट में नहीं");return}
     if(S.tab!=="bill"){S.tab="bill";showTab()}if(vw.it.active===false){toast(vw.it.name+" अभी बंद है");return}if(!(priceOf(vw.it)>0)){toast(vw.it.name+" का रेट नहीं डाला गया");return}
@@ -1410,6 +1412,7 @@ function unknownCode(code){
       const it={name,hi:$("#nbHi").value.trim(),emoji:"📦",cat:"kirana",sub,unit:"pc",mrp,sale,cost,code:nextCode("kirana"),hue:210,order:S.items.length+1,active:true,barcode:code,track:true,min:5,alias:"",
         addedBy:S.uid||"",addedByName:biller(),addedTs:Date.now(),pending:!own};
       try{if(!S.demo)await S.db.collection("items").doc(id).set(it);if(!item(id))S.items.push({id,...it});if(!S.demo&&own)logPrice(id,"sale",0,sale);
+        if(window.SO&&SO.active()){closeSheet();toast("✓ "+name+" जुड़ गया · कोड "+it.code);SO.addNew(id,qty);return}
         if(qty>0)await adjStock([[id,qty]],"शुरुआती स्टॉक");closeSheet();toast("✓ "+name+" जुड़ गया · कोड "+it.code);if(!S.scanIn)handleScan(code);else if(S.tab==="day")renderDay()}catch(err){toast("नहीं जुड़ा — "+(err.code||err.message||""))}return}
     if(e.target.closest("[data-nbattach]")){
       const id=$("#nbAttach").value;if(!id){toast("पहले सामान चुनें");return}const it=item(id);
@@ -1942,7 +1945,7 @@ function subBills(){
   if(S.demo){renderPane();return}
   if(S.unsubBills)S.unsubBills();
   S.dayBills=[];
-  S.unsubBills=S.db.collection("days/"+S.billsDate+"/bills").onSnapshot(s=>{const got=s.docs.map(d=>d.data()),nos=new Set(got.map(x=>x.no)),gd=S.billsDate;if(S.isOwner)guardQ(()=>guardBills(gd,got));S.dayBills=got.concat(outbox().map(x=>x.bill).filter(x=>x.date===S.billsDate&&!nos.has(x.no)));renderPane();if(S.tab==="bill")renderBill()},err=>toast("बिल लोड नहीं हुए"));
+  S.unsubBills=S.db.collection("days/"+S.billsDate+"/bills").onSnapshot(s=>{const got=s.docs.map(d=>d.data()),nos=new Set(got.map(x=>x.no)),gd=S.billsDate;if(S.isOwner)guardQ(()=>guardBills(gd,got));if(S.isOwner&&window.SB&&SB.rateWatch)SB.rateWatch(got);S.dayBills=got.concat(outbox().map(x=>x.bill).filter(x=>x.date===S.billsDate&&!nos.has(x.no)));renderPane();if(S.tab==="bill")renderBill()},err=>toast("बिल लोड नहीं हुए"));
   S.unsubDay.forEach(f=>{try{f()}catch(e){}});S.stock={};S.kharch=[];S.close=null;const d="days/"+S.billsDate;
   S.unsubDay=[S.db.doc(d+"/meta/stock").onSnapshot(s=>{S.stock=s.exists?s.data():{};if(S.tab!=="day")renderPane()},()=>{}),
     S.db.collection(d+"/kharch").onSnapshot(s=>{S.kharch=s.docs.map(x=>({id:x.id,...x.data()}));renderPane(S.tab!=="day")},()=>{}),
@@ -2003,6 +2006,7 @@ boot();
 <script src="se-bill.js"></script>
 <script src="se-plus.js"></script>
 <script src="se-galla.js"></script>
+<script src="se-open.js"></script>
 <script src="se-stock.js"></script>
 <script src="se-intake.js"></script>
 <script>if(window.SK)SK.bind();if(window.SI)SI.bind();</script>

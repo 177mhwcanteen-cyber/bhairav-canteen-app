@@ -312,13 +312,13 @@ SF.scanAdd=function(it){
 /* खेप (FEFO): बचा माल नई खेपों का माना जाता है — सबसे पुरानी एक्सपायरी वाला पहले बिकता है */
 S.batches=[];
 SF.nearExp=function(it){
-  const Q=+(S.pstock[it.id]?.qty)||0;const B=S.batches.filter(b=>b.itemId===it.id&&b.exp).sort((a,b)=>a.exp<b.exp?1:-1);
+  const Q=+(S.pstock[it.id]?.qty)||0;const B=S.batches.filter(b=>b.itemId===it.id&&b.exp&&!(it.openTs&&(+b.ts||0)<it.openTs)).sort((a,b)=>a.exp<b.exp?1:-1);
   if(!B.length)return it.exp||"";if(Q<=0)return "";
   let left=Q,near="";for(const b of B){if(left<=0)break;near=b.exp;left-=num(b.qty)}
   if(left>0&&it.exp)near=it.exp<near?it.exp:near;
   return near;
 };
-SF.batchList=function(it){const Q=+(S.pstock[it.id]?.qty)||0;const B=S.batches.filter(b=>b.itemId===it.id&&b.exp).sort((a,b)=>a.exp<b.exp?1:-1);let left=Q;const out=[];
+SF.batchList=function(it){const Q=+(S.pstock[it.id]?.qty)||0;const B=S.batches.filter(b=>b.itemId===it.id&&b.exp&&!(it.openTs&&(+b.ts||0)<it.openTs)).sort((a,b)=>a.exp<b.exp?1:-1);let left=Q;const out=[];
   for(const b of B){if(left<=0)break;const q=Math.min(left,num(b.qty));out.push({exp:b.exp,qty:q});left-=q}if(left>0)out.push({exp:it.exp||"",qty:left,old:true});return out.reverse()};
 function viewPurchase(p){
   const idx=S.purch.findIndex(x=>x.id===p.id)+1;const g=num(p.gross)||num(p.total);

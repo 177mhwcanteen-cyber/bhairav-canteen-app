@@ -130,7 +130,7 @@ async def main():
 
         # ---------- 4) भाव पर रोक ----------
         await pg.evaluate("S.rateMode=true;renderBill()"); await pg.click('[data-item="k1010"]'); await pg.wait_for_timeout(200)
-        assert "सिर्फ़ विक्रम जी" in await pg.text_content("#toast")
+        assert "विक्रम जी बदलेंगे" in await pg.text_content("#toast")
         await pg.evaluate("S.rateMode=false;renderBill()")
 
         # ---------- 5) उधार खाता ----------

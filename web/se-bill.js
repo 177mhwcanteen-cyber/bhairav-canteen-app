@@ -176,17 +176,20 @@ SB.cancelSheet=function(b){
 /* ================= ✏️ सेव के बाद बिल बदलें ================= */
 SB.editSheet=function(b){
   if(!b||b.settled!==false){toast("भुगतान हो चुका है — अब बिल नहीं बदल सकते, रद्द की अर्ज़ी भेजें");return}
-  const E=(b.lines||[]).map(l=>({...l}));let q="";
+  const E=(b.lines||[]).map(l=>({...l,board:l.board!=null?l.board:l.rate}));let q="",RI=-1;
+  const WHY=["पुराना ग्राहक","थोक में","अफसर/जवान रियायत","MRP बदली","दूसरा"];
   const step=l=>l.unit==="kg"?0.25:1;
   const draw=()=>{
     const tot=Math.round(sumLines(E));
     const L=q?S.items.filter(i=>i.active!==false&&!i.virtual&&(+i.sale||0)>0&&(i.name+" "+(window.SN?SN.en(i):"")+" "+i.id).toLowerCase().includes(q.toLowerCase())).slice(0,12):[];
     $("#sheet").innerHTML=`<div class="scrim" data-close><div class="sheet px" role="dialog" aria-label="बिल बदलें"><div class="grab"></div>
     <div class="sh-head ppc-sh"><h3>✏️ बिल बदलें <small class="note">· ${esc(b.no)}</small></h3><button class="x" data-close aria-label="बंद करें">✕</button></div>
-    <p class="note" style="margin:0 0 8px">🔒 भाव पक्के हैं — सिर्फ़ मात्रा बदलें या नया सामान जोड़ें। हर बदलाव दर्ज होगा।</p>
-    <div class="sbe-list">${E.map((l,i)=>`<div class="sbe-row ${l.qty<=0?"gone":""}"><div class="sbe-n"><b>${esc(l.name)}</b><span>₹${l.rate}/${UNITS[l.unit]||l.unit} 🔒</span></div>
+    <p class="note" style="margin:0 0 8px">मात्रा बदलें, नया सामान जोड़ें, या <b>भाव पर दबाकर</b> सिर्फ़ इस बिल का भाव बदलें। हर बदलाव दर्ज होगा${S.isOwner?"":" और विक्रम जी को दिखेगा"}।</p>
+    <div class="sbe-list">${E.map((l,i)=>`<div class="sbe-row ${l.qty<=0?"gone":""}"><div class="sbe-n"><b>${esc(l.name)}</b><button class="sbe-r${l.changed?" chg":""}" data-sbr="${i}" aria-label="${esc(l.name)} का भाव बदलें">₹${l.rate}/${UNITS[l.unit]||l.unit} ✏️${l.changed?` <s>₹${l.board}</s>`:""}</button></div>
       <div class="sbe-q"><button data-sbm="${i}" aria-label="कम">−</button><input data-sbq="${i}" inputmode="decimal" value="${+(+l.qty).toFixed(3)}" aria-label="${esc(l.name)} मात्रा"><button data-sbp2="${i}" aria-label="ज़्यादा">+</button></div>
-      <b class="sbe-a">₹${r2(l.qty*l.rate)}</b></div>`).join("")}</div>
+      <b class="sbe-a">₹${r2(l.qty*l.rate)}</b></div>${RI===i?`<div class="sbe-rate"><label class="fld" style="margin:0">इस बिल में ${esc(l.name)} का भाव ₹ <small class="note">(पक्का भाव ₹${l.board})</small><input class="inp" id="sbrIn" inputmode="decimal" value="${l.rate}" autocomplete="off"></label>
+        <div class="seg" style="margin:6px 0">${WHY.map(w=>`<button class="chip" data-sbw="${esc(w)}" aria-pressed="${l.why===w}">${esc(w)}</button>`).join("")}</div>
+        <div class="row2" style="margin:0"><button class="big" data-sbrok="${i}">✓ भाव लगाएँ</button><button class="big ghost" data-sbrback="${i}">पक्का भाव ₹${l.board}</button></div></div>`:""}`).join("")}</div>
     <div class="sbe-add"><input class="inp" id="sbeQ" type="search" placeholder="➕ और सामान — खोजें (जैसे टमाटर)" value="${esc(q)}" autocomplete="off">
       ${L.length?`<div class="ppick" style="margin-top:6px">${L.map(i=>`<button data-sbadd="${esc(i.id)}">${tileHTML(i)}<span>${esc(i.name)} ₹${i.sale}</span></button>`).join("")}</div>`:""}</div>
     <div class="settle-sum" style="margin-top:10px"><span>पहले ${rs(b.total)} → अब</span><b>${rs(tot)}</b></div>
@@ -204,6 +207,14 @@ SB.editSheet=function(b){
   sh.onclick=async e=>{
     if(e.target.matches("[data-close]")){closeSheet();return}
     if(e.target.closest("[data-sbback]")){SB.settleSheet(b);return}
+    const rb=e.target.closest("[data-sbr]");if(rb){RI=RI===+rb.dataset.sbr?-1:+rb.dataset.sbr;draw();setTimeout(()=>{const x=$("#sbrIn");if(x){x.focus();try{x.select()}catch(y){}}},40);return}
+    const w=e.target.closest("[data-sbw]");if(w&&RI>-1){E[RI].why=w.dataset.sbw;sh.querySelectorAll("[data-sbw]").forEach(x=>x.setAttribute("aria-pressed",x===w));return}
+    const rk=e.target.closest("[data-sbrok]");if(rk){const i=+rk.dataset.sbrok,l=E[i],v=r2(num(($("#sbrIn")||{}).value));
+      if(!(v>0)){toast("भाव लिखें");return}
+      const it=item(l.id),mrp=+(it&&it.mrp)||0;if(mrp>0&&v>mrp){toast("MRP ₹"+mrp+" से ज़्यादा भाव नहीं ले सकते");return}
+      if(v!==num(l.board)&&!S.isOwner&&!l.why){toast("भाव क्यों बदला — एक वजह चुनें");return}
+      l.rate=v;l.changed=v!==num(l.board);if(!l.changed)delete l.why;else if(!l.why)l.why="मालिक ने बदला";l.amt=r2(l.qty*l.rate);RI=-1;draw();toast(l.changed?"✏️ "+l.name+": ₹"+l.board+" → ₹"+v:"पक्का भाव वापस");return}
+    const rbk=e.target.closest("[data-sbrback]");if(rbk){const l=E[+rbk.dataset.sbrback];l.rate=num(l.board);l.changed=false;delete l.why;l.amt=r2(l.qty*l.rate);RI=-1;draw();return}
     const m=e.target.closest("[data-sbm]");if(m){const i=+m.dataset.sbm;setQ(i,E[i].qty-step(E[i]));draw();return}
     const p=e.target.closest("[data-sbp2]");if(p){const i=+p.dataset.sbp2;setQ(i,E[i].qty+step(E[i]));draw();return}
     const a=e.target.closest("[data-sbadd]");if(a){const it=item(a.dataset.sbadd);if(!it)return;const ex=E.findIndex(l=>l.id===it.id&&!l.changed&&!l.free);
@@ -213,14 +224,14 @@ SB.editSheet=function(b){
   };
 };
 async function saveEdit(b,E){
-  const before=(b.lines||[]).map(l=>({id:l.id,name:l.name,unit:l.unit,qty:l.qty,amt:l.amt}));
+  const before=(b.lines||[]).map(l=>({id:l.id,name:l.name,unit:l.unit,qty:l.qty,amt:l.amt,rate:l.rate}));
   const lines=E.filter(l=>l.qty>0).map(l=>{const o={...l};delete o.added;return o});
   if(!lines.length){toast("सारे सामान हटाने हैं तो बिल रद्द की अर्ज़ी भेजें");return}
-  const sig=L=>L.map(l=>l.id+":"+(+l.qty).toFixed(3)).sort().join("|");
+  const sig=L=>L.map(l=>l.id+":"+(+l.qty).toFixed(3)+":"+num(l.rate)).sort().join("|");
   if(sig(lines)===sig(before)){toast("कुछ नहीं बदला");SB.settleSheet(b);return}
   const subX=sumLines(lines),total=Math.round(subX),totalBefore=num(b.total);/* कुल रकम पूरे रुपये में — राउंड ऑफ = total − sub */
   const diff=[];const bm=new Map(before.map(l=>[l.id+"|"+l.name,l]));
-  lines.forEach(l=>{const o=bm.get(l.id+"|"+l.name);if(!o)diff.push("+ "+lineTxt(l));else if(Math.abs(o.qty-l.qty)>0.0005)diff.push(l.name+" "+fq(o.qty,l.unit)+" → "+fq(l.qty,l.unit));bm.delete(l.id+"|"+l.name)});
+  lines.forEach(l=>{const o=bm.get(l.id+"|"+l.name);if(!o)diff.push("+ "+lineTxt(l));else{if(Math.abs(o.qty-l.qty)>0.0005)diff.push(l.name+" "+fq(o.qty,l.unit)+" → "+fq(l.qty,l.unit));if(num(o.rate)!==num(l.rate))diff.push(l.name+" भाव ₹"+o.rate+" → ₹"+l.rate+(l.why?" ("+l.why+")":""))}bm.delete(l.id+"|"+l.name)});
   bm.forEach(o=>diff.push("− "+o.name+" "+fq(o.qty,o.unit)+" हटाया"));
   const ed={ts:Date.now(),by:S.uid||"",byName:biller(),before:before.map(lineTxt).join(", "),after:lines.map(lineTxt).join(", "),diff:diff.join("; "),totalBefore,totalAfter:total};
   const edits=[...(b.edits||[]),ed];
@@ -234,6 +245,16 @@ async function saveEdit(b,E){
   }catch(err){toast("बदलाव सेव नहीं हुआ: "+(err.code||err.message||""))}
 }
 
+/* ✏️ मालिक: किसी और ने बिल में भाव बदला → तुरंत सूचना (एक बार) */
+SB.rateWatch=function(bills){if(!S.isOwner)return;let seen={};try{seen=JSON.parse(localStorage.getItem("bh_rseen")||"{}")}catch(e){}
+  const first=!SB._rw;SB._rw=1;let ch=false;
+  for(const b of bills){if(b.cancelled||!b.rateChanged||b.by===S.uid)continue;const L=(b.lines||[]).filter(l=>l.changed);const k=b.no+"|"+L.map(l=>l.id+l.rate).join(",");if(seen[b.no]===k)continue;
+    seen[b.no]=k;ch=true;if(first)continue;
+    toast("✏️ "+(b.byName||"")+" ने बिल "+b.no+" में भाव बदला: "+L.map(l=>l.name+" ₹"+l.board+" → ₹"+l.rate+(l.why?" ("+l.why+")":"")).join(", "));try{beep(false)}catch(e){}}
+  if(ch)try{localStorage.setItem("bh_rseen",JSON.stringify(seen))}catch(e){}};
+SB.rateLine=function(bills){const B=(bills||[]).filter(b=>!b.cancelled&&b.rateChanged);if(!B.length)return "";
+  let d=0;B.forEach(b=>(b.lines||[]).forEach(l=>{if(l.changed)d+=(num(l.board)-num(l.rate))*num(l.qty)}));
+  return "✏️ भाव बदले: "+B.length+" बिल"+(d>0?" · ग्राहक को कुल ₹"+r2(d)+" कम":d<0?" · ₹"+r2(-d)+" ज़्यादा लिए":"")+"\n"+B.slice(0,5).map(b=>"   "+b.no+" ("+(b.byName||"")+"): "+(b.lines||[]).filter(l=>l.changed).map(l=>l.name+" ₹"+l.board+"→₹"+l.rate+(l.why?" "+l.why:"")).join(", ")).join("\n")+"\n"};
 /* ================= जगह-जगह जुड़ाव ================= */
 SB.pendingHTML=function(){
   const U=unpaid();if(!U.length)return "";
