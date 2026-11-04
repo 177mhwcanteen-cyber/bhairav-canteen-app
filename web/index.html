@@ -656,6 +656,20 @@ kbd{border:1px solid #cbd5e1;border-bottom-width:2px;border-radius:5px;padding:0
 #sklist .li{display:flex;align-items:center;gap:10px}#sklist .mid{flex:1;min-width:0}
 .card .offp{white-space:nowrap;display:inline-block}.card .pr{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 4px}
 .skstats{grid-template-columns:repeat(auto-fit,minmax(74px,1fr))}.skstats b{font-size:18px}
+
+/* 📷 कैमरा बीच में (हेडर के नीचे) */
+html.camon header{position:fixed;top:0;left:0;right:0;z-index:8;padding-top:calc(env(safe-area-inset-top,0px) + 6px)}
+html.camon #camwin{top:var(--hdh,150px);padding-top:0;border-block:2px solid rgba(255,255,255,.08)}
+html.camon body{top:calc(var(--hdh,150px) + var(--camh))}
+html.camon{--camh:28vh}
+#camwin .cfr{left:7%;right:7%;top:20%;bottom:24%}
+#camwin .cfr i{left:3%;right:3%}
+.camlast{left:10px;right:150px;top:8px;bottom:auto;font-size:13px;background:rgba(0,0,0,.6)}
+#camwin.ok .camlast{background:rgba(22,163,74,.9)}
+.cambtns{top:auto;bottom:8px}
+@media (min-width:900px){html.camon{--camh:24vh}#camwin .cfr{left:30%;right:30%;top:16%;bottom:22%}}
+@media (min-width:1100px){html.camon body.hasside header{right:360px;margin-right:0}html.camon body.hasside #side{top:0}}
+html.camon #greet,html.camon #demo{display:none!important}
 </style>
 
 <header class="px">
@@ -695,8 +709,8 @@ kbd{border:1px solid #cbd5e1;border-bottom-width:2px;border-radius:5px;padding:0
   <button class="cartbtn" id="cartbtn" type="button"><span class="c" id="cartc"></span><span class="t" id="cartt"></span><span class="go">बिल देखें →</span></button>
 </div>
 <div id="camwin" hidden><video id="camvid" playsinline muted></video><div class="cfr"><i></i></div>
-  <div class="camlast" id="camlast">बारकोड खिड़की में लाएँ — अपने-आप जुड़ेगा</div>
-  <div class="cambtns"><button type="button" id="camTorch" aria-label="टॉर्च" hidden>🔦</button><button type="button" id="camOff" aria-label="कैमरा बंद करें">✕ बंद</button></div></div>
+  <div class="camlast" id="camlast">बारकोड लाल लाइन पर रखें · 10-15 cm दूर</div>
+  <div class="cambtns"><button type="button" id="camZoom" aria-label="ज़ूम" hidden>1x</button><button type="button" id="camTorch" aria-label="टॉर्च" hidden>🔦</button><button type="button" id="camOff" aria-label="कैमरा बंद करें">✕ बंद</button></div></div>
 <div id="sheet"></div>
 <div id="lock" hidden></div>
 <div id="toast" class="toast" hidden></div>
@@ -1361,15 +1375,24 @@ function camBusy(){return !!($("#sheet").innerHTML.trim()||document.querySelecto
 function onCamCode(c){if(camBusy())return;handleScan(c)}
 async function camOn(){
   if(SE.cam.on)return;
-  const vid=$("#camvid");document.documentElement.classList.add("camon");$("#camwin").hidden=false;$("#camlast").textContent="बारकोड खिड़की में लाएँ — अपने-आप जुड़ेगा";
-  let ok=false;try{ok=await SE.cam.start(onCamCode,vid)}catch(e){camUi(false);toast(e.msg||"कैमरा नहीं खुला — "+(e.message||e.name||""));return}
+  const vid=$("#camvid");document.documentElement.classList.add("camon");$("#camwin").hidden=false;camLayout();$("#camlast").textContent="बारकोड लाल लाइन पर रखें · 10-15 cm दूर";
+  let ok=false;try{ok=await SE.cam.start(onCamCode,vid,camROI)}catch(e){camUi(false);toast(e.msg||"कैमरा नहीं खुला — "+(e.message||e.name||""));return}
   if(!ok){camUi(false);$("#scanFile").click();return}
   lsSet("se_cam","1");camUi(true);
 }
 async function camOff(remember){await SE.cam.stop();camUi(false);if(remember)lsSet("se_cam","0")}
 function camUi(on){document.documentElement.classList.toggle("camon",on);$("#camwin").hidden=!on;$("#scanBtn").setAttribute("aria-pressed",on?"true":"false");
-  const tb=$("#camTorch");tb.hidden=!(on&&SE.cam.canTorch);tb.textContent="🔦";}
+  const tb=$("#camTorch");tb.hidden=!(on&&SE.cam.canTorch);tb.textContent="🔦";
+  const zb=$("#camZoom");zb.hidden=!(on&&SE.cam.canZoom);zb.textContent=(+SE.cam.zoom||1).toFixed(1).replace(".0","")+"x";if(on)camLayout()}
+/* कैमरा-खिड़की हेडर के ठीक नीचे (स्क्रीन के बीच) — हेडर की ऊँचाई नापकर */
+function camLayout(){const h=$("header");if(!h)return;document.documentElement.style.setProperty("--hdh",Math.round(h.getBoundingClientRect().height)+"px")}
+if(window.ResizeObserver)new ResizeObserver(()=>{if(document.documentElement.classList.contains("camon"))camLayout()}).observe($("header"));
+window.addEventListener("resize",()=>{if(document.documentElement.classList.contains("camon"))camLayout()});
+/* वेब पर सिर्फ़ चौखटे वाला हिस्सा जाँचें (थोड़ा बड़ा) — [बायाँ, ऊपर, दायाँ, नीचे] खिड़की के अनुपात में */
+function camROI(){const w=$("#camwin"),f=w&&w.querySelector(".cfr");if(!w||!f)return [.05,.15,.95,.85];const a=w.getBoundingClientRect(),b=f.getBoundingClientRect();
+  const m=.06;return [Math.max(0,(b.left-a.left)/a.width-m),Math.max(0,(b.top-a.top)/a.height-m),Math.min(1,(b.right-a.left)/a.width+m),Math.min(1,(b.bottom-a.top)/a.height+m)]}
 $("#camOff").onclick=()=>camOff(true);
+$("#camZoom").onclick=async()=>{const z=await SE.cam.cycleZoom();$("#camZoom").textContent=(+z||1).toFixed(1).replace(".0","")+"x";toast("🔍 ज़ूम "+(+z).toFixed(1)+"x")};
 $("#camTorch").onclick=async()=>{const t=await SE.cam.toggleTorch();$("#camTorch").textContent=t?"🔦 बंद":"🔦"};
 function camAuto(){const want=(S.tab==="bill"||(S.tab==="kharid"&&!(window.SI&&SI.active()))||(S.tab==="stock"&&window.SK&&SK.counting())||(S.tab==="day"&&S.scanIn));if(!want&&SE.cam.on)camOff(false);else if(want&&!SE.cam.on&&SE.isNative&&lsGet("se_cam")==="1"&&!document.hidden)camOn()}
 document.addEventListener("visibilitychange",()=>{if(document.hidden){if(SE.cam.on){SE.cam.stop();camUi(false);camAuto._resume=true}}else if(camAuto._resume){camAuto._resume=false;camAuto()}});
