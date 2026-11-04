@@ -114,9 +114,49 @@ SX.hisabLink=async function(pid){const p=(S.parties||[]).find(x=>x.id===pid);if(
   const doc={type:"hisab",name:p.name||"",bal:r2(b),entries:E,upi:upiId(),payee:"Bhairav Canteen",ts:Date.now(),by:biller()||""};
   try{if(!S.demo)await S.db.collection("pub").doc(tok).set(doc)}catch(e){toast("लिंक नहीं बना (सर्वर नियम नए चिपकाएँ): "+(e.code||""));return}
   const url=pubBase()+"h.html?t="+tok;
-  const txt=`🙏 नमस्ते ${p.name} जी,\nभैरव कैंटीन में आपका हिसाब: *₹${r2(b)} बाकी*\nपूरा तारीख-वार हिसाब और UPI से चुकाने का बटन इस लिंक पर 👇\n${url}\nधन्यवाद 🥬`;
+  const txt=`🙏 नमस्ते ${p.name} जी,\nभैरव कैंटीन में आपका हिसाब: *₹${r2(b)} बाकी*\nपूरा तारीख-वार हिसाब और UPI से चुकाने का बटन इस लिंक पर 👇\n${url}\nधन्यवाद 🙏`;
   window.open(waLink(txt,p.phone||""),"_blank");SX._lastLink=url;return url};
 
+/* ======================= 5b) 📄 उधार का हिसाब PDF (तारीख-वार + UPI QR) ======================= */
+function loadPdfLib(){return window.jspdf?Promise.resolve():new Promise((res,rej)=>{const x=document.createElement("script");x.src="lib/jspdf.min.js";x.onload=res;x.onerror=rej;document.head.appendChild(x)})}
+function qrCanvas(text,size){return new Promise(res=>{if(!window.QRCode)return res(null);const d=document.createElement("div");d.style.cssText="position:fixed;left:-9999px;top:0";document.body.appendChild(d);
+  try{new QRCode(d,{text,width:size,height:size,correctLevel:QRCode.CorrectLevel.M})}catch(e){d.remove();return res(null)}
+  setTimeout(()=>{const c=d.querySelector("canvas"),im=d.querySelector("img");let out=null;if(c)out=c;else if(im&&im.complete){out=document.createElement("canvas");out.width=out.height=size;out.getContext("2d").drawImage(im,0,0,size,size)}d.remove();res(out)},60)})}
+SX.hisabPdf=async function(pid){const p=(S.parties||[]).find(x=>x.id===pid);if(!p){toast("खाता नहीं मिला");return}if(p.hide&&!S.isOwner){toast("🔒 यह खाता सिर्फ़ मालिक देख सकते हैं");return}
+  toast("📄 हिसाब का PDF बन रहा है…");
+  try{await loadPdfLib();try{await document.fonts.load('700 30px "Baloo 2"')}catch(e){}
+    const L=(S.ledger||[]).filter(l=>l.partyId===pid).sort((a,b)=>a.ts-b.ts);let run=0;
+    const R=L.map(l=>{const u=l.type==="udhar",a=num(l.amt);run=r2(run+(u?a:-a));return {d:l.date||"",t:u?(l.opening?"पुराना बाकी"+(l.note?" ("+String(l.note).slice(0,28)+")":""):"बिल "+(l.billNo||"")):"जमा — "+(l.mode==="upi"?"UPI":"नकद"),u:u?a:0,j:u?0:a,b:run}});
+    const due=r2(typeof balRaw==="function"?balRaw(pid):bal(pid));
+    const W=1240,H=1754,M=80,RH=46,F='"Baloo 2","Noto Sans Devanagari",sans-serif';
+    const qr=due>0?await qrCanvas(`upi://pay?pa=${encodeURIComponent(upiId())}&pn=${encodeURIComponent(UPI_FIXED.payee)}&am=${due.toFixed(2)}&cu=INR&tn=${encodeURIComponent("Bhairav Canteen hisab "+p.name)}`,320):null;
+    const pages=[];let i=0;
+    while(i<R.length||!pages.length){const cv=document.createElement("canvas");cv.width=W;cv.height=H;const g=cv.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,W,H);
+      const first=!pages.length;let y=M;
+      if(first){g.fillStyle="#4f46e5";g.fillRect(0,0,W,190);g.fillStyle="#fff";g.font=`800 60px ${F}`;g.fillText("🛒 भैरव कैंटीन",M,95);g.font=`500 30px ${F}`;g.fillText("किराना · फास्ट फूड · सब्ज़ी · जसाई, बाड़मेर",M,145);
+        y=250;g.fillStyle="#111827";g.font=`800 44px ${F}`;g.fillText("उधार का हिसाब — "+p.name,M,y);y+=48;g.font=`500 28px ${F}`;g.fillStyle="#4b5563";
+        g.fillText([p.qtr?"क्वार्टर "+p.qtr:"",p.phone?"मो. "+p.phone:"","तारीख "+fdate(today())].filter(Boolean).join("  ·  "),M,y);y+=40;
+        g.fillStyle=due>0?"#fef2f2":"#f0fdf4";g.fillRect(M,y,W-2*M,110);g.fillStyle=due>0?"#b91c1c":"#15803d";g.font=`800 52px ${F}`;g.fillText((due>0?"कुल बाकी: ₹":"हिसाब साफ़ ✓  ₹")+due.toLocaleString("en-IN"),M+30,y+72);y+=150}
+      else{g.fillStyle="#111827";g.font=`700 30px ${F}`;g.fillText(p.name+" — हिसाब (पेज "+(pages.length+1)+")",M,y);y+=50}
+      const cx=[M,M+190,M+640,M+810,M+960];g.fillStyle="#eef2ff";g.fillRect(M,y,W-2*M,RH);g.fillStyle="#312e81";g.font=`700 26px ${F}`;
+      ["तारीख","विवरण","उधार ₹","जमा ₹","बाकी ₹"].forEach((h,k)=>g.fillText(h,cx[k]+10,y+32));y+=RH;
+      const bottom=H-(qr&&i+Math.floor((H-y-M-420)/RH)>=R.length?470:140);
+      g.font=`500 26px ${F}`;
+      while(i<R.length&&y+RH<=bottom){const r=R[i];if(i%2){g.fillStyle="#f9fafb";g.fillRect(M,y,W-2*M,RH)}g.fillStyle="#111827";
+        g.fillText(fdate(r.d),cx[0]+10,y+32);g.fillText(r.t.slice(0,30),cx[1]+10,y+32);g.fillStyle="#b91c1c";if(r.u)g.fillText(r.u.toLocaleString("en-IN"),cx[2]+10,y+32);g.fillStyle="#15803d";if(r.j)g.fillText(r.j.toLocaleString("en-IN"),cx[3]+10,y+32);
+        g.fillStyle="#111827";g.font=`700 26px ${F}`;g.fillText(r.b.toLocaleString("en-IN"),cx[4]+10,y+32);g.font=`500 26px ${F}`;y+=RH;i++}
+      if(!R.length){g.fillStyle="#6b7280";g.fillText("अभी कोई एंट्री नहीं",M+10,y+34);y+=RH}
+      if(i>=R.length){y+=20;if(qr){g.drawImage(qr,M,y,320,320);g.fillStyle="#111827";g.font=`800 36px ${F}`;g.fillText("📱 UPI से चुकाएँ — ₹"+due.toLocaleString("en-IN"),M+360,y+70);
+          g.font=`500 28px ${F}`;g.fillStyle="#374151";g.fillText("कोई भी UPI ऐप खोलकर QR स्कैन करें",M+360,y+120);g.fillText("UPI: "+upiId(),M+360,y+165);g.fillText(UPI_FIXED.payee,M+360,y+205)}
+        g.fillStyle="#6b7280";g.font=`500 24px ${F}`;g.fillText("धन्यवाद 🙏  ·  कोई एंट्री गलत लगे तो कैंटीन पर बताएँ",M,H-60)}
+      pages.push(cv.toDataURL("image/jpeg",.85))}
+    const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"mm",format:"a4",compress:true});
+    pages.forEach((u,k)=>{if(k)doc.addPage();doc.addImage(u,"JPEG",0,0,210,297)});
+    const blob=doc.output("blob"),nm="Hisab_"+String(p.name).replace(/[^A-Za-z0-9ऀ-ॿ]+/g,"_").slice(0,30)+"_"+today();
+    if(!S.demo&&S.db)S.db.collection("parties").doc(pid).update({remindTs:Date.now()}).catch(()=>{});
+    SX._lastPdf={pages:pages.length,size:blob.size,rows:R.length};
+    await SX.shareBlob(blob,nm,"pdf","application/pdf",`🙏 नमस्ते ${p.name} जी, भैरव कैंटीन का आपका हिसाब: *₹${due} बाकी*। पूरा तारीख-वार हिसाब PDF में है, नीचे QR से UPI पर चुका सकते हैं।`);
+  }catch(e){toast("PDF नहीं बना: "+(e.message||e))}};
 /* ======================= 7) पहले से ऑर्डर ======================= */
 SX.orders=[];SX._oUn=null;
 SX.watchOrders=function(){if(S.demo||!S.db||SX._oUn)return;try{SX._oUn=S.db.collection("orders").where("status","in",["new","billing"]).onSnapshot(s=>{SX.orders=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>num(b.ts)-num(a.ts));SX.orderPill()},()=>{})}catch(e){}};
@@ -250,6 +290,7 @@ document.addEventListener("click",async e=>{const t=e.target;
   const rt=t.closest("[data-sxrate]");if(rt){const [id,v]=rt.dataset.sxrate.split("|");if(!rt.dataset.sure){rt.dataset.sure="1";rt.textContent="पक्का ₹"+v+"?";return}SX.setRate(id,num(v));return}
   const sl=t.closest("[data-sxslot]");if(sl){SX.slot.days=+sl.dataset.sxslot;SX.slot.res=null;rerender("slot");SX.calcSlots(SX.slot.days).then(()=>rerender("slot"));return}
   const hl=t.closest("[data-sxhl]");if(hl){SX.hisabLink(hl.dataset.sxhl);return}
+  const hp=t.closest("[data-sxhp]");if(hp){SX.hisabPdf(hp.dataset.sxhp);return}
   if(t.closest("[data-sxorders]")){SX.ordersSheet();return}
   const ob=t.closest("[data-sxobill]");if(ob){SX.orderBill(ob.dataset.sxobill);return}
   const od=t.closest("[data-sxodone]");if(od){SX.orderSet(od.dataset.sxodone,"done");closeSheet();return}
