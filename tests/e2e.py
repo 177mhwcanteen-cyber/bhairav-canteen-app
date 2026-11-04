@@ -181,6 +181,28 @@ async def main():
         await pg.fill("#wQ", "1"); await pg.click("[data-wsave]"); await pg.wait_for_timeout(500)
         assert abs(await pg.evaluate("window.__MOCK__.pstock.k1027.qty") - (lh0 - 1)) < 1e-6
         print("waste ok")
+
+        # ---------- 8b) 💵 गल्ला: खोलना, गिनती, पैसा देना, बंद (कर्मचारी को "होना चाहिए" नहीं) ----------
+        await pg.evaluate("closeSheet&&closeSheet()")
+        assert await pg.evaluate("SG.nag(true)||!!document.getElementById('sgNag')") and "खोलें" in await pg.text_content("#sgNag")
+        await pg.click('#sgNag [data-sgnag="open"]'); await pg.wait_for_selector('[data-sgn="500"]'); await pg.wait_for_timeout(150)
+        await pg.fill('[data-sgn="500"]', "2"); await pg.screenshot(path=f"{SHOTS}/10-galla-open.png")
+        await pg.click("[data-sgsave]"); await pg.wait_for_timeout(400)
+        async def gl(kind, vals):
+            await pg.evaluate(f"SG.sheet('{kind}')"); await pg.wait_for_timeout(200)
+            for k, v in vals.items():
+                await pg.fill(k, v)
+            await pg.click("[data-sgsave]"); await pg.wait_for_timeout(400)
+        await gl("count", {'[data-sgn="500"]': "1", '[data-sgn="100"]': "3"})
+        await gl("out", {"#sgAmt": "100"})
+        await gl("close", {'[data-sgn="500"]': "1", '[data-sgn="100"]': "4", "#sgKeep": "500"})
+        await pg.click('[data-tab="day"]'); await pg.wait_for_timeout(500)
+        dtxt = await pg.text_content("#p-day")
+        import re as _re; assert "होना चाहिए" not in dtxt and not _re.search(r"₹[\d,]+ कम", dtxt), ("staff must not see expected", [m.start() for m in _re.finditer("होना चाहिए|कम", dtxt)], dtxt[:3000])
+        await pg.screenshot(path=f"{SHOTS}/11-galla-staff.png", full_page=True)
+        gm = list((await pg.evaluate("window.__MOCK__")).get("days/" + await pg.evaluate("today()") + "/galla", {}).values()) or await pg.evaluate("S.galla")
+        assert sorted(g["kind"] for g in gm) == ["close", "count", "open", "out"], gm
+        print("galla staff ok", [(g["kind"], g["total"]) for g in sorted(gm, key=lambda g: g["ts"])])
         mock = await pg.evaluate("window.__MOCK__")
         await pg.context.close()
 
@@ -196,10 +218,17 @@ async def main():
         await pg.click('[data-tab="stock"]'); await pg.wait_for_timeout(500)
         assert await pg.locator("[data-skview]").count() >= 1, "owner should see count report"
         await pg.screenshot(path=f"{SHOTS}/9-owner-stock.png", full_page=True)
+        assert "💵 गल्ला: खुला ₹1,000" in txt or "💵 गल्ला: खुला ₹1000" in txt, txt
+        await pg.click('[data-tab="day"]'); await pg.wait_for_timeout(500)
+        await pg.evaluate("SF.dseg='paisa';renderDay()"); await pg.wait_for_timeout(300)
+        otxt = await pg.text_content("#p-day")
+        assert "होना चाहिए" in otxt and "200 कम" in otxt and "✓ ठीक" in otxt, otxt[:1500]
+        await pg.screenshot(path=f"{SHOTS}/12-galla-owner.png", full_page=True)
+        print("galla owner ok")
         print(txt)
         await pg.context.close()
         await b.close()
-    bad = [e for e in errs if "favicon" not in e]
+    bad = [e for e in errs if "favicon" not in e and "ERR_TUNNEL_CONNECTION_FAILED" not in e]
     assert not bad, bad
     print("\n✅ भैरव कैंटीन: पूरा टेस्ट पास")
 

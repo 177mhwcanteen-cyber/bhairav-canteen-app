@@ -148,6 +148,7 @@ function ownerText(){
   `🚚 माल आया: ${rs(d.buy)}${d.mh?` · 177 MH से ${rs(d.mh)}${d.mhUnsent?` (⚠ ${d.mhUnsent} पर्ची भेजनी बाकी)`:""}`:""}\n`+
   (d.kh?`💸 खर्चा: ${rs(d.kh)}\n`:"")+
   (d.nWaste?`🗑️ खराब/एक्सपायर हटाया: ${d.nWaste} बार · लगभग ${rs(d.waste)}\n`:"")+
+  (window.SG?SG.ownerLine():"")+
   (cnt.length?`🔢 गिनती: ${cnt.map(c=>c.byName+" · "+(c.nDiff?c.nDiff+" सामान में फर्क"+(c.short>0?", कम "+rs(c.short):""):"सब मिला")).join(", ")}\n`:"")+
   (d.cancel.length?`❌ रद्द बिल: ${d.cancel.map(b=>b.no+" "+rs(b.total)+(b.cancelReason?" ("+b.cancelReason+")":"")).join(", ")}\n`:"")+
   `👤 ${Object.entries(d.byStaff).map(([k,v])=>k+" "+rs(v)).join(" · ")||"—"}\n`+

@@ -56,6 +56,8 @@ service cloud.firestore {
     }
     match /days/{date}/meta/{doc}    { allow read, create, update: if active(); allow delete: if isOwner(); }
     match /days/{date}/kharch/{id}   { allow read, create: if active(); allow update, delete: if isOwner(); }
+    // 💵 गल्ला: कर्मचारी सिर्फ़ अपनी गिनती जोड़ सकते हैं, बदल/मिटा सिर्फ़ मालिक
+    match /days/{date}/galla/{id}    { allow read: if active(); allow create: if active() && request.resource.data.by == request.auth.uid && request.resource.data.total is number; allow update, delete: if isOwner(); }
 
     match /ledger/{id} {
       allow read, create: if active();

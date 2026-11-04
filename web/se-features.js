@@ -444,7 +444,7 @@ SF.dayStockHTML=function(){
     <button class="big" data-night>🌙 रात का स्टॉक डालें</button>${S.stock&&S.stock.nightTs?`<p class="note" style="margin:6px 0 0">✓ ${esc(S.stock.nightBy||"")} ने ${ftime(S.stock.nightTs)} पर भरा — बदलना हो तो फिर से दबाएँ</p>`:""}</div>
   <div class="card2"><h3>🛒 माल की खरीद</h3><p class="note" style="margin:0">सुबह न जुड़ पाई तो दोपहर, शाम या रात को "खरीद" में डाल दें। आधी रात के बाद हो तो वहाँ "कल" चुनें।</p>
     <button class="big ghost" data-gokharid>🛒 खरीद डालें</button></div>
-  <div class="card2"><h3>🖼️ आज का भाव-पोस्टर</h3><p class="note" style="margin:0">सब्ज़ियों की फोटो और आज के भाव वाली सुंदर तस्वीर — WhatsApp ग्रुप या स्टेटस पर डालें।</p><button class="big ghost" data-sxposter>🖼️ पोस्टर बनाएँ और भेजें</button></div>`;
+  <div class="card2"><h3>🖼️ आज का भाव-पोस्टर</h3><p class="note" style="margin:0">सामान की फोटो और आज के भाव वाली सुंदर तस्वीर — WhatsApp ग्रुप या स्टेटस पर डालें।</p><button class="big ghost" data-sxposter>🖼️ पोस्टर बनाएँ और भेजें</button></div>`;
   return `<div data-ds="sar">${P2.html}${SF.xyzWarnHTML()}${window.SR&&SR.miniMapHTML?SR.miniMapHTML():""}</div>
   <div data-ds="paisa">${SF.gpayCardHTML()}</div>
   <div data-ds="ai">${SF.copyCardHTML()+SF.auditCardHTML()}</div>
@@ -453,7 +453,7 @@ SF.dayStockHTML=function(){
   <div class="card2"><h3>🌙 रात का स्टॉक</h3>
     <p class="note" style="margin:0">दुकान बंद करते समय बचा माल तौलकर डालें। "होना चाहिए" = कल रात का + आज की खरीद − बिका − संस्था।</p>
     <button class="big" data-night>🌙 रात का स्टॉक डालें</button></div>
-  ${flags.length?`<div class="warn">⚠ ${flags.length} सब्ज़ियों में माल कम निकला: ${flags.map(r=>esc(r.it.name)+" "+fq(r.short,r.it.unit)).join(", ")}</div>`:""}
+  ${flags.length?`<div class="warn">⚠ ${flags.length} सामान में माल कम निकला: ${flags.map(r=>esc(r.it.name)+" "+fq(r.short,r.it.unit)).join(", ")}</div>`:""}
   <h3 style="margin:0 0 4px">माल का हिसाब (सामान-वार)</h3>
   <div class="list">${rows.map(r=>{const it=r.it,id=esc(it.id);return `<div class="stkrow" data-sid="${id}">${tileHTML(it)}<div style="min-width:0">
     <div class="stkmeta"><b style="color:var(--ink);font-size:16px">${esc(it.name)}</b><span>${r.rate?`खरीद ${rs(r.rate)}/${UNITS[it.unit]||it.unit}`:""}</span></div>
@@ -1265,7 +1265,7 @@ SF.billProfitTag=function(b){const x=SF.billProfit(b);if(!x)return "";if(x.inst)
   return `<small class="pf ${x.p<0?"neg":x.pct<20?"low":""}">${x.p<0?"घाटा":"फायदा"} ₹${Math.abs(Math.round(x.p))} · ${x.pct}%${x.miss?" *":""}</small>`};
 SF.profitKpiHTML=function(L){const P=L.map(SF.billProfit).filter(Boolean);const p=r2(P.reduce((a,x)=>a+x.p,0)),t=r2(L.filter(b=>b.mode!=="inst").reduce((a,b)=>a+num(b.total),0));
   const lowN=P.filter(x=>!x.inst&&x.pct<20).length,miss=P.some(x=>x.miss);
-  return `<div class="pfk"><span>💹 इन बिलों पर कुल फायदा <small>(सिर्फ़ आपको दिखता है)</small></span><b>${rs(Math.round(p))}</b><small>बिक्री ${rs(t)} · औसत ${t>0?Math.round(p/t*100):0}%${lowN?` · ${lowN} बिल में 20% से कम`:""}${miss?" · * कुछ सब्ज़ियों का खरीद भाव नहीं मिला":""}</small></div>`};
+  return `<div class="pfk"><span>💹 इन बिलों पर कुल फायदा <small>(सिर्फ़ आपको दिखता है)</small></span><b>${rs(Math.round(p))}</b><small>बिक्री ${rs(t)} · औसत ${t>0?Math.round(p/t*100):0}%${lowN?` · ${lowN} बिल में 20% से कम`:""}${miss?" · * कुछ सामान का खरीद भाव नहीं मिला":""}</small></div>`};
 
 /* =============== 🤖 कर्मचारी की कॉपी → AI → ऐप (सिर्फ़ मालिक) =============== */
 SF.PROMPT_DAY=`तुम भैरव कैंटीन (कैंटीन, जसाई, बाड़मेर) के हिसाब-किताब के मुंशी हो।
