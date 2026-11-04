@@ -51,9 +51,10 @@ SFM.html=function(){if(!S.isOwner)return "";
   return `<div class="card2 sfm"><div class="rr-h"><h3 style="margin:0">🏢 सभी फर्म — आज की बिक्री</h3><button class="lnk" data-sfmref>🔄</button></div>
     <div class="sfm-tot"><div><span>आज कुल</span><b>${rs(tot[0])}</b></div><div><span>कल कुल</span><b>${rs(tot[1])}</b></div></div>
     <div class="sfm-l">${rows.map(r=>`<div class="sfm-r"><div class="sfm-n"><b>${r.t}</b>${r.x?`<span class="note">${r.x}</span>`:""}
-      ${r.login?`<div class="row2" style="margin:6px 0 0"><input class="inp" type="password" id="sfmPw" placeholder="सब्ज़ी एक्सप्रेस का पासवर्ड" autocomplete="current-password"><button class="big ghost" data-sfmlogin>जोड़ें</button></div><span class="note">एक बार — फिर यह फोन याद रखेगा</span>`:""}
+
       ${r.manual?`<button class="lnk" data-sfmman="${r.k}">✏️ आज की बिक्री लिखें</button>`:""}</div>
-      <div class="sfm-c"><span>आज</span>${cell(r.v[0])}</div><div class="sfm-c"><span>कल</span>${cell(r.v[1])}</div></div>`).join("")}</div>
+      <div class="sfm-c"><span>आज</span>${cell(r.v[0])}</div><div class="sfm-c"><span>कल</span>${cell(r.v[1])}</div>
+      ${r.login?`<div class="sfm-login"><input class="inp" type="password" id="sfmPw" placeholder="सब्ज़ी एक्सप्रेस का पासवर्ड" autocomplete="current-password"><button class="big ghost" data-sfmlogin>जोड़ें</button><span class="note">एक बार — फिर यह फोन याद रखेगा</span></div>`:""}</div>`).join("")}</div>
     <button class="big ghost" data-mhst style="margin-top:8px">🏥 177 MH से लिए माल का महीने का हिसाब</button>
   </div>`;
 };
@@ -99,6 +100,6 @@ const css=document.createElement("style");css.textContent=`
 .sfm-tot{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.sfm-tot div{background:var(--grad,linear-gradient(120deg,#4f46e5,#7c3aed));color:#fff;border-radius:16px;padding:10px 12px}
 .sfm-tot span{display:block;font-size:12px;opacity:.85}.sfm-tot b{font-size:24px}
 .sfm-r{display:grid;grid-template-columns:1fr 88px 88px;gap:6px;align-items:start;padding:10px 0;border-top:1px solid var(--line)}
-.sfm-n b{display:block;font-size:15px}.sfm-n .note{display:block;font-size:12px}.sfm-c{text-align:right}.sfm-c span{display:block;font-size:11px;color:var(--muted)}
+.sfm-n b{display:block;font-size:15px}.sfm-login{grid-column:1/-1;display:grid;grid-template-columns:1fr 96px;gap:8px;margin:4px 0 0}.sfm-login .inp{margin:0;min-width:0}.sfm-login .big{margin:0;padding:10px}.sfm-login .note{grid-column:1/-1;font-size:12px}.sfm-n .note{display:block;font-size:12px}.sfm-c{text-align:right}.sfm-c span{display:block;font-size:11px;color:var(--muted)}
 .sfm-c b{display:block;font-size:16px}.sfm-c small{display:block;font-size:11px;color:var(--muted)}`;document.head.appendChild(css);
 })();

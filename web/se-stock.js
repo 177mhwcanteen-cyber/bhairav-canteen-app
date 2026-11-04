@@ -129,8 +129,9 @@ function viewCount(c){
 function dayNums(){
   const all=S.dayBills||[],bills=all.filter(b=>!b.cancelled),sale=bills.filter(b=>b.mode!=="inst"),inst=bills.filter(b=>b.mode==="inst");
   const sum=(a,f)=>r2(a.reduce((x,b)=>x+(+f(b)||0),0));
-  const cost=sum(sale,b=>(b.lines||[]).reduce((y,l)=>y+(+l.cost||0)*(+l.qty||0),0));
-  const noCost=sum(sale,b=>(b.lines||[]).reduce((y,l)=>y+(+l.cost>0||l.free?0:(+l.amt||0)),0));
+  const lc=(l,b)=>window.SF&&SF.lineCost?SF.lineCost(l,b.date):(+l.cost||0);/* बिल, रिपोर्ट, डैशबोर्ड — सब में एक ही तरीका */
+  const cost=sum(sale,b=>(b.lines||[]).reduce((y,l)=>y+(lc(l,b)>0?lc(l,b)*(+l.qty||0):0),0));
+  const noCost=sum(sale,b=>(b.lines||[]).reduce((y,l)=>y+(lc(l,b)>0||l.free?0:(+l.amt||0)),0));
   const P=(S.purch||[]).filter(p=>!p.cancelled);
   const W=((S.stock&&S.stock.wlog)||[]);
   return {n:sale.length,tot:sum(sale,b=>b.total),cash:sum(sale,b=>b.pay&&b.pay.cash),upi:sum(sale,b=>b.pay&&b.pay.upi),ud:sum(sale,b=>b.pay&&b.pay.udhar),
@@ -144,7 +145,7 @@ function ownerText(){
   const d=dayNums(),T=tracked(),low=T.filter(isLow),xp=T.filter(it=>qOf(it)>0&&expInfo(it)&&expInfo(it).k!=="chk");
   const cnt=(S.counts||[]).filter(c=>c.date===S.billsDate);
   return `🛒 *भैरव कैंटीन — ${fdate(S.billsDate)} का हिसाब*\n────────\n`+
-  `💰 बिक्री: *${rs(d.tot)}* (${d.n} बिल)\n   नकद ${rs(d.cash)} · UPI ${rs(d.upi)} · उधार ${rs(d.ud)}${d.pend?`\n   ⏳ ${d.pend} बिल का भुगतान बाकी`:""}\n`+
+  `💰 बिक्री: *${rs(d.tot)}* (${d.n} बिल)${window.SV&&SV.saleTotal(S.billsDate)>0?" · वापसी घटाकर "+rs(r2(d.tot-SV.saleTotal(S.billsDate))):""}\n   नकद ${rs(d.cash)} · UPI ${rs(d.upi)} · उधार ${rs(d.ud)}${d.pend?`\n   ⏳ ${d.pend} बिल का भुगतान बाकी`:""}\n`+
   (d.nInst?`🏢 संस्था को: ${rs(d.inst)} (${d.nInst} बिल)\n`:"")+
   `📈 लगभग मुनाफ़ा: *${rs(d.gm)}* (लागत ${rs(d.cost)})\n`+(d.noCost>0?`   ⚠ ${rs(d.noCost)} की बिक्री वाले सामान का खरीद भाव नहीं भरा — उसका मुनाफ़ा इसमें नहीं गिना\n`:"")+
   (d.saved>0?`🎉 ग्राहकों की MRP से बचत: ${rs(d.saved)}\n`:"")+

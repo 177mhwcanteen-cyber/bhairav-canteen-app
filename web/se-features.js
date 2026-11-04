@@ -1115,7 +1115,7 @@ SF.compactPaperHTML=function(b,o){
   <div class="ppc-meta"><span><b>${esc(b.no||"…")}</b> · ${fdate(b.date||today()).slice(0,5)} · ${ftime(b.ts||Date.now())}</span><span class="ppc-cust">${esc(cust)}</span></div>
   ${o.tap?'<div class="ppc-meta ppc-by"><span class="note">👆 सामान पर टैप = मात्रा बदलें</span></div>':""}
   <table class="pp-t ppc-t"><thead><tr><th>#</th><th>सामान</th><th class="r">मात्रा</th><th class="r">भाव</th><th class="r">रकम</th>${ed?"<th></th>":""}</tr></thead><tbody>
-  ${(b.lines||[]).map((l,i)=>`<tr${ed?` data-edit="${i}"`:o.tap?` data-sbrow="${i}" class="tap"`:""}><td>${i+1}</td><td>${esc(l.name)}${window.SN&&SN.en(l.name)?` <small class="pp-en">${esc(SN.en(l.name))}</small>`:""}${l.changed?' <span class="pp-chg">भाव बदला</span>':""}${l.free?' <span class="pp-chg">मुफ्त</span>':""}</td><td class="r">${fq(l.qty,l.unit).replace(" कि.ग्रा"," kg")}</td><td class="r">${l.free?"—":"₹"+l.rate}</td><td class="r"><b>₹${l.amt}</b></td>${ed?`<td><button class="pp-x" data-del="${i}" aria-label="${esc(l.name)} हटाएँ">✕</button></td>`:""}</tr>`).join("")}
+  ${(b.lines||[]).map((l,i)=>`<tr${ed?` data-edit="${i}"`:o.tap?` data-sbrow="${i}" class="tap"`:""}><td>${i+1}</td><td>${esc(l.name)}${window.SN&&SN.en(l.name)?` <small class="pp-en">${esc(SN.en(l.name))}</small>`:""}${l.changed&&S.isOwner?' <span class="pp-chg">भाव बदला</span>':""}${l.free?' <span class="pp-chg">मुफ्त</span>':""}</td><td class="r">${fq(l.qty,l.unit).replace(" कि.ग्रा"," kg")}</td><td class="r">${l.free?"—":"₹"+l.rate}</td><td class="r"><b>₹${l.amt}</b></td>${ed?`<td><button class="pp-x" data-del="${i}" aria-label="${esc(l.name)} हटाएँ">✕</button></td>`:""}</tr>`).join("")}
   </tbody></table>
   ${b.disc?`<div class="pp-row"><span>जोड़ ₹${sub}</span><span>छूट −₹${b.disc}</span></div>`:""}
   <div class="ppc-sum"><span>कुल रकम · ${(b.lines||[]).length} सामान${SF.roff(b)?`<small class="roff">जोड़ ₹${r2(num(b.sub!=null?b.sub:sub))} · ${SF.roffTxt(SF.roff(b))}</small>`:""}</span><b>₹${b.total}</b>${savedOf(b)>0?`<small class="ppc-save">🎉 MRP से ₹${savedOf(b)} की बचत</small>`:""}</div>
@@ -1135,7 +1135,7 @@ SF.paperHTML=function(b,o){
   <div class="pp-meta"><span>ग्राहक: <b>${esc(b.partyName||"VIP ग्राहक")}</b>${b.custPhone?" · "+esc(b.custPhone):""}</span><span>बिलर: ${esc(b.byName||"")}</span></div>
   <div class="pp-dash"></div>
   <table class="pp-t"><thead><tr><th>क्र.</th><th>सामान</th><th class="r">मात्रा</th><th class="r">भाव</th><th class="r">रकम</th>${ed?"<th></th>":""}</tr></thead><tbody>
-  ${(b.lines||[]).map((l,i)=>`<tr${ed?` data-edit="${i}"`:""}><td>${i+1}</td><td>${esc(l.name)}${window.SN&&SN.en(l.name)?` <small class="pp-en">(${esc(SN.en(l.name))})</small>`:""}${l.changed?' <span class="pp-chg">भाव बदला</span>':""}${l.free?' <span class="pp-chg">मुफ्त</span>':""}</td><td class="r">${fq(l.qty,l.unit).replace(" कि.ग्रा"," kg")}</td><td class="r">${l.free?"—":"₹"+l.rate}</td><td class="r"><b>₹${l.amt}</b></td>${ed?`<td><button class="pp-x" data-del="${i}" aria-label="${esc(l.name)} हटाएँ">✕</button></td>`:""}</tr>`).join("")}
+  ${(b.lines||[]).map((l,i)=>`<tr${ed?` data-edit="${i}"`:""}><td>${i+1}</td><td>${esc(l.name)}${window.SN&&SN.en(l.name)?` <small class="pp-en">(${esc(SN.en(l.name))})</small>`:""}${l.changed&&S.isOwner?' <span class="pp-chg">भाव बदला</span>':""}${l.free?' <span class="pp-chg">मुफ्त</span>':""}</td><td class="r">${fq(l.qty,l.unit).replace(" कि.ग्रा"," kg")}</td><td class="r">${l.free?"—":"₹"+l.rate}</td><td class="r"><b>₹${l.amt}</b></td>${ed?`<td><button class="pp-x" data-del="${i}" aria-label="${esc(l.name)} हटाएँ">✕</button></td>`:""}</tr>`).join("")}
   </tbody></table>
   <div class="pp-dash"></div>
   ${b.disc?`<div class="pp-row"><span>जोड़</span><span>₹${sub}</span></div><div class="pp-row"><span>छूट</span><span>−₹${b.disc}</span></div>`:""}
@@ -1260,8 +1260,9 @@ SF.roff=function(b){if(!b||b.mode==="inst")return 0;const sub=b.sub!=null?num(b.
 SF.roffTxt=r=>"राउंड ऑफ "+(r>0?"+":"−")+"₹"+Math.abs(r).toFixed(2);
 SF.billProfit=function(b){
   if(!b||b.cancelled)return null;if(b.mode==="inst")return {p:0,pct:0,inst:true,miss:0};
-  let p=0,miss=0;(b.lines||[]).forEach(l=>{if(l.id==="xyz"){p+=num(l.amt);return}const c=SF.lineCost(l,b.date);if(!(c>0))miss++;p+=(l.free?0:num(l.amt))-num(l.qty)*c});
-  p=r2(p-num(b.disc)+SF.roff(b));return {p,pct:num(b.total)>0?Math.round(p/num(b.total)*100):0,miss}};
+  /* जिस सामान का खरीद भाव पता नहीं, उसकी बिक्री मुनाफ़े में नहीं गिनते (पहले पूरी बिक्री मुनाफ़ा दिखती थी) */
+  let p=0,miss=0,missAmt=0;(b.lines||[]).forEach(l=>{if(l.id==="xyz"){p+=num(l.amt);return}const c=SF.lineCost(l,b.date);if(!(c>0)){miss++;missAmt+=l.free?0:num(l.amt);return}p+=(l.free?0:num(l.amt))-num(l.qty)*c});
+  p=r2(p-num(b.disc)+SF.roff(b));const base=num(b.total)-missAmt;return {p,pct:base>0?Math.round(p/base*100):0,miss,missAmt:r2(missAmt)}};
 SF.billProfitTag=function(b){const x=SF.billProfit(b);if(!x)return "";if(x.inst)return '<small class="pf z">खरीद भाव</small>';
   return `<small class="pf ${x.p<0?"neg":x.pct<20?"low":""}">${x.p<0?"घाटा":"फायदा"} ₹${Math.abs(Math.round(x.p))} · ${x.pct}%${x.miss?" *":""}</small>`};
 SF.profitKpiHTML=function(L){const P=L.map(SF.billProfit).filter(Boolean);const p=r2(P.reduce((a,x)=>a+x.p,0)),t=r2(L.filter(b=>b.mode!=="inst").reduce((a,b)=>a+num(b.total),0));
