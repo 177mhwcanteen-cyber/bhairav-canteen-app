@@ -43,11 +43,15 @@ service cloud.firestore {
     match /days/{date}/bills/{no} {
       allow read: if active();
       allow create: if active() && request.resource.data.by == request.auth.uid;
-      // कर्मचारी सिर्फ़ ग्राहक का नंबर जोड़ सकते हैं; रद्द सिर्फ़ मालिक
+      // कर्मचारी सिर्फ़ ग्राहक का नंबर / उधार पर्ची भेजने का समय जोड़ सकते हैं
       // सेटल होने से पहले बनाने वाला खुद बदल/सेटल कर सकता है (हर बदलाव edits में दर्ज); सेटल के बाद ताला
-      allow update: if isOwner() || (active() && (noChange() || onlyKeys(['custPhone'])))
+      allow update: if isOwner() || (active() && (noChange() || onlyKeys(['custPhone', 'udSent'])))
         || (active() && resource.data.get('settled', true) == false && resource.data.by == request.auth.uid
-            && onlyKeys(['lines', 'sub', 'total', 'cost', 'rateChanged', 'edits', 'editCount', 'pay', 'payMode', 'settled', 'settleTs', 'mode', 'partyId', 'partyName', 'custPhone']));
+            && onlyKeys(['lines', 'sub', 'total', 'cost', 'rateChanged', 'edits', 'editCount', 'pay', 'payMode', 'settled', 'settleTs', 'mode', 'partyId', 'partyName', 'custPhone', 'udChk']))
+        // कर्मचारी वजह लिखकर बिल रद्द कर सकते हैं (सिर्फ़ रद्द — मालिक को सूचना जाती है, मालिक वापस चालू कर सकते हैं)
+        || (active() && resource.data.get('cancelled', false) == false && request.resource.data.cancelled == true
+            && request.resource.data.cancelledBy == request.auth.uid && request.resource.data.cancelReason is string && request.resource.data.cancelReason.size() >= 3
+            && onlyKeys(['cancelled', 'cancelledBy', 'cancelByName', 'cancelReason', 'cancelTs']));
       allow delete: if false;
     }
     match /days/{date}/meta/{doc}    { allow read, create, update: if active(); allow delete: if isOwner(); }
@@ -56,11 +60,13 @@ service cloud.firestore {
     match /ledger/{id} {
       allow read, create: if active();
       allow update: if isOwner() || (active() && noChange());
-      allow delete: if isOwner();
+      // रद्द हुए बिल की उधार एंट्री ही कर्मचारी हटा सकते हैं
+      allow delete: if isOwner() || (active() && resource.data.get('billNo', '') != ''
+        && get(/databases/$(database)/documents/days/$(resource.data.date)/bills/$(resource.data.billNo)).data.get('cancelled', false) == true);
     }
     match /parties/{id} {
       allow read, create: if active();
-      allow update: if isOwner() || (active() && onlyKeys(['lastCart', 'lastTs', 'phone', 'remindTs']));
+      allow update: if isOwner() || (active() && onlyKeys(['lastCart', 'lastTs', 'phone', 'remindTs', 'pubToken']));
       allow delete: if false;
     }
     match /customers/{id} { allow read, create, update: if active(); allow delete: if false; }
@@ -105,7 +111,22 @@ service cloud.firestore {
       allow read: if isOwner() || (signedIn() && request.auth.uid == uid);
       allow write: if active() && request.auth.uid == uid;
     }
-    match /places/{id} { allow read: if active(); allow write: if isOwner(); }
+    match /places/{id} { allow read, write: if isOwner(); }  // जगहें सिर्फ़ मालिक की
+
+    // 🔗 ग्राहक के लिए खुले पन्ने (हिसाब-लिंक, आज के भाव) — गुप्त लिंक से कोई भी पढ़ सके, लिखे सिर्फ़ टीम
+    match /pub/{id} { allow read: if true; allow write: if active(); }
+    // 📥 घर बैठे ऑर्डर — ग्राहक बिना लॉगिन नया ऑर्डर भेज सके (तय खाने, छोटी सीमा); देखना/बदलना टीम, मिटाना मालिक
+    match /orders/{id} {
+      allow read, update: if active();
+      allow create: if request.resource.data.keys().hasOnly(['name', 'phone', 'addr', 'note', 'items', 'ts', 'status', 'src'])
+        && request.resource.data.status == 'new'
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 40
+        && request.resource.data.phone is string && request.resource.data.phone.matches('^[0-9]{10}$')
+        && request.resource.data.items is list && request.resource.data.items.size() > 0 && request.resource.data.items.size() <= 40
+        && (!('addr' in request.resource.data) || (request.resource.data.addr is string && request.resource.data.addr.size() <= 80))
+        && (!('note' in request.resource.data) || (request.resource.data.note is string && request.resource.data.note.size() <= 200));
+      allow delete: if isOwner();
+    }
 
     // 🔐 मालिक का UPI मिलान, असली दुकानदार, अपने खाते — कर्मचारी पढ़ भी नहीं सकते
     match /pay/{id}      { allow read, write: if isOwner(); }

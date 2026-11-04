@@ -116,7 +116,7 @@ async def main():
         assert await pg.locator("#grid .margin, #grid .mg").count() == 0
         await pg.click("#cartbtn"); await pg.wait_for_timeout(400)
         await pg.screenshot(path=f"{SHOTS}/4-checkout.png")
-        await pg.click("[data-billsave]"); await pg.wait_for_selector("[data-sbok]"); await pg.wait_for_timeout(500)
+        await pg.wait_for_timeout(10); await pg.wait_for_selector("[data-sbok]"); await pg.wait_for_timeout(500)
         await pg.click('[data-sbpay="cash"]'); await pg.wait_for_timeout(150); await pg.click("[data-sbok]"); await pg.wait_for_timeout(1200)
         await pg.screenshot(path=f"{SHOTS}/5-receipt.png")
         bl = bills_of(await pg.evaluate("window.__MOCK__"))
@@ -146,7 +146,7 @@ async def main():
         pis0 = await pg.evaluate("(window.__MOCK__.pstock.k1010||{}).qty||0")
         await pg.click('[data-tab="kharid"]'); await pg.wait_for_timeout(300)
         await pg.click('[data-psrc="mh"]'); await pg.wait_for_timeout(200)
-        await pg.evaluate("handleScan('8906079510407')"); await pg.wait_for_selector("#piQ")
+        await pg.evaluate("handleScan('8906079510407')"); await pg.wait_for_selector("#piQ"); await pg.wait_for_timeout(200)
         await pg.fill("#piQ", "3"); await pg.fill("#piR", "300")
         await pg.evaluate("document.querySelector('#piE').value=new Date(Date.now()+40*864e5).toISOString().slice(0,10)")
         await pg.click("[data-pisave]"); await pg.wait_for_timeout(300)
@@ -155,7 +155,7 @@ async def main():
         m = await pg.evaluate("window.__MOCK__")
         pu = list(m["purchases"].values())
         assert pu and pu[-1]["src"] == "mh" and pu[-1]["pay"] == "mh", pu[-1:]
-        assert abs(m["pstock"]["k1010"]["qty"] - (pis0 + 3)) < 1e-6, (pis0, m["pstock"]["k1010"])
+        assert abs(m["pstock"]["k1010"]["qty"] - (pis0 + 3)) < 1e-6, (pis0, m["pstock"]["k1010"], pu[-1]["lines"], m.get("stockLog") and list(m["stockLog"].values())[-3:])
         assert any(x["itemId"] == "k1010" for x in m.get("batches", {}).values()), "batch missing"
         assert await pg.locator("[data-mhsent]").count() == 1 and "wa.me/91" in (await pg.get_attribute("[data-mhsent]", "href"))
         print("177 MH ok")
