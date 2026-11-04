@@ -72,7 +72,7 @@ async def main():
         assert await pg.evaluate("window.__MOCK__.items.k1001.sale") == 111, "migration overwrote data!"
         print("migrate ok: 32 items, idempotent")
         await pg.click('[data-tab="set"]'); await pg.wait_for_timeout(300)
-        await pg.fill("#stName", "दिनेश जी"); await pg.fill("#stPhone", "+91 82095 93527"); await pg.fill("#stPin", "4321")
+        await pg.fill("#stName", "दिनेश जी"); await pg.fill("#stPhone", "+91 82095 93527"); await pg.fill("#stPin", "482916")
         await pg.click("[data-staffadd]"); await pg.wait_for_timeout(800)
         staff = await pg.evaluate("window.__MOCK__.staff")
         dk = [k for k, v in staff.items() if v.get("phone") == "8209593527"]
@@ -85,10 +85,10 @@ async def main():
         pg = await page(b, mock, users)
         await pg.wait_for_selector("#lock:not([hidden])")
         for d in "8209593527": await pg.click(f'#lock [data-k="{d}"]')
-        for d in "1111": await pg.click(f'#lock [data-k="{d}"]')
+        for d in "111111": await pg.click(f'#lock [data-k="{d}"]')
         await pg.wait_for_timeout(500)
         assert await pg.is_visible(".lgerr"), "wrong pin should show error"
-        for d in "4321": await pg.click(f'#lock [data-k="{d}"]')
+        for d in "482916": await pg.click(f'#lock [data-k="{d}"]')
         await pg.wait_for_selector("#lock", state="hidden"); await pg.wait_for_timeout(800)
         tabs = await pg.eval_on_selector_all("[data-tab]", "e=>e.map(x=>x.dataset.tab)")
         assert "set" not in tabs and "report" not in tabs and "route" not in tabs, tabs
@@ -97,8 +97,8 @@ async def main():
         await pg.evaluate("localStorage.setItem('se_act',String(Date.now()-3*3600e3));pinGate()"); await pg.wait_for_timeout(200)
         assert await pg.locator(".pinlock").count() == 0, "PIN must not be asked after only 3 hours"
         await pg.evaluate("localStorage.setItem('bh_pin_ts',String(Date.now()-13*3600e3));pinGate()"); await pg.wait_for_selector(".pinlock")
-        await pg.fill("#pgIn", "1111"); await pg.wait_for_timeout(300); assert await pg.locator(".pinlock").count() == 1
-        await pg.fill("#pgIn", "4321"); await pg.wait_for_timeout(300); assert await pg.locator(".pinlock").count() == 0
+        await pg.fill("#pgIn", "111111"); await pg.wait_for_timeout(300); assert await pg.locator(".pinlock").count() == 1
+        await pg.fill("#pgIn", "482916"); await pg.wait_for_timeout(300); assert await pg.locator(".pinlock").count() == 0
         print("12h PIN ok")
 
         # ---------- 3) स्कैन से बिल ----------

@@ -55,8 +55,8 @@ function drawLogin(st){
     <div class="lgform"><button class="big" data-lg="verify-done">हो गया</button><button class="lnk" data-lg="verify-resend">लिंक दोबारा भेजें</button><button class="lnk" data-lg="logout">दूसरा खाता</button></div>`;
     return}
   L.innerHTML=`<div style="font-size:44px">🛒</div><h2>भैरव कैंटीन</h2>
-    ${st.step==="pin"?`<p class="note" style="margin:-8px 0 0">📱 ${esc(st.phone)} — अपना 4 अंक का PIN डालें</p>
-      <div class="dots ${st.err?"bad":""}" aria-label="PIN">${[0,1,2,3].map(i=>`<i class="${i<st.pin.length?"f":""}"></i>`).join("")}</div>`
+    ${st.step==="pin"?`<p class="note" style="margin:-8px 0 0">📱 ${esc(st.phone)} — अपना ${st.len||4} अंक का PIN डालें</p>
+      <div class="dots ${st.err?"bad":""}" aria-label="PIN">${Array.from({length:st.len||4},(_,i)=>i).map(i=>`<i class="${i<st.pin.length?"f":""}"></i>`).join("")}</div>`
     :`<p class="note" style="margin:-8px 0 0">अपना मोबाइल नंबर डालें</p><div class="lgphone" aria-live="polite">${esc(st.phone||"")||'<span class="note">10 अंक</span>'}</div>`}
     ${st.err?`<p class="lgerr">${esc(st.err)}</p>`:""}${st.busy?'<p class="note">जाँच रहे हैं…</p>':""}
     <div class="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join("")}<button class="t" data-k="c">साफ़</button><button data-k="0">0</button><button class="t" data-k="b" aria-label="एक अंक हटाएँ">⌫</button></div>
@@ -81,10 +81,13 @@ function loginFlow(){
     const tryStaff=async()=>{
       st.busy=true;st.err="";draw();
       try{
-        let v=1;try{const x=await db.doc("staffIndex/"+st.phone).get();if(x.exists)v=+x.data().v||1}catch(e){}
+        let v=1;try{const x=st.idx?{exists:true,data:()=>st.idx}:await db.doc("staffIndex/"+st.phone).get();if(x.exists)v=+x.data().v||1}catch(e){}
         await auth.signInWithEmailAndPassword(staffEmail(st.phone,v),staffPass(st.phone,st.pin));
-        try{const h=await SE.pinHash(st.phone,st.pin);localStorage.setItem("se_pinh",h);localStorage.setItem("se_pinph",st.phone);localStorage.setItem("se_act",String(Date.now()));localStorage.setItem("bh_pin_ts",String(Date.now()))}catch(e){}
-      }catch(e){st.busy=false;st.pin="";st.err=errHi(e);draw()}
+        try{const h=await SE.pinHash(st.phone,st.pin);localStorage.setItem("se_pinh",h);localStorage.setItem("se_pinlen",String(st.pin.length));localStorage.setItem("se_pinph",st.phone);localStorage.setItem("se_act",String(Date.now()));localStorage.setItem("bh_pin_ts",String(Date.now()))}catch(e){}
+      }catch(e){st.busy=false;st.pin="";st.err=errHi(e);st.fails=(st.fails||0)+1;
+        /* 5 बार गलत → 5 मिनट रुकें (इस फोन पर) */
+        if(st.fails>=5){st.until=Date.now()+5*60000;st.fails=0;try{localStorage.setItem("bh_lgwait",String(st.until))}catch(x){}st.err="5 बार गलत PIN — 5 मिनट बाद कोशिश करें"}
+        draw()}
     };
     L.onclick=async e=>{
       const lg=e.target.closest("[data-lg]");
@@ -106,13 +109,17 @@ function loginFlow(){
           if(auth.currentUser&&auth.currentUser.emailVerified){done(auth.currentUser)}else{st.err="अभी पक्का नहीं हुआ — Gmail में लिंक दबाएँ";draw()}return}
         return}
       const k=e.target.closest("[data-k]");if(!k||st.mode!=="staff"||st.busy)return;
+      {const w=Math.max(st.until||0,+(localStorage.getItem("bh_lgwait")||0));if(w>Date.now()){st.err="5 बार गलत PIN — "+Math.ceil((w-Date.now())/60000)+" मिनट बाद कोशिश करें";draw();return}}
       const v=k.dataset.k;st.err="";
       if(st.step==="phone"){
         if(v==="c")st.phone="";else if(v==="b")st.phone=st.phone.slice(0,-1);else if(st.phone.length<10)st.phone+=v;
-        if(st.phone.length===10){st.step="pin";st.pin=""}
+        if(st.phone.length===10){st.step="pin";st.pin="";st.len=4;st.idx=null;
+          /* PIN कितने अंक का — staffIndex में (नए खाते 6, पुराने 4) */
+          db.doc("staffIndex/"+st.phone).get().then(x=>{st.idx=x.exists?x.data():{};st.len=+(st.idx.len)===6?6:4;if(st.step==="pin")draw()}).catch(()=>{})}
         draw();return}
-      if(v==="c")st.pin="";else if(v==="b")st.pin=st.pin.slice(0,-1);else if(st.pin.length<4)st.pin+=v;
-      draw();if(st.pin.length===4)tryStaff();
+      const L2=st.len||4;
+      if(v==="c")st.pin="";else if(v==="b")st.pin=st.pin.slice(0,-1);else if(st.pin.length<L2)st.pin+=v;
+      draw();if(st.pin.length===L2)tryStaff();
     };
     let finished=false;
     const done=u=>{if(finished)return;finished=true;L.onclick=null;resolve(u)};
@@ -168,10 +175,12 @@ SE.ownerDiag=async function(){
 SE.pinHash=async(ph,pin)=>{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("se|"+ph+"|"+pin));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")};
 SE.logout=async()=>{try{localStorage.removeItem("se_pinh")}catch(e){}try{await auth.signOut()}catch(e){}location.reload()};
 
-/* मालिक नया कर्मचारी जोड़े — मोबाइल + 4 अंक PIN */
+/* मालिक नया कर्मचारी जोड़े — मोबाइल + 6 अंक PIN (आसान PIN जैसे 111111 / 123456 नहीं) */
+SE.weakPin=p=>/^(\d)\1+$/.test(p)||"0123456789".includes(p)||"9876543210".includes(p);
 SE.addStaff=async function(name,phone,pin){
   phone=String(phone).replace(/\D/g,"").slice(-10);
-  if(!name||phone.length!==10||!/^\d{4}$/.test(pin))throw {msg:"नाम, 10 अंक का मोबाइल और 4 अंक का PIN डालें"};
+  if(!name||phone.length!==10||!/^\d{6}$/.test(pin))throw {msg:"नाम, 10 अंक का मोबाइल और 6 अंक का PIN डालें"};
+  if(SE.weakPin(pin))throw {msg:"यह PIN बहुत आसान है (जैसे 111111 / 123456) — कोई दूसरा 6 अंक का PIN चुनें"};
   let v=1;try{const x=await db.doc("staffIndex/"+phone).get();if(x.exists)v=(+x.data().v||1)+1}catch(e){}
   const sec=firebase.apps.find(a=>a.name==="sec")||firebase.initializeApp(CFG.firebase,"sec");
   const r=await sec.auth().createUserWithEmailAndPassword(staffEmail(phone,v),staffPass(phone,pin));
@@ -179,7 +188,7 @@ SE.addStaff=async function(name,phone,pin){
   // पुराने खाते (उसी नंबर के) बंद — PIN बदलने पर पुराना PIN काम नहीं करेगा
   try{const old=await db.collection("staff").where("phone","==",phone).get();for(const d of old.docs)if(d.id!==uid&&d.data().active!==false)await d.ref.update({active:false,offTs:Date.now(),offWhy:"नया PIN"})}catch(e){}
   await db.doc("staff/"+uid).set({name,phone,pin,active:true,owner:false,ts:Date.now(),by:auth.currentUser.uid});
-  await db.doc("staffIndex/"+phone).set({v});
+  await db.doc("staffIndex/"+phone).set({v,len:6});
   return uid;
 };
 SE.setStaffActive=(uid,on)=>db.doc("staff/"+uid).update({active:!!on,[on?"onTs":"offTs"]:Date.now()});

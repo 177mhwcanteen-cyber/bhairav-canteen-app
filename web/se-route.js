@@ -830,7 +830,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ======================= 🔒 1 घंटे से ज़्यादा बंद रहा तो PIN (कर्मचारी) ======================= */
-const IDLE=60*60000;let lastMark=0;
+const IDLE=60*60000;const PL=()=>+LSx.get("se_pinlen")===6?6:4;let lastMark=0;
 function markAct(){const n=Date.now();if(n-lastMark<30000)return;lastMark=n;LSx.set("se_act",String(n))}
 SR.lockCheck=function(){
   return; // भैरव: घंटे-घंटे का लॉक बंद — PIN हर 12 घंटे (index.html pinGate)
@@ -840,16 +840,16 @@ SR.lockCheck=function(){
   if(Date.now()-last<IDLE){markAct();return}
   let pin="",bad=0;const el=document.createElement("div");el.id="plock";el.className="plock";document.body.appendChild(el);
   const draw=(err)=>{el.innerHTML=`<div class="pl-box"><div class="pl-logo">🛒</div><b>भैरव कैंटीन</b><span>नमस्ते ${esc(biller()||"")} 🙏 — अपना PIN डालें</span>
-    <div class="dots ${err?"bad":""}">${[0,1,2,3].map(i=>`<i class="${i<pin.length?"f":""}"></i>`).join("")}</div>${err?`<p class="pl-err">${esc(err)}</p>`:""}
+    <div class="dots ${err?"bad":""}">${Array.from({length:PL()},(_,i)=>i).map(i=>`<i class="${i<pin.length?"f":""}"></i>`).join("")}</div>${err?`<p class="pl-err">${esc(err)}</p>`:""}
     <div class="pl-keys">${["1","2","3","4","5","6","7","8","9","c","0","b"].map(k=>`<button data-pk="${k}">${k==="c"?"साफ़":k==="b"?"⌫":k}</button>`).join("")}</div>
     <button class="lnk" data-plout>दूसरा व्यक्ति? लॉग-आउट</button></div>`};
   draw();
   el.onclick=async e=>{
     if(e.target.closest("[data-plout]")){SE.logout();return}
     const k=e.target.closest("[data-pk]");if(!k)return;const v=k.dataset.pk;
-    if(v==="c")pin="";else if(v==="b")pin=pin.slice(0,-1);else if(pin.length<4)pin+=v;
+    if(v==="c")pin="";else if(v==="b")pin=pin.slice(0,-1);else if(pin.length<PL())pin+=v;
     draw();
-    if(pin.length===4){const ok=(await SE.pinHash(ph,pin))===h;
+    if(pin.length===PL()){const ok=(await SE.pinHash(ph,pin))===h;
       if(ok){el.remove();LSx.set("se_act",String(Date.now()));lastMark=Date.now();toast("🙏 स्वागत है")}
       else{bad++;pin="";if(bad>=5){toast("5 बार गलत PIN — दोबारा लॉगिन करें");setTimeout(()=>SE.logout(),1200);return}draw("PIN गलत है ("+bad+"/5)")}}
   };
@@ -896,9 +896,9 @@ SR.saveOpening=async function(p){
 };
 document.addEventListener("click",e=>{if(e.target.closest("[data-remindall]"))SR.remindAll()});
 /* 🔑 मालिक: कर्मचारी का PIN देखें/बदलें */
-SR.pinHTML=function(x){return ` <span class="note">🔑 PIN ${x.pin?esc(x.pin):"—"}</span> <button class="lnk" data-pinch="${esc(x.id)}">PIN बदलें</button>`};
+SR.pinHTML=function(x){const old=x.pin&&String(x.pin).length<6;return ` <span class="note">🔑 PIN ${x.pin?esc(x.pin):"—"}</span> <button class="lnk" data-pinch="${esc(x.id)}">PIN बदलें</button>${old?`<div class="warn" style="margin:6px 0 0">🔐 ${esc(x.name)} का PIN अभी 4 अंक का है — सुरक्षा के लिए "PIN बदलें" दबाकर 6 अंक का नया PIN दें</div>`:""}`};
 document.addEventListener("click",async e=>{const b=e.target.closest("[data-pinch]");if(!b||!S.isOwner)return;const x=(S.staffDocs||[]).find(y=>y.id===b.dataset.pinch);if(!x)return;
-  const pin=(prompt(x.name+" का नया 4 अंक का PIN",x.pin||"")||"").trim();if(!pin)return;if(!/^\d{4}$/.test(pin)){toast("PIN 4 अंक का होना चाहिए");return}
+  const pin=(prompt(x.name+" का नया 6 अंक का PIN","")||"").trim();if(!pin)return;if(!/^\d{6}$/.test(pin)){toast("PIN 6 अंक का होना चाहिए");return}if(SE.weakPin(pin)){toast("यह PIN बहुत आसान है — दूसरा चुनें");return}
   try{toast("⏳ नया PIN लग रहा है…");await SE.addStaff(x.name,x.phone,pin);toast("🔑 "+x.name+" का नया PIN "+pin+" — उन्हें बता दें")}catch(err){toast("नहीं हुआ: "+(err.msg||err.code||err.message||""))}});
 
 
