@@ -1220,6 +1220,7 @@ function showReceipt(b,fresh,offline){
     ${receiptHTML(b)}
     ${b.photo?`<div class="bphoto" id="bphoto">📷 फोटो लोड हो रही है…</div>`:S.isOwner&&!S.demo?`<div class="bphoto" id="bphoto" data-opt hidden></div>`:""}
     ${window.SB?SB.receiptActionsHTML(b):""}
+    ${window.SV&&!fresh?(SV._bill=b,SV.billBtnHTML(b)):""}
     ${S.isOwner&&window.SF&&SF.billLabel(b.no)?`<p class="note" style="margin:6px 0 0;text-align:center">🔐 ${esc(SF.billLabel(b.no))} (यह सिर्फ़ आपको दिखता है)</p>`:""}
     ${(party?.phone||b.custPhone)?`<div class="btnrow"><a class="big" style="background:#25d366;color:#04230f" target="_blank" rel="noopener" href="${waLink(receiptText(b),party?.phone||b.custPhone)}">💬 WhatsApp पर भेजें</a><button class="big haldi" data-close>${fresh?"नया बिल":"बंद करें"}</button></div>`
     :`<div class="btnrow"><button class="big" style="background:#25d366;color:#04230f" data-waask>💬 WhatsApp पर भेजें</button><button class="big haldi" data-close>${fresh?"नया बिल":"बंद करें"}</button></div><div class="waask" id="waask" hidden><input class="inp" id="waPh" inputmode="tel" autocomplete="off" placeholder="ग्राहक का WhatsApp नंबर" aria-label="ग्राहक का WhatsApp नंबर"><a class="big" id="waGo" style="background:#25d366;color:#04230f;padding:12px 16px" target="_blank" rel="noopener" href="#" aria-disabled="true">भेजें</a></div>`}
@@ -1647,13 +1648,14 @@ function stockRows(){
 function cashCalc(d){
   const sale=liveBills().filter(b=>b.mode!=="inst");
   const cashSale=r2(sale.reduce((a,b)=>a+(b.pay.cash||0),0));
-  const jamaCash=r2(S.ledger.filter(l=>l.date===d&&l.type==="jama"&&l.mode!=="upi").reduce((a,l)=>a+l.amt,0));
+  const jamaCash=r2(S.ledger.filter(l=>l.date===d&&l.type==="jama"&&l.mode!=="upi"&&l.mode!=="return").reduce((a,l)=>a+l.amt,0));
   const khCash=r2(S.kharch.filter(k=>k.mode!=="upi").reduce((a,k)=>a+(+k.amt||0),0)+(window.SF?SF.gallaPaid():0));
   const khAll=r2(S.kharch.reduce((a,k)=>a+(+k.amt||0),0));
   const cl=S.close||{};const G=window.SG?SG.forCalc():null;
   const float=G&&G.float!=null?G.float:cl.float!=null&&cl.float!==""?+cl.float:(+S.settings.float||0);
   const out=G?G.out:0;
-  const expected=r2(float+cashSale+jamaCash-khCash-out);
+  const rvCash=window.SV?SV.cashAt(d,0,Infinity):0;/* ↩️ वापसी: नकद लौटाया (−) / मिला (+) */
+  const expected=r2(float+cashSale+jamaCash-khCash-out+rvCash);
   const counted=G&&G.counted!=null?G.counted:cl.counted!=null&&cl.counted!==""?+cl.counted:null;
   return {cashSale,jamaCash,khCash,khAll,float,out,expected,counted,diff:counted==null?null:r2(counted-expected)};
 }
@@ -2008,6 +2010,7 @@ boot();
 <script src="se-plus.js"></script>
 <script src="se-galla.js"></script>
 <script src="se-open.js"></script>
+<script src="se-return.js"></script>
 <script src="se-stock.js"></script>
 <script src="se-intake.js"></script>
 <script>if(window.SK)SK.bind();if(window.SI)SI.bind();</script>

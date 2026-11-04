@@ -100,7 +100,7 @@ const pTotal=()=>r2(P.lines.reduce((a,l)=>a+lAmt(l),0)); // बिल का ज
 const pNet=()=>{const g=pTotal();const n=String(P.net??"").trim();return n===""?g:Math.max(0,Math.min(g,r2(num(n))))}; // असल में देने हैं
 const pDisc=()=>r2(pTotal()-pNet());
 const pNo=(p,idx)=>{const [y,m,d]=(p?p.date:today()).split("-");return `ख-${d}/${m}-${String(idx).padStart(2,"0")}`};
-function supDue(id){const due=S.purchHist.concat(S.purch).filter((p,i,a)=>!p.cancelled&&p.supId===id&&a.findIndex(x=>x.id===p.id)===i).reduce((a,p)=>a+num(p.due),0);const paid=S.supPay.filter(x=>x.supId===id).reduce((a,x)=>a+num(x.amt),0);return r2(due-paid)}
+function supDue(id){const due=S.purchHist.concat(S.purch).filter((p,i,a)=>!p.cancelled&&p.supId===id&&a.findIndex(x=>x.id===p.id)===i).reduce((a,p)=>a+num(p.due),0);const paid=S.supPay.filter(x=>x.supId===id).reduce((a,x)=>a+num(x.amt),0);return r2(due-paid-(window.SV?SV.supCredit(id):0))}
 function rateBadge(id,rate){
   const l=lastRate(id);if(!l||!(rate>0))return "";const d=r2(rate-l.rate);
   const when=l.date?" ("+fdate(l.date).slice(0,5)+")":"";
@@ -332,6 +332,7 @@ function viewPurchase(p){
   <div class="pp-stamp${p.pay==="udhar"&&num(p.due)>0?" red":""}">${PAY[p.pay]||""}${p.pay==="udhar"?" · दिया ₹"+p.paid+" · बाकी ₹"+p.due:""}</div>${p.note?`<p class="note">📝 ${esc(p.note)}</p>`:""}</div>
   ${p.src==="mh"?`<button class="big ghost" data-mhagain style="margin-top:8px">🏥 177 MH पर्ची ${p.mhSent?"दोबारा ":""}भेजें${p.mhSent?" (भेजी जा चुकी ✓)":""}</button>`:""}
   ${window.SP?SP.purchaseInfoHTML(p):""}
+  ${window.SV?SV.purBtnHTML(p):""}
   <h4 style="margin:10px 0 6px">बिल की फोटो</h4>
   ${(p.photos||[]).length?(p.photos||[]).map((f,i)=>`<a class="big ghost" style="margin-bottom:6px" target="_blank" rel="noopener" href="${esc(f.url)}">📷 फोटो ${i+1} देखें (Google Drive)</a>`).join(""):`<p class="note">${num(p.photoPending)>0?"📷 फोटो अभी उस फोन से Drive पर जानी बाकी है":"इस खरीद की फोटो नहीं ली गई"}</p>`}
   ${p.by===S.uid&&!p.cancelled&&!S.demo?`<button class="big ghost" data-paddphoto style="margin-top:8px">📷 और फोटो जोड़ें</button>`:""}

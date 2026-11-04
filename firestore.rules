@@ -81,6 +81,8 @@ service cloud.firestore {
     match /counts/{id}    { allow create: if active(); allow read, update, delete: if isOwner(); }
     // 🏁 ओपनिंग स्टॉक का रिकॉर्ड (पुराना स्टॉक/एक्सपायरी/खरीद भाव सुरक्षित) — सिर्फ़ मालिक
     match /openings/{id}  { allow read, write: if isOwner(); }
+    // ↩️ माल वापसी: कर्मचारी जोड़ सकते हैं, बदल/मिटा सिर्फ़ मालिक
+    match /returns/{id}   { allow read: if active(); allow create: if active() && request.resource.data.by == request.auth.uid; allow update, delete: if isOwner(); }
     match /batches/{id}   { allow read, create: if active(); allow update, delete: if isOwner(); }
     match /presence/{id}  { allow read, write: if active(); }
 

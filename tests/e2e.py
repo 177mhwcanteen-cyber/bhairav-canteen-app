@@ -182,6 +182,24 @@ async def main():
         assert abs(await pg.evaluate("window.__MOCK__.pstock.k1027.qty") - (lh0 - 1)) < 1e-6
         print("waste ok")
 
+        # ---------- 8a) ↩️ माल वापसी: ग्राहक से (नकद) + 177 MH को ----------
+        lz0 = await pg.evaluate("window.__MOCK__.pstock.k1027.qty")
+        await pg.evaluate("showReceipt(S.dayBills.find(b=>b.no.startsWith('BW-')&&!b.cancelled),false)"); await pg.wait_for_selector("[data-svsale]")
+        await pg.click("[data-svsale]"); await pg.wait_for_selector("[data-svq]")
+        await pg.fill('[data-svq="0"]', "1"); await pg.click('[data-svw="ग्राहक ने बदला"]'); await pg.click('[data-svr="cash"]'); await pg.click("[data-svsave]"); await pg.wait_for_timeout(600)
+        rv = list((await pg.evaluate("window.__MOCK__")).get("returns", {}).values())
+        assert rv and rv[0]["kind"] == "sale" and rv[0]["refund"] == "cash" and rv[0]["total"] > 0, rv
+        assert abs(await pg.evaluate("window.__MOCK__.pstock.k1027.qty") - (lz0 + 1)) < 1e-6, "returned good item must go back to stock"
+        await pg.click('[data-tab="kharid"]'); await pg.wait_for_timeout(300)
+        await pg.evaluate("document.querySelector('[data-pview]').click()"); await pg.wait_for_selector("[data-svpur]")
+        ps0 = await pg.evaluate("window.__MOCK__.pstock.k1010.qty")
+        await pg.click("[data-svpur]"); await pg.wait_for_selector("[data-svq]")
+        await pg.fill('[data-svq="0"]', "1"); await pg.click('[data-svw="ज़्यादा आ गया"]'); await pg.click("[data-svsave]"); await pg.wait_for_timeout(600)
+        assert abs(await pg.evaluate("window.__MOCK__.pstock.k1010.qty") - (ps0 - 1)) < 1e-6
+        rv = list((await pg.evaluate("window.__MOCK__")).get("returns", {}).values())
+        assert any(r["kind"] == "purchase" and r["refund"] == "mh" for r in rv), rv
+        print("returns ok", [(r["kind"], r["total"], r["refund"]) for r in rv])
+
         # ---------- 8b) 💵 गल्ला: खोलना, गिनती, पैसा देना, बंद (कर्मचारी को "होना चाहिए" नहीं) ----------
         await pg.evaluate("closeSheet&&closeSheet()")
         assert await pg.evaluate("SG.nag(true)||!!document.getElementById('sgNag')") and "खोलें" in await pg.text_content("#sgNag")
@@ -218,6 +236,7 @@ async def main():
         await pg.click('[data-tab="stock"]'); await pg.wait_for_timeout(500)
         assert await pg.locator("[data-skview]").count() >= 1, "owner should see count report"
         await pg.screenshot(path=f"{SHOTS}/9-owner-stock.png", full_page=True)
+        assert "↩️ माल वापसी" in txt, txt
         assert "💵 गल्ला: खुला ₹1,000" in txt or "💵 गल्ला: खुला ₹1000" in txt, txt
         await pg.click('[data-tab="day"]'); await pg.wait_for_timeout(500)
         await pg.evaluate("SF.dseg='paisa';renderDay()"); await pg.wait_for_timeout(300)

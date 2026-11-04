@@ -24,11 +24,12 @@ SG.expAt=function(t){
   const at=x=>x>t0&&x<=t;
   const bills=(S.dayBills||[]).filter(b=>!b.cancelled&&b.mode!=="inst");
   const cash=bills.reduce((a,b)=>a+(at(b.settleTs||b.ts)?num(b.pay&&b.pay.cash):0),0);
-  const jama=(S.ledger||[]).filter(l=>l.date===S.billsDate&&l.type==="jama"&&l.mode!=="upi"&&at(l.ts)).reduce((a,l)=>a+num(l.amt),0);
+  const jama=(S.ledger||[]).filter(l=>l.date===S.billsDate&&l.type==="jama"&&l.mode!=="upi"&&l.mode!=="return"&&at(l.ts)).reduce((a,l)=>a+num(l.amt),0);
   const kh=(S.kharch||[]).filter(k=>k.mode!=="upi"&&at(k.ts)).reduce((a,k)=>a+num(k.amt),0);
   const pu=(window.SF&&SF.livePurch?SF.livePurch():[]).filter(p=>p.pay==="galla"&&at(p.ts)).reduce((a,p)=>a+num(p.paid),0);
   const out=st.outs.filter(o=>at(o.ts)).reduce((a,o)=>a+num(o.total),0);
-  return {base,cash:r2(cash),jama:r2(jama),kh:r2(kh),pu:r2(pu),out:r2(out),exp:r2(base+cash+jama-kh-pu-out)};
+  const rv=window.SV?SV.cashAt(S.billsDate,t0,t):0;
+  return {base,cash:r2(cash),jama:r2(jama),kh:r2(kh),pu:r2(pu),out:r2(out),rv,exp:r2(base+cash+jama-kh-pu-out+rv)};
 };
 /* cashCalc (दिन का हिसाब) के लिए: खोला/बंद/दिया */
 SG.forCalc=function(){const st=SG.state();if(!st.open&&!st.close&&!st.outs.length)return null;
@@ -116,6 +117,7 @@ SG.dayHTML=function(){
     ${now.jama?`<div class="stkmeta"><span>+ उधारी वसूली (नकद)</span><b>${rs(now.jama)}</b></div>`:""}
     ${now.kh||now.pu?`<div class="stkmeta"><span>− नकद खर्चा / गल्ले से खरीद</span><b>${rs(now.kh+now.pu)}</b></div>`:""}
     ${now.out?`<div class="stkmeta"><span>− दिया / निकाला</span><b>${rs(now.out)}</b></div>`:""}
+    ${now.rv?`<div class="stkmeta"><span>${now.rv<0?"− वापसी में नकद लौटाया":"+ लौटाए माल का नकद मिला"}</span><b>${rs(Math.abs(now.rv))}</b></div>`:""}
     <div class="amtline" style="margin:0"><span>अभी गल्ले में होना चाहिए</span><b>${rs(now.exp)}</b></div>
     ${isT&&st.open&&!st.close&&gap!=null&&gap>=SG.hrs()?`<div class="warn">⏰ आख़िरी गिनती ${gap} घंटे पहले हुई थी</div>`:""}
     ${isT&&!st.open?`<div class="warn">🌅 आज अभी तक गल्ला नहीं खोला गया</div>`:""}

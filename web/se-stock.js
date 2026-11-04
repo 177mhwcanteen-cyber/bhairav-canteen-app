@@ -152,6 +152,7 @@ function ownerText(){
   (d.nWaste?`🗑️ खराब/एक्सपायर हटाया: ${d.nWaste} बार · लगभग ${rs(d.waste)}\n`:"")+
   (window.SG?SG.ownerLine():"")+
   (window.SB&&SB.rateLine?SB.rateLine(S.dayBills):"")+
+  (window.SV?SV.dayLine(S.billsDate):"")+
   (cnt.length?`🔢 गिनती: ${cnt.map(c=>c.byName+" · "+(c.nDiff?c.nDiff+" सामान में फर्क"+(c.short>0?", कम "+rs(c.short):""):"सब मिला")).join(", ")}\n`:"")+
   (d.cancel.length?`❌ रद्द बिल: ${d.cancel.map(b=>b.no+" "+rs(b.total)+(b.cancelReason?" ("+b.cancelReason+")":"")).join(", ")}\n`:"")+
   `👤 ${Object.entries(d.byStaff).map(([k,v])=>k+" "+rs(v)).join(" · ")||"—"}\n`+
