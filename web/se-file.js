@@ -20,7 +20,8 @@ function catSub(r){let cat=String(r.cat||"").trim(),sub=String(r.sub||"").trim()
   if(cat==="mithai"&&sub==="bakery"){cat="kirana"} /* बेकरी: SUB2CAT से मिठाई टैब में */
   if(SUB2CAT[sub]&&cat!=="kirana")cat="kirana";
   const ok=(SUBS[mcat({cat,sub})]||[]).some(([k])=>k===sub);return {cat,sub:ok?sub:""}}
-function findExisting(r){const tries=[r.barcode,r.gtin,r.key].filter(x=>x&&/^\d{6,14}$/.test(String(x)));
+function findExisting(r){const a=r.appId&&item(String(r.appId).trim());if(a&&!a.packOf)return a; /* 03 सूची वाला पुराना सामान (id से) */
+  const tries=[r.barcode,r.gtin,r.key].filter(x=>x&&/^\d{6,14}$/.test(String(x)));
   for(const c of tries){const it=findByCode(String(c));if(it&&!it.packOf)return it}
   const k=String(r.key||"").toUpperCase();if(k)return S.items.find(i=>String(i.fileKey||"").toUpperCase()===k)||null;return null}
 
@@ -46,7 +47,7 @@ SFI.parse=function(text){let j;try{j=JSON.parse(String(text).replace(/^﻿/,""))
 SFI.preview=function(text){let D;try{D=SFI.parse(text)}catch(e){toast(e.msg||"फाइल नहीं पढ़ी");return}
   const st={mode:"open",price:false};
   const R=D.rows,nNew=R.filter(x=>!x.ex).length,nOld=R.length-nNew,nPack=R.filter(x=>x.modes==="both"&&x.perPack>1&&x.packSale>0).length,
-    nLbl=R.filter(x=>!x.bc&&!(x.ex&&String(x.ex.barcode||"").split(",")[0])).length,pcs=r2(R.reduce((a,x)=>a+x.qty,0)),
+    nLbl=R.filter(x=>!x.bc&&x.r.cat!=="fast"&&x.r.unit!=="pl"&&!(x.ex&&String(x.ex.barcode||"").split(",")[0])).length,pcs=r2(R.reduce((a,x)=>a+x.qty,0)),
     val=r2(R.reduce((a,x)=>a+x.qty*num(x.r.cost),0)),prob=R.filter(x=>x.P.length),
     chg=R.filter(x=>x.ex&&x.sale>0&&Math.abs(num(x.ex.sale)-x.sale)>0.001);
   const draw=()=>{$("#sheet").innerHTML=`<div class="scrim" data-close><div class="sheet px" role="dialog" aria-label="स्टॉक फाइल"><div class="grab"></div>
@@ -85,7 +86,7 @@ SFI.apply=async function(D,st){
     const packOnly=x.modes==="pack";
     const sale=packOnly&&x.packSale>0?x.packSale:(x.sale||x.packSale);
     if(!it){id="f"+ts.toString(36)+x.i.toString(36);const mc=mcat({cat,sub}),code=nextCode(mc);
-      const bar=x.bc||ean13("2000000"+code+"0");if(!x.bc)labels.push(id);
+      const bar=x.bc||ean13("2000000"+code+"0");if(!x.bc&&mc!=="fast"&&unit!=="pl")labels.push(id); /* बना खाना — लेबल नहीं चाहिए */
       it={name:x.nm,cat,sub,unit,code,barcode:bar,mrp:num(packOnly?(r.packMrp||r.mrp):r.mrp),sale,cost:num(r.cost),
         track:!["fast","sabzi"].includes(mc)&&unit!=="pl",min:num(r.minStock)||(["fast","sabzi"].includes(mc)?0:5),emoji:"📦",hue:Math.floor(Math.random()*360),order:S.items.length+1,active:true,
         perPack:x.perPack||0,secret:String(r.secret||"").toUpperCase(),fileKey:x.key,fileBatch:D.batch,addedTs:ts,addedBy:S.uid||"",addedByName:biller(),...base,info};
@@ -93,7 +94,10 @@ SFI.apply=async function(D,st){
       if(!it.secret&&isTob(it))it.secret=nextSecret();
       await put(id,it);made.push(id);it=item(id)}
     else{id=it.id;const p={active:true};
-      Object.entries(base).forEach(([k,v])=>{if(v&&!it[k])p[k]=v});if(!it.sub&&sub)p.sub=sub;if(!it.info&&Object.keys(info).length)p.info=info;
+      Object.entries(base).forEach(([k,v])=>{if(v&&!it[k])p[k]=v});if(!it.sub&&sub)p.sub=sub;
+      /* असली कंपनी बारकोड पुराने (दुकान वाले 200…) के साथ जोड़ दो — दोनों से स्कैन हो */
+      if(x.bc&&!String(it.barcode||"").split(",").map(s=>s.trim()).includes(x.bc)&&!(findByCode(x.bc)&&findByCode(x.bc).id!==it.id))p.barcode=[String(it.barcode||"").trim(),x.bc].filter(Boolean).join(",");
+      if(!it.info&&Object.keys(info).length)p.info=info;
       if(!it.secret&&(r.secret||isTob({...it,sub:it.sub||sub})))p.secret=String(r.secret||"").toUpperCase()||nextSecret();
       if(!(+it.perPack)&&x.perPack)p.perPack=x.perPack;if(!(+it.cost)&&num(r.cost))p.cost=num(r.cost);if(!(+it.mrp)&&num(r.mrp))p.mrp=num(r.mrp);
       if(st.price&&sale>0&&Math.abs(num(it.sale)-sale)>0.001){p.sale=sale;try{logPrice(id,"sale",num(it.sale),sale)}catch(e){}}
