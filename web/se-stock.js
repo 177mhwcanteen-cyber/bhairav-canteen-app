@@ -38,7 +38,7 @@ SK.render=function(){
   ${S.isOwner&&T.some(it=>qOf(it)>0&&!costOf(it))?`<p class="note" style="margin:-4px 0 6px;color:var(--chili)">⚠ ${T.filter(it=>qOf(it)>0&&!costOf(it)).length} सामान का खरीद भाव नहीं भरा — "रेट व सेटिंग" में "खरीद ₹" भरें, या अगली बार "माल आया" में भाव लिखें</p>`:""}
   ${S.isOwner&&mrpVal>0?`<p class="note" style="margin:-4px 0 10px">इसी माल की MRP कीमत ${rs(mrpVal)} · बिकने पर लगभग फायदा ${rs(r2(T.reduce((a,it)=>a+Math.max(0,qOf(it))*((+it.sale||0)-costOf(it)),0)))}</p>`:""}
   <button class="big" data-skstart>🔢 गिनती शुरू करें</button>
-  ${window.SO?SO.btnHTML():""}
+  ${window.SO?SO.btnHTML():""}${window.SFI?SFI.btnHTML():""}
   <div class="row2" style="margin:8px 0 0"><button class="big ghost" data-skwaste>🗑️ खराब / एक्सपायर हटाएँ</button><button class="big ghost" data-skin>📦 माल आया</button></div>
   ${S.isOwner&&S.counts.length?`<div class="card2"><h3>📋 गिनती की रिपोर्ट ${fresh?`<span class="pill red">${fresh} नई</span>`:""}</h3><div class="list" style="margin:0">${S.counts.slice(0,6).map(c=>`<button class="li" data-skview="${esc(c.id)}"><div class="mid"><b>${fdate(c.date)} · ${esc(c.byName||"")}</b><span>${c.n} सामान गिने · ${c.nDiff?c.nDiff+" में फर्क":"सब मिला 👍"}</span></div><div class="rt" style="color:${c.nDiff?"var(--chili)":"var(--leaf)"}">${c.short>0?"−"+rs(c.short):c.nDiff?"फर्क":"✓"}<small>${c.extra>0?"ज़्यादा "+rs(c.extra):""}</small></div></button>`).join("")}</div></div>`:""}
   <div class="card2"><h3>⚠ कम स्टॉक — मँगाना है (${low.length})</h3>

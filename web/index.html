@@ -1887,6 +1887,7 @@ function renderSettings(){
     <label class="fld">सुबह गल्ले में रोज़ कितना खुला पैसा रखते हैं (₹)<input class="inp" id="s-float" data-sf="float" inputmode="decimal" value="${esc(s.float||"")}" placeholder="जैसे 500"></label>
     <label class="fld">अपनी संस्थाएँ (हर लाइन में एक)<textarea class="inp" id="s-insts" data-sf="insts" rows="4">${esc(insts().join("\n"))}</textarea></label>${window.SB?SB.peopleBtnHTML():""}
   </div>
+  ${S.isOwner?`<div class="card2"><h3>🆕 नई शुरुआत / 📥 स्टॉक फाइल</h3><p class="note" style="margin:0 0 8px">नई शुरुआत: पहले बैकअप, फिर स्टॉक 0 और पुराना सामान छिपे — बिल/उधार कभी नहीं मिटते। फिर दूसरे Claude वाली स्टॉक फाइल चढ़ाएँ।</p><div class="row2" style="margin:0"><button class="big ghost" data-sfireset>🆕 नई शुरुआत</button><button class="big" data-sfiopen>📥 स्टॉक फाइल</button></div></div>`:""}
   <div class="card2"><h3>🔐 कर्मचारी (लॉगिन खाते)</h3>
     <p class="note" style="margin:0">हर व्यक्ति अपने मोबाइल नंबर + 6 अंक के PIN से लॉगिन करेगा। बिल उसी के नाम से बनेंगे। किसी को हटाना हो तो "बंद करें" — उसका पुराना हिसाब कभी नहीं मिटेगा।</p>
     <div>${S.staffDocs.filter(x=>!x.owner).length?S.staffDocs.filter(x=>!x.owner).map(x=>`<div class="staffrow"><b>👤 ${esc(x.name)}</b><span class="note">${esc(x.phone||"")} · ${x.active===false?"बंद":"चालू"}</span>${window.SR&&x.active!==false?SR.pinHTML(x):""}<button class="lnk" data-staffon="${esc(x.id)}" data-on="${x.active===false?1:0}" style="color:${x.active===false?"var(--leaf)":"var(--chili)"}">${x.active===false?"चालू करें":"बंद करें"}</button></div>`).join(""):'<p class="note" style="margin:0">अभी कोई कर्मचारी नहीं जोड़ा।</p>'}</div>
@@ -2099,6 +2100,7 @@ boot();
 <script src="se-items.js"></script>
 <script src="se-order.js"></script>
 <script src="se-firms.js"></script>
+<script src="se-file.js"></script>
 <script src="se-stock.js"></script>
 <script src="se-intake.js"></script>
 <script>if(window.SK)SK.bind();if(window.SI)SI.bind();</script>

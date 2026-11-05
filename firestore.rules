@@ -87,6 +87,9 @@ service cloud.firestore {
     match /firmDays/{d}   { allow read, write: if isOwner(); }
     // 🚪 ऐप कब-कहाँ खुला — हर कोई सिर्फ़ अपना जोड़ सके, पढ़ें सिर्फ़ मालिक
     match /opens/{id}     { allow create: if active() && request.resource.data.uid == request.auth.uid; allow read: if isOwner(); }
+    // 📥 स्टॉक फाइल का रिकॉर्ड + 🆕 नई शुरुआत का बैकअप — सिर्फ़ मालिक
+    match /imports/{id}   { allow read, write: if isOwner(); }
+    match /resets/{id}    { allow read, write: if isOwner(); }
     match /batches/{id}   { allow read, create: if active(); allow update, delete: if isOwner(); }
     match /presence/{id}  { allow read, write: if active(); }
 
