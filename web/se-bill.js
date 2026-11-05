@@ -185,7 +185,7 @@ SB.editSheet=function(b){
     $("#sheet").innerHTML=`<div class="scrim" data-close><div class="sheet px" role="dialog" aria-label="बिल बदलें"><div class="grab"></div>
     <div class="sh-head ppc-sh"><h3>✏️ बिल बदलें <small class="note">· ${esc(b.no)}</small></h3><button class="x" data-close aria-label="बंद करें">✕</button></div>
     <p class="note" style="margin:0 0 8px">मात्रा बदलें, नया सामान जोड़ें, या <b>भाव पर दबाकर</b> सिर्फ़ इस बिल का भाव बदलें। हर बदलाव दर्ज होगा${S.isOwner?"":" और विक्रम जी को दिखेगा"}।</p>
-    <div class="sbe-list">${E.map((l,i)=>`<div class="sbe-row ${l.qty<=0?"gone":""}"><div class="sbe-n"><b>${esc(l.name)}</b><button class="sbe-r${l.changed?" chg":""}" data-sbr="${i}" aria-label="${esc(l.name)} का भाव बदलें">₹${l.rate}/${UNITS[l.unit]||l.unit} ✏️${l.changed?` <s>₹${l.board}</s>`:""}</button></div>
+    <div class="sbe-list">${E.map((l,i)=>`<div class="sbe-row ${l.qty<=0?"gone":""}"><div class="sbe-n"><b>${esc(typeof appNm==="function"?appNm(l):l.name)}</b><button class="sbe-r${l.changed?" chg":""}" data-sbr="${i}" aria-label="${esc(l.name)} का भाव बदलें">₹${l.rate}/${UNITS[l.unit]||l.unit} ✏️${l.changed?` <s>₹${l.board}</s>`:""}</button></div>
       <div class="sbe-q"><button data-sbm="${i}" aria-label="कम">−</button><input data-sbq="${i}" inputmode="decimal" value="${+(+l.qty).toFixed(3)}" aria-label="${esc(l.name)} मात्रा"><button data-sbp2="${i}" aria-label="ज़्यादा">+</button></div>
       <b class="sbe-a">₹${r2(l.qty*l.rate)}</b></div>${RI===i?`<div class="sbe-rate"><label class="fld" style="margin:0">इस बिल में ${esc(l.name)} का भाव ₹ <small class="note">(पक्का भाव ₹${l.board})</small><input class="inp" id="sbrIn" inputmode="decimal" value="${l.rate}" autocomplete="off"></label>
         <div class="seg" style="margin:6px 0">${WHY.map(w=>`<button class="chip" data-sbw="${esc(w)}" aria-pressed="${l.why===w}">${esc(w)}</button>`).join("")}</div>
@@ -218,7 +218,7 @@ SB.editSheet=function(b){
     const m=e.target.closest("[data-sbm]");if(m){const i=+m.dataset.sbm;setQ(i,E[i].qty-step(E[i]));draw();return}
     const p=e.target.closest("[data-sbp2]");if(p){const i=+p.dataset.sbp2;setQ(i,E[i].qty+step(E[i]));draw();return}
     const a=e.target.closest("[data-sbadd]");if(a){const it=item(a.dataset.sbadd);if(!it)return;const ex=E.findIndex(l=>l.id===it.id&&!l.changed&&!l.free);
-      if(ex>-1)setQ(ex,E[ex].qty+(it.unit==="kg"?0.5:1));else{const r=+it.sale||0,qty=it.unit==="kg"?0.5:1;E.push({id:it.id,name:it.name,emoji:it.emoji||"",unit:it.unit,qty,rate:r,board:r,cost:(window.SF?SF.costOf(it):(+it.cost||0)),amt:r2(qty*r),changed:false,free:false,added:true})}
+      if(ex>-1)setQ(ex,E[ex].qty+(it.unit==="kg"?0.5:1));else{const r=+it.sale||0,qty=it.unit==="kg"?0.5:1;E.push({id:it.id,name:(typeof billNm==="function"?billNm(it):it.name),realName:it.name,emoji:it.emoji||"",unit:it.unit,qty,rate:r,board:r,cost:(window.SF?SF.costOf(it):(+it.cost||0)),amt:r2(qty*r),changed:false,free:false,added:true})}
       q="";draw();toast("➕ "+it.name+" जुड़ा — मात्रा ठीक कर लें");return}
     if(e.target.closest("[data-sbsave]"))await saveEdit(b,E);
   };

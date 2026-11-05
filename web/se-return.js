@@ -70,7 +70,7 @@ SV.saleSheet=function(b){
     try{
       if(S.demo)S.returns.unshift({id,...doc});else await S.db.collection("returns").doc(id).set(doc);
       if(!S.returns.some(r=>r.id===id))S.returns.unshift({id,...doc});
-      if(st.good){const pr=lines.filter(l=>trackedIt(l.id)).map(l=>[l.id,l.qty]);if(pr.length)await adjStock(pr,"वापसी बिल "+b.no)}
+      if(st.good){const pr=typeof trackedPairs==="function"?trackedPairs(lines,1):lines.filter(l=>trackedIt(l.id)).map(l=>[l.id,l.qty]);if(pr.length)await adjStock(pr,"वापसी बिल "+b.no)}
       if(st.refund==="udhar"&&party){const le={ts,date:today(),partyId:party.id,partyName:party.name,type:"jama",mode:"return",amt:total,billNo:b.no,note:"माल वापसी ("+st.why+")",by:S.uid||"",byName:biller()};
         if(S.demo)S.ledger.push({id:"r"+id,...le});else await S.db.collection("ledger").doc("r"+id).set(le)}
       closeSheet();try{beep(true)}catch(x){}

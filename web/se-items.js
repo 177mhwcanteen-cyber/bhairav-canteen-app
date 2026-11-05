@@ -12,7 +12,7 @@ SQ.calc=async function(days){
   SQ.busy=true;const to=today(),from=dAdd(to,-(days-1));
   const B=(await SF.fetchRange(from,to)).filter(b=>!b.cancelled&&b.mode!=="inst");
   const M={};const g=(id,name,unit)=>M[id]||(M[id]={id,name,unit,qty:0,sale:0,cost:0,miss:0,days:new Set(),last:""});
-  B.forEach(b=>(b.lines||[]).forEach(l=>{if(!l.id||l.id==="xyz")return;const o=g(l.id,l.name,l.unit);const c=SF.lineCost?SF.lineCost(l,b.date):num(l.cost);
+  B.forEach(b=>(b.lines||[]).forEach(l=>{if(!l.id||l.id==="xyz")return;const o=g(l.id,(item(l.id)||{}).name||l.realName||l.name,l.unit);const c=SF.lineCost?SF.lineCost(l,b.date):num(l.cost);
     o.qty+=num(l.qty);o.sale+=l.free?0:num(l.amt);if(c>0)o.cost+=num(l.qty)*c;else o.miss+=l.free?0:num(l.amt);o.days.add(b.date);if(b.date>o.last)o.last=b.date}));
   (S.returns||[]).filter(r=>r.kind==="sale"&&!r.void&&r.date>=from&&r.date<=to).forEach(r=>(r.lines||[]).forEach(l=>{const o=M[l.id];if(!o)return;
     o.qty-=num(l.qty);o.sale-=num(l.amt);const it=item(l.id);const c=it?SF.costOf(it):0;if(c>0)o.cost-=num(l.qty)*c}));
