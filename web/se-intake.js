@@ -62,8 +62,8 @@ Rules:
 6. cost and qty: copy exactly from the page. Never invent.
 7. exp: expiry date as YYYY-MM-DD. If the pack says "best before N months from manufacture", calculate it from mfg. If only month and year, use the last day of that month. null if not readable.
 8. barcode: prefer the BARCODE printed on the page; otherwise the digits under the barcode in the photo; null if none.
-9. cat: "kirana" for packaged goods, "fast" for cooked food, "sabzi" for vegetables or fruit.
-10. sub (only for kirana): one of namkeen, dryfruit, achar, rashan, drinks, sweet, clean.
+9. cat: "kirana" for packaged food/drinks/cigarettes, "fast" for cooked food, "mithai" for sweets/cake, "general" for everything else (soap, cap, pen, battery, disposal, pooja, gift).
+10. sub (only for kirana): one of namkeen (namkeen, chips, biscuit, chocolate), thanda (cold drink, milk, curd, ice cream, eggs), rashan (atta, dal, oil, masala, dry fruit, achar), tob (cigarette, gutkha, tobacco).
 11. If you are not sure about any value, put null and explain in "note" in simple Hindi. Never guess numbers.
 After the json block write 2-3 short lines in Hindi about anything doubtful.`}
 SI.prompt=()=>B?prompt():"";
@@ -212,11 +212,11 @@ async function apply(){
   for(const r of rows){
     let id;
     if(r.ex){id=r.ex.id;nOld++;
-      if(S.isOwner){const p={};if(!r.ex.hi&&r.hi)p.hi=r.hi;if(!r.ex.size&&r.a.size)p.size=r.a.size;if(!(+r.ex.mrp)&&r.mrp)p.mrp=r.mrp;if(!r.ex.sub&&r.a.sub)p.sub=r.a.sub;if(!(+r.ex.cost)&&r.cost)p.cost=r.cost;
+      if(S.isOwner){const p={};if(!r.ex.hi&&r.hi)p.hi=r.hi;if(!r.ex.size&&r.a.size)p.size=r.a.size;if(!(+r.ex.mrp)&&r.mrp)p.mrp=r.mrp;if(!r.ex.sub&&msub({cat:"kirana",sub:r.a.sub}))p.sub=msub({cat:"kirana",sub:r.a.sub});if(!(+r.ex.cost)&&r.cost)p.cost=r.cost;
         if(!r.ex.barcode&&r.bar)p.barcode=r.bar;if(Object.keys(p).length){Object.assign(r.ex,p);if(!S.demo)S.db.doc("items/"+id).update(p).catch(()=>{})}}}
-    else{nNew++;id="i"+uid();const cat=["kirana","fast","sabzi"].includes(r.a.cat)?r.a.cat:"kirana",code=nextCode(cat);
+    else{nNew++;id="i"+uid();const cat=mcat({cat:r.a.cat||"kirana",sub:r.a.sub}),code=nextCode(cat);
       const bar=/^\d{8,14}$/.test(r.bar)&&!findByCode(r.bar)?r.bar:ean13("2000000"+code+"0");
-      const it={name:r.name,hi:r.hi,emoji:r.a.emoji||"📦",cat,sub:(SUBS[cat]||[]).some(([k])=>k===r.a.sub)?r.a.sub:"",unit:"pc",size:r.a.size||"",mrp:r.mrp,sale:r.sale,cost:r.cost||0,code,barcode:bar,track:true,min:5,
+      const it={name:r.name,hi:r.hi,emoji:r.a.emoji||"📦",cat,sub:msub({cat,sub:r.a.sub}),unit:"pc",size:r.a.size||"",mrp:r.mrp,sale:r.sale,cost:r.cost||0,code,barcode:bar,track:true,min:5,
         hue:Math.floor(Math.random()*360),order:S.items.length+1,active:true,src:"photo-ai",addedBy:S.uid||"",addedByName:biller(),addedTs:ts,pending:!S.isOwner,...(r.exp?{exp:r.exp}:{})};
       // ऐप में छोटी फोटो (≈6-10 KB)
       try{const big=await IDB.get(pk(r.e.n,"f"));if(big){const sm=await shrink(big,220,.66);photoKB+=sm.size/1024;

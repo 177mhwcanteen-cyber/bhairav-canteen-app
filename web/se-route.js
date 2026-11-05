@@ -225,7 +225,7 @@ SR.newItemSheet=function(q){
   <label class="fld">अंग्रेज़ी नाम (अगर पता हो)<input class="inp" id="niEn" placeholder="जैसे Sweet Potato"></label>
   <div class="row2"><label class="fld">किस हिसाब से बिकेगा<select class="inp" id="niUnit"><option value="kg">किलो</option><option value="pc">पीस / पैकेट</option></select></label>
   <label class="fld">बेचने का भाव ₹<input class="inp" id="niRate" inputmode="decimal" placeholder="₹"></label></div>
-  <label class="fld">किस में रखें<select class="inp" id="niCat">${[["kirana","🛒 किराना"],["fast","🍔 फास्ट फूड"],["sabzi","🥬 सब्ज़ी-फल"]].map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select></label>
+  <label class="fld">किस में रखें<select class="inp" id="niCat">${CATS.slice(1).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select></label>
   <button class="big" data-nisave style="margin-top:10px">✓ जोड़ें और बिल में डालें</button></div></div>`;
   $("#sheet").onclick=e=>{if(e.target.matches("[data-close]")){closeSheet();return}if(e.target.closest("[data-nisave]"))SR.saveNewItem()};
   setTimeout(()=>{const x=$(q?"#niRate":"#niName");if(x)x.focus()},120);

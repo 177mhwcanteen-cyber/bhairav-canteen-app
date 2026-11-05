@@ -16,10 +16,8 @@ const CATK=()=>CATS.map(c=>c[0]).filter(k=>k!=="all");
 const UNIT_OK={pc:1,pk:1,kg:1,pl:1,dz:1,gd:1};
 const gtin=c=>{c=String(c||"");if(!/^\d{8}$|^\d{12,14}$/.test(c))return false;let s=0;const d=c.slice(0,-1);for(let i=0;i<d.length;i++)s+=(+d[d.length-1-i])*(i%2?1:3);return (10-s%10)%10===+c.slice(-1)};
 function catSub(r){let cat=String(r.cat||"").trim(),sub=String(r.sub||"").trim();
-  if(!CATK().includes(cat))cat=sub==="tob"?"kirana":"kirana";
-  if(cat==="mithai"&&sub==="bakery"){cat="kirana"} /* बेकरी: SUB2CAT से मिठाई टैब में */
-  if(SUB2CAT[sub]&&cat!=="kirana")cat="kirana";
-  const ok=(SUBS[mcat({cat,sub})]||[]).some(([k])=>k===sub);return {cat,sub:ok?sub:""}}
+  /* सिर्फ़ 4 श्रेणी: पुरानी/गलत cat-sub (daily, egg, masala…) भी सही जगह पहुँचे — नया सामान हमेशा नई cat/sub में बनता है */
+  const c=mcat({cat,sub});return {cat:c,sub:msub({cat:c,sub})}}
 function findExisting(r){const a=r.appId&&item(String(r.appId).trim());if(a&&!a.packOf)return a; /* 03 सूची वाला पुराना सामान (id से) */
   const tries=[r.barcode,r.gtin,r.key].filter(x=>x&&/^\d{6,14}$/.test(String(x)));
   for(const c of tries){const it=findByCode(String(c));if(it&&!it.packOf)return it}

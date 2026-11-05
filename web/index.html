@@ -786,21 +786,19 @@ const DEMO_ITEMS=[
 ];
 const UPI_FIXED={upi:"8696283600@okbizaxis",payee:"CHARAN KANCHAN NAKHATDAN"};
 function upiId(){return UPI_FIXED.upi}
-/* 🗂️ श्रेणियाँ — 177 MH जैसी (बड़ी कंपनियों की तरह कम श्रेणी, गहरी नहीं): L1 श्रेणी → L2 उप-श्रेणी → L3 कंपनी (brand) */
-const CATS=[["all","सब"],["kirana","🛒 किराना"],["fast","🍔 फास्ट फूड"],["mithai","🍬 मिठाई-बेकरी"],["daily","🧴 रोज़मर्रा"],["stationery","✏️ स्टेशनरी"],["gift","🎁 गिफ्ट"],["sabzi","🥬 सब्ज़ी-फल"]];
-const NEWCATS=["mithai","daily","stationery","gift"];/* इनमें सामान हो तभी टैब दिखे */
-const SUBS={kirana:[["namkeen","🥨 नमकीन-चिप्स"],["sweet","🍫 बिस्किट-चॉकलेट"],["drinks","🥤 कोल्ड ड्रिंक-पेय"],["dairy","🥛 दूध-दही"],["ice","🍦 आइसक्रीम"],["tob","📦 कोड वाले"],["rashan","🌾 आटा-दाल-चावल"],["oil","🫗 तेल-घी"],["masala","🌶️ मसाले"],["dryfruit","🥜 ड्राई फ्रूट"],["achar","🌶️ अचार-सॉस"],["pooja","🪔 पूजा"],["disposal","🥤 डिस्पोज़ल"],["clean","🧼 साबुन-सफाई"]],
-  fast:[["egg","🍳 अंडा-आमलेट"],["nashta","🥪 नाश्ता"],["meal","🍛 बिरयानी-थाली"],["chicken","🍗 चिकन-पनीर"],["chinese","🥢 चाइनीज़"],["chai","☕ चाय-कॉफी"]],
-  mithai:[["mithai","🍬 मिठाई"],["bakery","🍰 बेकरी-केक"]],
-  daily:[["personal","🪥 पर्सनल केयर"],["hair","💇 बाल-तेल-डाई"],["clean","🧼 साबुन-सफाई"],["home","🪣 घर का सामान"],["tools","✂️ कैंची-औज़ार"],["elec","🔦 बैटरी-बल्ब"]],
-  stationery:[["pen","🖊️ पेन-पेंसिल"],["copy","📒 कॉपी-रजिस्टर"],["office","📎 फाइल-ऑफिस"]],
-  gift:[["party","🎁 पार्टी-गिफ्ट"],["toys","🧸 खिलौने"],["army","🎖️ आर्मी यादगार"]],
-  sabzi:[["sabzi","🥬 सब्ज़ी"],["fruit","🍎 फल"]]};
-const OLDCAT={packed:"kirana",patta:"sabzi",fal:"sabzi",biryani:"fast",nonveg:"fast",veg:"fast",chinese:"fast",drinks:"fast"};
+/* 🗂️ श्रेणियाँ — विक्रम जी का स्थायी नियम (05-11-2026): सिर्फ़ 4, बिल्कुल कम —
+   🛒 किराना (अंदर 4 हिस्से) · 🍔 फास्ट फूड (सब एक में) · 🍬 मिठाई (एक में) · 🧢 जनरल सामान (एक में)
+   पुराना डेटा नहीं बदलता — पुरानी cat/sub (daily, egg, masala…) mcat/msub से अपने-आप नई जगह दिखती है */
+const CATS=[["all","सब"],["kirana","🛒 किराना"],["fast","🍔 फास्ट फूड"],["mithai","🍬 मिठाई"],["general","🧢 जनरल सामान"]];
+const NEWCATS=["mithai","general"];/* इनमें सामान हो तभी टैब दिखे */
+const SUBS={kirana:[["namkeen","🥨 नमकीन-बिस्किट"],["thanda","🥤 ठंडा-दूध"],["rashan","🌾 राशन-मसाले"],["tob","📦 कोड वाले"]]};
+const OLDCAT={packed:"kirana",patta:"sabzi",fal:"sabzi",biryani:"fast",nonveg:"fast",veg:"fast",chinese:"fast",drinks:"fast",daily:"general",stationery:"general",gift:"general",sabzi:"kirana"};
 const UNITS={pc:"पीस",pk:"पैकेट",kg:"कि.ग्रा",pl:"प्लेट",dz:"दर्जन",gd:"गड्डी"};
-/* पुराना सामान बदले बिना: किराना के अंदर साबुन/पर्सनल केयर जैसी उप-श्रेणी हो तो सही टैब में दिखे */
-const SUB2CAT={personal:"daily",hair:"daily",home:"daily",tools:"daily",elec:"daily",party:"gift",toys:"gift",bakery:"mithai"};
-function mcat(it){const c=OLDCAT[it.cat]||it.cat||"kirana";return c==="kirana"&&SUB2CAT[it.sub]?SUB2CAT[it.sub]:c}
+/* पुरानी उप-श्रेणी → नई जगह */
+const SUB2CAT={personal:"general",hair:"general",home:"general",tools:"general",elec:"general",party:"general",toys:"general",army:"general",pooja:"general",disposal:"general",clean:"general",pen:"general",copy:"general",office:"general",bakery:"mithai"};
+const SUBMAP={namkeen:"namkeen",sweet:"namkeen",drinks:"thanda",dairy:"thanda",ice:"thanda",thanda:"thanda",egg:"thanda",rashan:"rashan",oil:"rashan",masala:"rashan",dryfruit:"rashan",achar:"rashan",sabzi:"rashan",fruit:"rashan",tob:"tob"};
+function mcat(it){const c=OLDCAT[it.cat]||it.cat||"kirana";return c==="kirana"&&SUB2CAT[it.sub]?SUB2CAT[it.sub]:(CATS.some(x=>x[0]===c)?c:"kirana")}
+function msub(it){return mcat(it)==="kirana"?(SUBMAP[it.sub]||""):""}
 /* ✂️ स्थायी नियम (177 MH जैसा): बिल व लेबल पर छोटा नाम (24 अक्षर) — "कंपनी + सामान + साइज़"। it.short हो तो वही, नहीं तो अपने-आप छोटा */
 const SHORT_MAX=24;
 const SH_AB=[[/\bMasala\b/gi,"Msl"],[/\bBiscuits?\b/gi,"Bisc"],[/\bChocolate\b/gi,"Choc"],[/\bPowder\b/gi,"Pwd"],[/\bPacket\b/gi,"Pkt"],[/\bCream\b/gi,"Crm"],[/\bSpecial\b/gi,"Spl"],[/\bPremium\b/gi,"Prm"],[/\bOriginal\b/gi,"Orig"],[/\bFlavou?r(ed)?\b/gi,"Flv"],[/\bChicken\b/gi,"Chkn"],[/\bPaneer\b/gi,"Pnr"],[/\bTandoori\b/gi,"Tndr"],[/\bButter\b/gi,"Btr"],[/\bVegetable\b/gi,"Veg"],[/\bDetergent\b/gi,"Det"],[/\bShampoo\b/gi,"Shmp"],[/\bToothpaste\b/gi,"T.Paste"],[/\bChips\b/gi,"Chps"],[/\bNamkeen\b/gi,"Nmkn"],[/\bCookies\b/gi,"Cooki"],[/\bJuice\b/gi,"Jc"],[/\bBottle\b/gi,"Btl"],[/\bOmelette\b/gi,"Omlt"]];
@@ -821,7 +819,7 @@ function isTob(it){return !!it&&(it.sub==="tob"||!!it.secret||TOBRX.test([it.nam
 function billNm(it){return !it?"":it.secret?"Misc Item "+it.secret:isTob(it)?"Misc Item #"+(it.code||String(it.id).slice(-4)):shortNm(it)}
 /* ऐप की स्क्रीन पर असली पूरा नाम (कोड वाले पर 🔒) — छपे बिल पर l.name ही */
 function appNm(l){return l&&l.realName&&l.realName!==l.name?l.realName+(/^Misc Item/.test(l.name)?" 🔒":""):(l?l.name:"")}
-function niSubFill(){const c=$("#ni-cat"),u=$("#ni-sub");if(!c||!u)return;u.innerHTML=`<option value="">— उप-श्रेणी —</option>`+(SUBS[c.value]||[]).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}
+function niSubFill(){const c=$("#ni-cat"),u=$("#ni-sub");if(!c||!u)return;u.innerHTML=`<option value="">— उप-श्रेणी —</option>`+(SUBS[c.value]||[]).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");u.style.display=SUBS[c.value]?"":"none"}
 function nextSecret(){const mx=S.items.reduce((a,x)=>{const m=/^S-(\d+)$/.exec(x.secret||"");return m?Math.max(a,+m[1]):a},0);return "S-"+String(mx+1).padStart(2,"0")}
 /* ⚙️ मालिक कोई भी टैब छिपाए (सामान "सब" और खोज में दिखता रहता है) */
 function hiddenCats(){return (S.settings&&S.settings.hideCats)||[]}
@@ -839,7 +837,7 @@ function lowOf(it){return +it.min>0?+it.min:LOW}
 function isLow(it){return !!it.track&&(+(S.pstock[it.id]?.qty)||0)<=lowOf(it)}
 function expInfo(it){const e0=window.SF&&SF.nearExp?SF.nearExp(it):it.exp;if(e0!==it.exp)it={...it,exp:e0};if(!it.exp)return it.chk?{k:"chk",t:"तारीख जाँचें"}:null;const d=Math.floor((new Date(String(it.exp)+"T23:59:59")-Date.now())/864e5);if(isNaN(d))return null;if(d<0)return {k:"dead",t:"एक्सपायर",d};if(d<=30)return {k:"soon",t:d+" दिन बचे",d};return it.chk?{k:"chk",t:"तारीख जाँचें"}:null}
 function ean13(s12){let t=0;for(let i=0;i<12;i++)t+=(+s12[i])*(i%2?3:1);return s12+((10-t%10)%10)}
-function nextCode(cat){const base={kirana:1000,fast:2000,sabzi:3000,mithai:4000,daily:5000,stationery:6000,gift:7000}[cat||"kirana"]||1000;return String(S.items.reduce((a,i)=>{const c=+i.code||0;return c>base&&c<base+1000?Math.max(a,c):a},base)+1)}
+function nextCode(cat){const base={kirana:1000,fast:2000,sabzi:3000,mithai:4000,general:5000,daily:5000,stationery:6000,gift:7000}[cat||"kirana"]||1000;return String(S.items.reduce((a,i)=>{const c=+i.code||0;return c>base&&c<base+1000?Math.max(a,c):a},base)+1)}
 function canSell(it){if(expInfo(it)?.k==="dead"){beep(false);toast("⚠ "+it.name+" एक्सपायर है — इसे काउंटर से हटाएँ, बिल में नहीं जुड़ेगा");return false}return true}
 /* MRP से ग्राहक की बचत (संस्था बिल में नहीं) */
 function savedOf(b){if(!b||b.mode==="inst")return 0;return r2((b.lines||[]).reduce((a,l)=>{const m=+l.mrp||+(S.items.find(x=>x.id===l.id)?.mrp)||0;return a+(m>l.rate&&!l.free?(m-l.rate)*l.qty:0)},0)+(+b.disc||0))}
@@ -972,7 +970,7 @@ function billList(){
   const mm=raw.match(/^(.*?[^\d\s.,])\s*(\d+(?:[.,]\d+)?)\s*(kg|किलो|कि\.?ग्रा|कि)?$/i);
   if(mm){q=mm[1].trim();qq=parseFloat(mm[2].replace(",","."))||0}
   const ql=q.toLowerCase();
-  const catOk=i=>S.flt==="low"?isLow(i):S.flt==="exp"?!!expInfo(i):(S.cat==="all"||mcat(i)===S.cat)&&(S.sub==="all"||i.sub===S.sub);
+  const catOk=i=>S.flt==="low"?isLow(i):S.flt==="exp"?!!expInfo(i):(S.cat==="all"||mcat(i)===S.cat)&&(S.sub==="all"||msub(i)===S.sub);
   const hit=i=>String(i.name).toLowerCase().includes(ql)||String(i.hi||"").includes(q)||i.id.includes(ql)||String(i.alias||"").toLowerCase().includes(ql)||SN.en(i).toLowerCase().includes(ql)||String(i.code||"")===q||codes(i).includes(q);
   const exact=q&&S.items.find(i=>i.active!==false&&String(i.code||"")===q);
   const list=exact?[exact]:S.items.filter(i=>i.active!==false&&(q?true:catOk(i)&&!isVariant(i))&&(!q||hit(i)));
@@ -1003,7 +1001,7 @@ function renderBill(){
   const act=S.items.filter(i=>i.active!==false),nLow=act.filter(isLow).length,nExp=act.filter(i=>expInfo(i)).length;
   $("#greet").hidden=searching;if(!searching)$("#greet").innerHTML=greetHTML();
   $("#cats").innerHTML=(window.SR?SR.rateChipHTML():"")+CATS.filter(([k])=>(k===S.cat||!hiddenCats().includes(k))&&(!NEWCATS.includes(k)||act.some(i=>mcat(i)===k))).map(([k,v])=>`<button class="chip" aria-pressed="${!S.flt&&S.cat===k}" data-cat="${k}">${v}</button>`).join("")+(nLow?`<button class="chip warnc" aria-pressed="${S.flt==="low"}" data-flt="low">⚠ कम स्टॉक ${nLow}</button>`:"")+(nExp?`<button class="chip warnc" aria-pressed="${S.flt==="exp"}" data-flt="exp">⏰ एक्सपायरी ${nExp}</button>`:"")+`<button class="chip" aria-pressed="${S.sortTop}" data-sorttop>⭐ टॉप सेलिंग ऊपर</button><button class="chip" data-view>${S.view==="list"?"▦ फोटो":"☰ लिस्ट"}</button>${S.isOwner?`<button class="chip" data-catset aria-label="टैब छिपाएँ या दिखाएँ">⚙️</button>`:""}`;
-  const subs=!S.flt&&SUBS[S.cat]?SUBS[S.cat].filter(([k])=>act.some(i=>mcat(i)===S.cat&&i.sub===k)):[];
+  const subs=!S.flt&&SUBS[S.cat]?SUBS[S.cat].filter(([k])=>act.some(i=>mcat(i)===S.cat&&msub(i)===k)):[];
   $("#cats2").hidden=searching||!subs.length;
   $("#cats2").innerHTML=subs.length?`<button class="chip" aria-pressed="${S.sub==="all"}" data-sub="all">सब</button>`+subs.map(([k,v])=>`<button class="chip" aria-pressed="${S.sub===k}" data-sub="${k}">${v}</button>`).join(""):"";
   $("#grid").classList.toggle("rows",S.view==="list");
@@ -1468,7 +1466,7 @@ function unknownCode(code){
     <div class="row2" style="margin:0"><label class="fld">छोटा नाम (अंग्रेज़ी)<input class="inp" id="nbName" placeholder="Parle-G 70g"></label><label class="fld">हिंदी नाम<input class="inp" id="nbHi" placeholder="पारले-जी"></label></div>
     <div class="row2" style="margin:0"><label class="fld">MRP ₹ (पैकेट पर)<input class="inp" id="nbMrp" inputmode="decimal"></label><label class="fld">बिक्री ₹<input class="inp" id="nbSale" inputmode="decimal" placeholder="खाली = MRP"></label></div>
     ${own?`<div class="row2" style="margin:0"><label class="fld">खरीद ₹<input class="inp" id="nbCost" inputmode="decimal"></label><label class="fld">अभी कितने पीस हैं<input class="inp" id="nbQty" inputmode="numeric" placeholder="0"></label></div>`:""}
-    <label class="fld">किस में रखें<select class="inp" id="nbSub">${CATS.filter(([k])=>k!=="all"&&k!=="fast"&&k!=="sabzi").map(([c,cv])=>`<optgroup label="${cv}">${(SUBS[c]||[]).map(([k,v])=>`<option value="${c}:${k}">${v}</option>`).join("")}</optgroup>`).join("")}</select></label>
+    <label class="fld">किस में रखें<select class="inp" id="nbSub">${CATS.filter(([k])=>k!=="all"&&k!=="fast").map(([c,cv])=>SUBS[c]?`<optgroup label="${cv}">${SUBS[c].map(([k,v])=>`<option value="${c}:${k}">${v}</option>`).join("")}</optgroup>`:`<option value="${c}:">${cv}</option>`).join("")}</select></label>
     <button class="big" data-nbsave>✓ सामान जोड़ें${S.scanIn?"":" और बिल में डालें"}</button></div>
   ${own?`<h4 style="margin:4px 0 6px">या पहले से बने सामान में यह बारकोड जोड़ें</h4>
   <div class="row2"><select class="inp" id="nbAttach" aria-label="सामान चुनें"><option value="">— सामान चुनें —</option>${S.items.filter(i=>!i.virtual).map(i=>`<option value="${esc(i.id)}">${esc(i.name)}${i.code?" #"+esc(i.code):""}</option>`).join("")}</select><button class="big ghost" data-nbattach>जोड़ें</button></div>`:""}
@@ -1480,7 +1478,7 @@ function unknownCode(code){
       if(!name||!(sale>0)){toast("नाम और MRP/बिक्री भाव लिखें");return}
       if(mrp>0&&sale>mrp){toast("बिक्री भाव MRP से ज़्यादा नहीं हो सकता");return}
       if(findByCode(code)){closeSheet();handleScan(code);return}
-      const id="b"+Date.now().toString(36),[cat0,sub]=String($("#nbSub").value||"kirana:").split(":"),cat=SUB2CAT[sub]?"kirana":cat0;
+      const id="b"+Date.now().toString(36),[cat,sub]=String($("#nbSub").value||"kirana:").split(":");
       const it={name,hi:$("#nbHi").value.trim(),emoji:"📦",cat,sub,unit:"pc",mrp,sale,cost,code:nextCode(mcat({cat,sub})),hue:210,order:S.items.length+1,active:true,barcode:code,track:true,min:5,alias:"",
         addedBy:S.uid||"",addedByName:biller(),addedTs:Date.now(),pending:!own};
       if(isTob(it))it.secret=nextSecret();
@@ -1907,7 +1905,7 @@ function renderSettings(){
       <label class="fld">बिक्री ₹<input class="inp ${(+it.sale)>0?"":"bad"}" id="s-${esc(it.id)}" data-if="sale" inputmode="decimal" value="${it.sale||""}"></label>
       <label class="fld">खरीद ₹<input class="inp" id="c-${esc(it.id)}" data-if="cost" inputmode="decimal" value="${it.cost||""}"></label></div>
       <div class="flds2"><select class="inp" id="u-${esc(it.id)}" data-if="unit" aria-label="इकाई">${Object.entries(UNITS).map(([k,v])=>`<option value="${k}" ${it.unit===k?"selected":""}>${v}</option>`).join("")}</select>
-      <select class="inp" id="k-${esc(it.id)}" data-if="cat" aria-label="कैटेगरी">${CATS.slice(1).map(([k,v])=>`<option value="${k}" ${it.cat===k?"selected":""}>${v}</option>`).join("")}</select>
+      <select class="inp" id="k-${esc(it.id)}" data-if="cat" aria-label="कैटेगरी">${CATS.slice(1).map(([k,v])=>`<option value="${k}" ${mcat(it)===k?"selected":""}>${v}</option>`).join("")}</select>
       <input class="inp" id="e-${esc(it.id)}" data-if="emoji" value="${esc(it.emoji||"")}" style="width:56px" aria-label="इमोजी">
       <label class="note"><input type="checkbox" id="a-${esc(it.id)}" data-if="active" ${it.active!==false?"checked":""}> चालू</label>
       <input class="inp code" id="b-${esc(it.id)}" data-if="barcode" value="${esc(it.barcode||"")}" placeholder="बारकोड" style="width:150px" aria-label="${esc(it.name)} का बारकोड">
@@ -1920,7 +1918,7 @@ function renderSettings(){
       <label class="fld">कोड<input class="inp code" data-if="code" inputmode="numeric" maxlength="4" value="${esc(it.code||"")}"></label>
       <label class="fld">कम स्टॉक<input class="inp" data-if="min" inputmode="numeric" value="${it.min||""}" placeholder="5"></label>
       <label class="fld">एक्सपायरी<input class="inp" type="date" data-if="exp" value="${esc(it.exp||"")}"></label>
-      <label class="fld">उप-कैटेगरी<select class="inp" data-if="sub"><option value="">—</option>${(SUBS[mcat(it)]||[]).map(([k,v])=>`<option value="${k}" ${it.sub===k?"selected":""}>${v}</option>`).join("")}</select></label>
+      ${SUBS[mcat(it)]?`<label class="fld">उप-कैटेगरी<select class="inp" data-if="sub"><option value="">—</option>${(SUBS[mcat(it)]||[]).map(([k,v])=>`<option value="${k}" ${msub(it)===k?"selected":""}>${v}</option>`).join("")}</select></label>`:""}
       <label class="fld">✂️ बिल का छोटा नाम (24)<input class="inp" data-if="short" maxlength="24" value="${esc(it.short||"")}" placeholder="${esc(autoShort(it.name))}"></label>
       <label class="fld">🔒 गुप्त कोड (बिल पर Misc Item)<input class="inp" data-if="secret" value="${esc(it.secret||"")}" placeholder="${isTob(it)?"अपने-आप #"+esc(it.code||""):"सिगरेट/गुटखा के लिए"}"></label>
       <label class="fld">वेज/नॉन-वेज<select class="inp" data-if="veg"><option value="">—</option>${[["veg","🟩 वेज"],["nonveg","🟫 नॉन-वेज"],["egg","🥚 अंडा"]].map(([k,v])=>`<option value="${k}" ${it.veg===k?"selected":""}>${v}</option>`).join("")}</select></label>
@@ -1948,6 +1946,7 @@ $("#p-set").addEventListener("change",async e=>{
   if(t.dataset.if){const id=t.closest("[data-sid]").dataset.sid;let v=t.type==="checkbox"?t.checked:t.value.trim();if(["sale","cost","mrp","min"].includes(t.dataset.if))v=parseFloat(v)||0;if(t.dataset.if==="secret")v=String(v).toUpperCase();
     if(t.dataset.if==="code"&&v){if(!/^\d{4}$/.test(v)){toast("कोड 4 अंक का हो");t.value=item(id)?.code||"";return}const o=S.items.find(i=>i.id!==id&&String(i.code)===v);if(o){toast("कोड "+v+" पहले से "+o.name+" में है");t.value=item(id)?.code||"";return}}
     if(t.dataset.if==="barcode"){v=String(v).split(/[,\s]+/).filter(Boolean).join(",");const dup=v.split(",").find(c=>{const o=findByCode(c);return o&&o.id!==id});if(dup){toast("बारकोड "+dup+" पहले से "+findByCode(dup).name+" में लगा है");t.value=item(id)?.barcode||"";return}}
+    if(t.dataset.if==="cat"){const o=item(id)||{};const p={cat:v};if(SUB2CAT[o.sub]||!SUBS[v]||!SUBMAP[o.sub])p.sub="";await saveItem(id,p);return} /* श्रेणी बदली तो पुरानी उप-श्रेणी हटे */
     const old=item(id)?.[t.dataset.if];await saveItem(id,{[t.dataset.if]:v});if((t.dataset.if==="sale"||t.dataset.if==="cost")&&+old!==v)logPrice(id,t.dataset.if,+old||0,v);return}
   if(t.id==="photoIn"&&t.files[0]){const id=t.dataset.for;const f=t.files[0];t.value="";
     if(S.demo){toast("डेमो में फोटो नहीं लगती");return}
@@ -1966,7 +1965,7 @@ $("#p-set").addEventListener("click",async e=>{
   if(e.target.closest("[data-additem]")){
     const name=$("#ni-name").value.trim();if(!name){toast("नाम लिखें");return}if(window.SR&&SR.instOf&&SR.instOf(name)){toast("🏢 "+name+" अपनी संस्था है — इसका उधार खाता नहीं बनता। बिलिंग में ऊपर 🏢 संस्था चुनें");return}
     const id="i"+Date.now().toString(36);
-    const sub=($("#ni-sub")||{}).value||"",cat0=$("#ni-cat").value,cat=SUB2CAT[sub]&&cat0!=="kirana"?"kirana":cat0,code=nextCode(cat0),bar=$("#ni-bar").value.trim().replace(/\s+/g,""),unit=$("#ni-unit").value;
+    const sub=($("#ni-sub")||{}).value||"",cat0=$("#ni-cat").value,cat=cat0,code=nextCode(cat0),bar=$("#ni-bar").value.trim().replace(/\s+/g,""),unit=$("#ni-unit").value;
     if(bar&&findByCode(bar)){toast("यह बारकोड पहले से "+findByCode(bar).name+" में है");return}
     const it={name,hi:$("#ni-hi").value.trim(),short:$("#ni-short").value.trim(),alias:$("#ni-alias").value.trim(),emoji:$("#ni-emoji").value.trim()||"🛒",cat,sub,unit,code,barcode:bar||ean13("2000000"+code+"0"),track:!["fast","sabzi"].includes(cat0),min:5,secret:String($("#ni-secret").value||"").trim().toUpperCase(),perPack:parseInt($("#ni-pack").value)||0,mrp:parseFloat($("#ni-mrp").value)||0,sale:parseFloat($("#ni-sale").value)||0,cost:parseFloat($("#ni-cost").value)||0,hue:Math.floor(Math.random()*360),order:S.items.length+1,active:true};
     if(!it.secret&&isTob(it))it.secret=nextSecret();
