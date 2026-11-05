@@ -8,6 +8,7 @@
 <script src="build.js"></script>
 <script src="lib/qrcode.min.js"></script>
 <script src="lib/vendor.js"></script>
+<script src="se-watch.js"></script>
 <script src="se-platform.js"></script>
 <script src="se-nutri.js"></script>
 <style>
@@ -856,7 +857,7 @@ function isPc(u){return u==="pc"||u==="pk"||u==="pl"}
 const S={db:null,user:null,assets:null,demo:false,isOwner:false,uid:null,meName:"",staff:"",staffDocs:[],
   items:[],settings:{},parties:[],ledger:[],dayBills:[],billsDate:today(),repDate:today(),
   tab:"bill",mode:"walk",partyId:"",inst:"",cat:"all",sub:"all",flt:"",q:"",cart:[],chk:null,saving:false,unsubBills:null,
-  bt:[],ai:0,qq:0,view:"grid",pstock:{},scanIn:false,held:[],stock:{},kharch:[],close:null,cust:{phone:"",name:""},customers:[],sortTop:false,range:null,priceLog:[],unsubDay:[]};
+  bt:[],ai:0,qq:0,view:"grid",pstock:{},scanIn:false,held:[],stock:{},kharch:[],close:null,cust:{phone:"",name:""},customers:[],sortTop:false,range:null,priceLog:[],unsubDay:[]};window.__S__=S;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const r2=n=>Math.round((+n||0)*100)/100;
@@ -1418,7 +1419,7 @@ document.addEventListener("change",e=>{
 
 /* ---------- barcode ---------- */
 function codes(it){return String(it.barcode||"").split(/[,\s]+/).filter(Boolean)}
-function findByCode(c){return S.items.find(i=>codes(i).includes(c))||S.items.find(i=>i.code&&String(i.code)===c)}
+function findByCode(c){const V=window.SE&&SE.codeVariants?SE.codeVariants(c):[String(c||"").trim()];for(const v of V){const it=S.items.find(i=>codes(i).includes(v));if(it)return it}const v0=V[0];return S.items.find(i=>i.code&&String(i.code)===v0)}
 function beep(ok){camFlash(ok);try{if(navigator.vibrate)navigator.vibrate(ok?35:[60,40,60])}catch(e){}try{const A=beep.a||(beep.a=new (window.AudioContext||window.webkitAudioContext)());const o=A.createOscillator(),g=A.createGain();o.frequency.value=ok?1250:330;g.gain.value=.08;o.connect(g);g.connect(A.destination);o.start();o.stop(A.currentTime+(ok?.09:.25))}catch(e){}}
 async function adjStock(pairs,why){
   pairs=pairs.filter(p=>p[1]);
@@ -1431,7 +1432,7 @@ async function adjStock(pairs,why){
 function stockPair(l,sign){const it=item(l.id);if(!it)return null;if(it.packOf){const b=item(it.packOf);if(b&&b.track)return [b.id,r2(sign*l.qty*(+it.perPack||1))]}return it.track?[l.id,sign*l.qty]:null}
 function trackedPairs(lines,sign){const M={};lines.forEach(l=>{const p=stockPair(l,sign);if(p)M[p[0]]=r2((M[p[0]]||0)+p[1])});return Object.entries(M)}
 async function handleScan(code){
-  code=String(code||"").trim();if(!code)return;
+  code=window.SE&&SE.normCode?SE.normCode(code):String(code||"").trim();if(!code)return;
   if(S.tab==="kharid"&&window.SI&&SI.active()&&SI.scan(code))return;
   if(window.SO&&SO.active()){const it=findByCode(code);beep(!!it);if(!it){unknownCode(code);return}SO.scan(it);return}
   const vw=window.SF&&!S.scanIn&&!findByCode(code)?SF.parseVW(code):null;
@@ -1509,6 +1510,8 @@ async function camOn(){
   let ok=false;try{ok=await SE.cam.start(onCamCode,vid,camROI)}catch(e){camUi(false);toast(e.msg||"कैमरा नहीं खुला — "+(e.message||e.name||""));return}
   if(!ok){camUi(false);$("#scanFile").click();return}
   lsSet("se_cam","1");camUi(true);
+  /* 🔦 टॉर्च एक बार चालू की तो अगली बार अपने-आप */
+  if(lsGet("se_torch")==="1"&&SE.cam.canTorch&&!SE.cam.torch){try{const t=await SE.cam.toggleTorch();$("#camTorch").textContent=t?"🔦 बंद":"🔦"}catch(e){}}
 }
 async function camOff(remember){await SE.cam.stop();camUi(false);if(remember)lsSet("se_cam","0")}
 function camUi(on){document.documentElement.classList.toggle("camon",on);$("#camwin").hidden=!on;$("#scanBtn").setAttribute("aria-pressed",on?"true":"false");
@@ -1523,7 +1526,7 @@ function camROI(){const w=$("#camwin"),f=w&&w.querySelector(".cfr");if(!w||!f)re
   const m=.06;return [Math.max(0,(b.left-a.left)/a.width-m),Math.max(0,(b.top-a.top)/a.height-m),Math.min(1,(b.right-a.left)/a.width+m),Math.min(1,(b.bottom-a.top)/a.height+m)]}
 $("#camOff").onclick=()=>camOff(true);
 $("#camZoom").onclick=async()=>{const z=await SE.cam.cycleZoom();$("#camZoom").textContent=(+z||1).toFixed(1).replace(".0","")+"x";toast("🔍 ज़ूम "+(+z).toFixed(1)+"x")};
-$("#camTorch").onclick=async()=>{const t=await SE.cam.toggleTorch();$("#camTorch").textContent=t?"🔦 बंद":"🔦"};
+$("#camTorch").onclick=async()=>{const t=await SE.cam.toggleTorch();$("#camTorch").textContent=t?"🔦 बंद":"🔦";lsSet("se_torch",t?"1":"0");toast(t?"🔦 टॉर्च चालू — अगली बार भी अपने-आप":"🔦 टॉर्च बंद")};
 function camAuto(){const want=(S.tab==="bill"||(S.tab==="kharid"&&!(window.SI&&SI.active()))||(S.tab==="stock"&&window.SK&&SK.counting())||(S.tab==="day"&&S.scanIn));if(!want&&SE.cam.on)camOff(false);else if(want&&!SE.cam.on&&SE.isNative&&lsGet("se_cam")==="1"&&!document.hidden)camOn()}
 document.addEventListener("visibilitychange",()=>{if(document.hidden){if(SE.cam.on){SE.cam.stop();camUi(false);camAuto._resume=true}}else if(camAuto._resume){camAuto._resume=false;camAuto()}});
 async function liveScan(){
@@ -1545,10 +1548,10 @@ $("#scanFile").onchange=async e=>{const f=e.target.files[0];e.target.value="";if
 const W={buf:"",t:0,gaps:[]};
 document.addEventListener("keydown",e=>{
   const now=performance.now();
-  if(e.key==="Enter"){
+  if(e.key==="Enter"||(e.key==="Tab"&&W.buf.length>=6&&now-W.t<80)){
     const b=W.buf,avg=W.gaps.length?W.gaps.reduce((a,x)=>a+x,0)/W.gaps.length:999;W.buf="";W.gaps=[];
     const inPop=document.activeElement&&document.activeElement.closest&&document.activeElement.closest("#sheet");
-    if(b.length>=6&&avg<45&&!inPop){e.preventDefault();e.stopImmediatePropagation();
+    if(b.length>=6&&avg<50&&(!inPop||/^\d{8,14}$/.test(b)&&!(document.activeElement&&document.activeElement.matches&&document.activeElement.matches("#qIn,#aIn,#rtIn,#soQ,#sgCoin,[data-sgn]")))){e.preventDefault();e.stopImmediatePropagation();
       const ae=document.activeElement;if(ae&&ae.tagName==="INPUT"&&ae.value.endsWith(b)){ae.value=ae.value.slice(0,-b.length);if(ae.id==="q"){S.q=ae.value}}
       handleScan(b);return}
     if(e.target&&e.target.id==="q"){const v=e.target.value.trim();if(v&&findByCode(v)){e.preventDefault();e.target.value="";S.q="";handleScan(v)}else if(/^\d{6,}$/.test(v)){e.preventDefault();e.target.value="";S.q="";renderBill();handleScan(v)}}

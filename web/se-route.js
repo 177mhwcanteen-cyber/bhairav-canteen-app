@@ -70,6 +70,9 @@ SR.start=async function(){
       e=>{if(e.code===1)SR.st.perm=false;else if(e.code===2)SR.st.gps=false;SR.st.running=false;SR.banner()},{enableHighAccuracy:true,maximumAge:30000,timeout:60000})}catch(e){}
   }
   SR.tick();setInterval(SR.tick,90000);
+  /* 🚪 ऐप कब-कहाँ खुला (177 MH से) — मालिक के लोकेशन टैब में */
+  setTimeout(()=>SR.logOpen("खोला"),25000);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(SR._lo||0)>20*60000)setTimeout(()=>SR.logOpen("फिर खोला"),20000)});
   if(SR.st.native)setInterval(async()=>{if(document.hidden||SR.st.unsupported)return;try{const r=await BP().trackStatus();const was=SR.gateOn();apply(r);if(was!==SR.gateOn()){SR.banner();if(!SR.gateOn())setTimeout(SR.tick,500)}}catch(e){}},20000);
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(SR.tick,800)});
 };
@@ -436,6 +439,12 @@ function playHTML(d){const [a,b]=playRange(d);const t=R.play.t&&R.play.t>=a&&R.p
   return `<div class="rplay"><button class="rp-btn" data-rplay aria-label="रास्ता चलाकर देखें">${R.play.on?"⏸":"▶"}</button>
   <div class="rp-mid"><input type="range" id="rpT" min="${a}" max="${b}" step="30000" value="${t}" aria-label="समय"><div class="rp-info"><b id="rpTime">${R.play.t?ftime(R.play.t):ftime(a)+" – "+ftime(b)}</b> <span id="rpSt">${R.play.t?"":"▶ दबाएँ — कर्मचारी दिन भर के रास्ते पर चलती दिखेगी"}</span></div></div>
   <div class="rp-spd" role="group" aria-label="तेज़ी">${[[1,"1 मि/से"],[5,"5 मि/से"],[15,"15 मि/से"]].map(([v,l])=>`<button data-rspd="${v}" aria-pressed="${R.play.spd===v}">${l}</button>`).join("")}</div></div>`}
+SR.logOpen=async function(what){if(S.isOwner||S.demo||!S.db||!S.uid)return;SR._lo=Date.now();const l=SR.last&&Date.now()-SR.last.ts<10*60000?SR.last:null;
+  try{await S.db.collection("opens").add({uid:S.uid,name:biller()||"",ts:Date.now(),date:today(),what:what||"खोला",lat:l?l.lat:null,lng:l?l.lng:null,acc:l?Math.round(l.acc||0):null,gps:!!SR.st.gps,ver:(window.SE&&SE.version)||""})}catch(e){}};
+const OP={};
+function opensHTML(){const d=R.date;if(!OP[d]&&S.db&&!S.demo){OP[d]={loading:true,list:[]};S.db.collection("opens").where("date","==",d).get().then(q=>{OP[d]={list:q.docs.map(x=>x.data()).sort((a,b)=>b.ts-a.ts)};if(S.tab==="route")SR.renderRoute()}).catch(()=>{OP[d]={list:[],err:1}})}
+  const o=OP[d]||{list:[]};const L=o.list.filter(x=>!R.who||x.uid===R.who);
+  return `<div class="card2"><h3 style="margin:0 0 6px">🚪 ऐप कब-कहाँ खुला <small class="note">${L.length} बार</small></h3>${o.loading?'<p class="note">लोड हो रहा है…</p>':L.length?`<div class="list">${L.slice(0,60).map(x=>`<div class="li"><div class="mid"><b>${esc(x.name||"फोन")} · ${ftime(x.ts)} <small class="note">${esc(x.what||"")}</small></b><span>${x.lat!=null?`📍 ±${x.acc||"?"} मी`:"📍 जगह नहीं मिली (GPS बंद?)"}</span></div>${x.lat!=null?`<a class="chip" target="_blank" rel="noopener" href="https://maps.google.com/?q=${x.lat},${x.lng}">🗺️ नक्शा</a>`:""}</div>`).join("")}</div>`:'<p class="note">इस दिन किसी ने ऐप नहीं खोला</p>'}</div>`}
 SR.renderRoute=function(){
   const el=document.getElementById("p-route");if(!el)return;bindRoute(el);if(!R.date)R.date=today();
   if((!R.raw||R.raw.date!==R.date)&&!R.loading)SR.loadDay(R.date);
@@ -443,7 +452,7 @@ SR.renderRoute=function(){
   el.innerHTML=`<div class="daterow"><h2 class="sec" style="margin:0;flex:1">📍 लोकेशन ट्रैकर</h2><button class="chip" data-rref aria-label="ताज़ा करें">🔄</button></div>
   <div class="rt-f"><div class="rt-chips">${[[today(),"आज"],[yd,"कल"]].map(([v,t])=>`<button class="chip" data-rday="${v}" aria-pressed="${R.date===v}">${t}</button>`).join("")}<input class="inp" type="date" id="rDate" value="${R.date}" aria-label="तारीख"></div>
     ${P.length?`<div class="rt-chips"><button class="chip" data-rwho="" aria-pressed="${!R.who}">👥 सब</button>${P.map(([u,n])=>`<button class="chip" data-rwho="${esc(u)}" aria-pressed="${R.who===u}"><i class="rdot" style="background:${colorOf(u)}"></i>${esc(n||"फोन")}</button>`).join("")}</div>`:""}</div>
-  <div class="card2 rlive" id="rLive">${liveHTML()}</div>
+  <div class="card2 rlive" id="rLive">${liveHTML()}</div>${opensHTML()}
   <div class="seg" style="margin:0 0 10px"><span class="note" style="align-self:center">लोकेशन बंद हो तो कर्मचारी की बिलिंग रोकें:</span><button class="chip" data-locreq="1" aria-pressed="${locReq()}">✅ हाँ, रोकें</button><button class="chip" data-locreq="0" aria-pressed="${!locReq()}">नहीं</button></div>
   <div class="rmapw${R.big?" big":""}" id="rmapw"><div id="rmap" class="rmap" role="img" aria-label="कर्मचारी का रास्ता नक्शे पर"></div>
     <div class="rctl"><button data-rsat>${R.sat?"🗺️ सादा":"🛰️ सैटेलाइट"}</button><button data-rlbl aria-pressed="${R.lbl}">🏷️ नाम</button><button data-rme>📍 मैं</button><button data-rbig>${R.big?"✕ छोटा":"⛶ बड़ा"}</button></div></div>
@@ -461,11 +470,16 @@ SR.renderRoute=function(){
 function loadLeaflet(){return new Promise((res,rej)=>{if(window.L)return res();if(!document.querySelector('link[href="lib/leaflet.css"]')){const l=document.createElement("link");l.rel="stylesheet";l.href="lib/leaflet.css";document.head.appendChild(l)}
   const s=document.createElement("script");s.src="lib/leaflet.js";s.onload=()=>res();s.onerror=rej;document.head.appendChild(s)})}
 const ESRI="https://server.arcgisonline.com/ArcGIS/rest/services/",SATU=ESRI+"World_Imagery/MapServer/tile/{z}/{y}/{x}";
+/* 🛰️ साफ़ सैटेलाइट (177 MH से): Esri "Clarity" + फोन की स्क्रीन जितनी बारीक टाइल; न मिले तो पुरानी Esri — नक्शा कभी खाली नहीं
+   🗺️ सादा = CARTO Voyager (साफ़ सड़क नक्शा) */
+const SATC="https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+function satLayer(){const t=L.tileLayer(SATC,{maxZoom:21,maxNativeZoom:19,detectRetina:true,crossOrigin:true,attribution:"Imagery © Esri, Maxar, Earthstar Geographics"});
+  t.on("tileerror",e=>{const im=e.tile;if(im&&!im.dataset.fb){im.dataset.fb=1;const c=e.coords;im.src=SATU.replace("{z}",c.z).replace("{y}",c.y).replace("{x}",c.x)}});return t}
+function lblLayers(m){L.tileLayer(ESRI+"Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",{maxZoom:21,maxNativeZoom:19,opacity:.55}).addTo(m);
+  L.tileLayer(ESRI+"Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",{maxZoom:21,maxNativeZoom:19,opacity:.95}).addTo(m)}
 function baseLayers(m,lbl){
-  if(R.sat){L.tileLayer(SATU,{maxZoom:20,maxNativeZoom:18,attribution:"Imagery © Esri, Maxar, Earthstar Geographics"}).addTo(m);
-    if(lbl){L.tileLayer(ESRI+"Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",{maxZoom:20,maxNativeZoom:18,opacity:.5}).addTo(m);
-      L.tileLayer(ESRI+"Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",{maxZoom:20,maxNativeZoom:18,opacity:.9}).addTo(m)}}
-  else L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:20,maxNativeZoom:19,attribution:"© OpenStreetMap"}).addTo(m);
+  if(R.sat){satLayer().addTo(m);if(lbl)lblLayers(m)}
+  else L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",{subdomains:"abcd",maxZoom:21,maxNativeZoom:20,attribution:"© OpenStreetMap © CARTO"}).addTo(m);
 }
 const pin=(html,cls,w,h)=>L.divIcon({className:cls,html,iconSize:[w,h],iconAnchor:[w/2,h/2]});
 SR.drawMap=async function(){
@@ -473,7 +487,7 @@ SR.drawMap=async function(){
   if(!window.L){try{await loadLeaflet()}catch(e){el.innerHTML='<p class="note" style="padding:12px">नक्शा लोड नहीं हुआ (इंटरनेट देखें)</p>';return}}
   if(R.map){try{R.map.remove()}catch(e){}R.map=null;R.liveLayer=null;R.meLayer=null;R.playLayer=null;R.billLayer=null;R.findLayer=null}
   if(!document.body.contains(el))return;
-  const m=R.map=L.map(el,{zoomControl:true,attributionControl:true,maxZoom:20});
+  const m=R.map=L.map(el,{zoomControl:true,attributionControl:true,maxZoom:21,zoomSnap:.5,wheelPxPerZoomLevel:90});
   baseLayers(m,R.lbl);
   const B=[];
   SR.places.forEach(p=>{const ok=p.src==="gps";const c=L.circle([p.lat,p.lng],{radius:+p.r||150,color:ok?"#38bdf8":"#f59e0b",weight:2,dashArray:ok?null:"6 5",fillOpacity:.07}).addTo(m);
@@ -526,7 +540,7 @@ SR.playToggle=playToggle;
 /* छोटा सैटेलाइट "फोटो" — जगह कैसी दिखती है */
 function thumbInit(id,lat,lng,r){const el=document.getElementById(id);if(!el||!window.L)return;
   const m=L.map(el,{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false}).setView([lat,lng],r>200?17:18);
-  L.tileLayer(SATU,{maxZoom:20,maxNativeZoom:18}).addTo(m);L.circle([lat,lng],{radius:r||80,color:"#38bdf8",weight:2,fillOpacity:.08}).addTo(m);
+  satLayer().addTo(m);lblLayers(m);L.circle([lat,lng],{radius:r||80,color:"#38bdf8",weight:2,fillOpacity:.08}).addTo(m);
   L.circleMarker([lat,lng],{radius:6,color:"#fff",weight:2,fillColor:"#ef4444",fillOpacity:1}).addTo(m);setTimeout(()=>{try{m.invalidateSize()}catch(e){}},200)}
 function billRowsHTML(L0){const L1=L0.slice().sort((a,b)=>b.ts-a.ts);if(!L1.length)return '<p class="note">कोई बिल नहीं</p>';
   return `<div class="rbl">${L1.slice(0,80).map(b=>{const p=b.pay||{};const how=b.mode==="inst"?"🏢 संस्था":b.settled===false?"⏳ बाकी":[p.upi?"UPI":"",p.cash?"नकद":"",p.udhar?"📒 उधार":""].filter(Boolean).join("+");const ph=clean(b.custPhone||"");
@@ -1247,7 +1261,7 @@ SR.miniInit=async function(){const el=document.getElementById("dMini");if(!el||!
     if(t)t.textContent=`${d.stops.length} जगह रुकी · लगभग ${d.km} km · ${d.stops.filter(s=>s.sales>0).length} जगह बिक्री${d.gaps&&d.gaps.length?" · ⚠ "+d.gaps.length+" बार लोकेशन बंद":""}`;
     if(!window.L)await loadLeaflet();const el2=document.getElementById("dMini");if(!el2||el2._lm)return;
     const m=L.map(el2,{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,tap:false});el2._lm=m;
-    L.tileLayer(SATU,{maxZoom:20,maxNativeZoom:18}).addTo(m);const B=[];
+    satLayer().addTo(m);lblLayers(m);const B=[];
     d.pts.forEach(u=>{const ll=u.P.map(p=>[p.lat,p.lng]);if(ll.length<2)return;L.polyline(ll,{color:"#fff",weight:6,opacity:.45}).addTo(m);L.polyline(ll,{color:colorOf(u.uid),weight:3.5}).addTo(m);ll.forEach(x=>B.push(x))});
     d.stops.forEach((s,i)=>{L.circleMarker([s.lat,s.lng],{radius:s.sales>0?Math.min(14,6+Math.sqrt(s.sales)/6):5,color:"#fff",weight:2,fillColor:s.sales>0?"#22c55e":"#f59e0b",fillOpacity:.95}).addTo(m);B.push([s.lat,s.lng])});
     if(B.length)m.fitBounds(B,{padding:[14,14],maxZoom:17});else m.setView([HOME.lat,HOME.lng],15);setTimeout(()=>{try{m.invalidateSize()}catch(e){}},150);
