@@ -1,4 +1,4 @@
-/* भैरव कैंटीन — 📍 कर्मचारी की लोकेशन व रूट, जगह की कमाई, 👥 ग्राहक रजिस्टर, 📤 बिल भेजना (WhatsApp/SMS),
+/* भैरव कैंटीन — 📍 गाड़ी की लोकेशन व रूट, जगह की कमाई, 👥 ग्राहक रजिस्टर, 📤 बिल भेजना (WhatsApp/SMS),
    ➕ नया सामान, 🅧 XYZ (अन्य पैसा)। मुख्य ऐप (index.html) के S, $, esc, rs, r2, fq, toast… इस्तेमाल करता है। */
 (function(){
 "use strict";
@@ -70,7 +70,6 @@ SR.start=async function(){
       e=>{if(e.code===1)SR.st.perm=false;else if(e.code===2)SR.st.gps=false;SR.st.running=false;SR.banner()},{enableHighAccuracy:true,maximumAge:30000,timeout:60000})}catch(e){}
   }
   SR.tick();setInterval(SR.tick,90000);
-  /* 🚪 ऐप कब-कहाँ खुला (177 MH से) — मालिक के लोकेशन टैब में */
   setTimeout(()=>SR.logOpen("खोला"),25000);
   document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-(SR._lo||0)>20*60000)setTimeout(()=>SR.logOpen("फिर खोला"),20000)});
   if(SR.st.native)setInterval(async()=>{if(document.hidden||SR.st.unsupported)return;try{const r=await BP().trackStatus();const was=SR.gateOn();apply(r);if(was!==SR.gateOn()){SR.banner();if(!SR.gateOn())setTimeout(SR.tick,500)}}catch(e){}},20000);
@@ -225,7 +224,7 @@ SR.newItemSheet=function(q){
   <label class="fld">अंग्रेज़ी नाम (अगर पता हो)<input class="inp" id="niEn" placeholder="जैसे Sweet Potato"></label>
   <div class="row2"><label class="fld">किस हिसाब से बिकेगा<select class="inp" id="niUnit"><option value="kg">किलो</option><option value="pc">पीस / पैकेट</option></select></label>
   <label class="fld">बेचने का भाव ₹<input class="inp" id="niRate" inputmode="decimal" placeholder="₹"></label></div>
-  <label class="fld">किस में रखें<select class="inp" id="niCat">${CATS.slice(1).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select></label>
+  <label class="fld">किस में रखें<select class="inp" id="niCat">${[["kirana","🛒 किराना"],["fast","🍔 फास्ट फूड"],["sabzi","🥬 सब्ज़ी-फल"]].map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select></label>
   <button class="big" data-nisave style="margin-top:10px">✓ जोड़ें और बिल में डालें</button></div></div>`;
   $("#sheet").onclick=e=>{if(e.target.matches("[data-close]")){closeSheet();return}if(e.target.closest("[data-nisave]"))SR.saveNewItem()};
   setTimeout(()=>{const x=$(q?"#niRate":"#niName");if(x)x.focus()},120);
@@ -255,14 +254,13 @@ document.addEventListener("click",async e=>{
 });
 
 /* ======================= 📍 मालिक का रूट डैशबोर्ड ======================= */
-const R={date:null,map:null,live:[],day:null,raw:null,agg:null,loading:false,custQ:"",custAll:false,liveLayer:null,who:"",sat:LSx.get("se_rsat")!=="0",lbl:LSx.get("se_rlbl")!=="0",big:false,placeQ:"",play:{t:0,on:false,spd:5,timer:null},bcache:{}};
+const R={date:null,map:null,live:[],day:null,raw:null,agg:null,loading:false,custQ:"",custAll:false,liveLayer:null,who:"",sty:(()=>{const v=LSx.get("se_rsty");return ["osm","clean","sat"].includes(v)?v:"clean"})(),get sat(){return this.sty==="sat"},lbl:LSx.get("se_rlbl")!=="0",big:false,placeQ:"",play:{t:0,on:false,spd:5,timer:null},bcache:{}};
 const HOME={lat:25.7521,lng:71.3967};/* बाड़मेर — नक्शे का शुरुआती इलाका (पॉइंट आते ही नक्शा उन पर आ जाता है) */
 const COLORS=["#22c55e","#f59e0b","#a855f7","#06b6d4","#ef4444"];
 SR.onDb=function(db){
   if(S.isOwner)db.collection("places").onSnapshot(s=>{SR.places=s.docs.map(d=>({id:d.id,...d.data()}));if(S.tab==="route"&&R.raw){R.day=dayFor();SR.renderRoute()}},()=>{});
   if(S.isOwner)db.collection("live").onSnapshot(s=>{R.live=s.docs.map(d=>({id:d.id,...d.data()}));liveAlerts(R.live);if(S.tab==="route")SR.updateLive()},()=>{});
-  if(!S.isOwner)setTimeout(SR.start,1500);   // कर्मचारी के फोन पर लोकेशन अपने-आप चालू
-  // भैरव: सब्ज़ी एक्सप्रेस का पुराना डेटा (कॉपी/बोर्ड/संस्था) यहाँ कभी नहीं चढ़ता
+  if(!S.isOwner)setTimeout(SR.start,1500);   // 📍 बिलर के फोन पर लोकेशन अपने-आप चालू (भैरव जैसा) — मालिक को "लोकेशन" टैब में
 };
 function parse(docs){
   const by={};
@@ -439,12 +437,13 @@ function playHTML(d){const [a,b]=playRange(d);const t=R.play.t&&R.play.t>=a&&R.p
   return `<div class="rplay"><button class="rp-btn" data-rplay aria-label="रास्ता चलाकर देखें">${R.play.on?"⏸":"▶"}</button>
   <div class="rp-mid"><input type="range" id="rpT" min="${a}" max="${b}" step="30000" value="${t}" aria-label="समय"><div class="rp-info"><b id="rpTime">${R.play.t?ftime(R.play.t):ftime(a)+" – "+ftime(b)}</b> <span id="rpSt">${R.play.t?"":"▶ दबाएँ — कर्मचारी दिन भर के रास्ते पर चलती दिखेगी"}</span></div></div>
   <div class="rp-spd" role="group" aria-label="तेज़ी">${[[1,"1 मि/से"],[5,"5 मि/से"],[15,"15 मि/से"]].map(([v,l])=>`<button data-rspd="${v}" aria-pressed="${R.play.spd===v}">${l}</button>`).join("")}</div></div>`}
+/* 🚪 ऐप कब-कहाँ खुला — हर बार ऐप खोलने पर (20 मिनट में एक बार) जगह के साथ दर्ज; सिर्फ़ मालिक देखें */
 SR.logOpen=async function(what){if(S.isOwner||S.demo||!S.db||!S.uid)return;SR._lo=Date.now();const l=SR.last&&Date.now()-SR.last.ts<10*60000?SR.last:null;
   try{await S.db.collection("opens").add({uid:S.uid,name:biller()||"",ts:Date.now(),date:today(),what:what||"खोला",lat:l?l.lat:null,lng:l?l.lng:null,acc:l?Math.round(l.acc||0):null,gps:!!SR.st.gps,ver:(window.SE&&SE.version)||""})}catch(e){}};
 const OP={};
 function opensHTML(){const d=R.date;if(!OP[d]&&S.db&&!S.demo){OP[d]={loading:true,list:[]};S.db.collection("opens").where("date","==",d).get().then(q=>{OP[d]={list:q.docs.map(x=>x.data()).sort((a,b)=>b.ts-a.ts)};if(S.tab==="route")SR.renderRoute()}).catch(()=>{OP[d]={list:[],err:1}})}
   const o=OP[d]||{list:[]};const L=o.list.filter(x=>!R.who||x.uid===R.who);
-  return `<div class="card2"><h3 style="margin:0 0 6px">🚪 ऐप कब-कहाँ खुला <small class="note">${L.length} बार</small></h3>${o.loading?'<p class="note">लोड हो रहा है…</p>':L.length?`<div class="list">${L.slice(0,60).map(x=>`<div class="li"><div class="mid"><b>${esc(x.name||"फोन")} · ${ftime(x.ts)} <small class="note">${esc(x.what||"")}</small></b><span>${x.lat!=null?`📍 ±${x.acc||"?"} मी`:"📍 जगह नहीं मिली (GPS बंद?)"}</span></div>${x.lat!=null?`<a class="chip" target="_blank" rel="noopener" href="https://maps.google.com/?q=${x.lat},${x.lng}">🗺️ नक्शा</a>`:""}</div>`).join("")}</div>`:'<p class="note">इस दिन किसी ने ऐप नहीं खोला</p>'}</div>`}
+  return `<div class="card2"><h3 style="margin:0 0 6px">🚪 ऐप कब-कहाँ खुला <small class="note">${L.length} बार</small></h3>${o.loading?'<p class="note">लोड हो रहा है…</p>':L.length?`<div class="list">${L.slice(0,60).map(x=>`<div class="li"><div class="mid"><b>${esc(x.name||"फोन")} · ${ftime(x.ts)} <small class="note">${esc(x.what||"")}</small></b><span>${x.lat!=null?`📍 ±${x.acc||"?"} मी`:"📍 जगह नहीं मिली (GPS बंद?)"}</span></div>${x.lat!=null?`<a class="chip" target="_blank" rel="noopener" href="https://maps.google.com/?q=${x.lat},${x.lng}">🗺️ नक्शा</a>`:""}</div>`).join("")}</div>`:'<p class="note">इस दिन किसी ने ऐप नहीं खोला (या नियम अभी Firebase में नहीं डाले)</p>'}</div>`}
 SR.renderRoute=function(){
   const el=document.getElementById("p-route");if(!el)return;bindRoute(el);if(!R.date)R.date=today();
   if((!R.raw||R.raw.date!==R.date)&&!R.loading)SR.loadDay(R.date);
@@ -455,7 +454,7 @@ SR.renderRoute=function(){
   <div class="card2 rlive" id="rLive">${liveHTML()}</div>${opensHTML()}
   <div class="seg" style="margin:0 0 10px"><span class="note" style="align-self:center">लोकेशन बंद हो तो कर्मचारी की बिलिंग रोकें:</span><button class="chip" data-locreq="1" aria-pressed="${locReq()}">✅ हाँ, रोकें</button><button class="chip" data-locreq="0" aria-pressed="${!locReq()}">नहीं</button></div>
   <div class="rmapw${R.big?" big":""}" id="rmapw"><div id="rmap" class="rmap" role="img" aria-label="कर्मचारी का रास्ता नक्शे पर"></div>
-    <div class="rctl"><button data-rsat>${R.sat?"🗺️ सादा":"🛰️ सैटेलाइट"}</button><button data-rlbl aria-pressed="${R.lbl}">🏷️ नाम</button><button data-rme>📍 मैं</button><button data-rbig>${R.big?"✕ छोटा":"⛶ बड़ा"}</button></div></div>
+    <div class="rctl"><button data-rsat aria-label="नक्शे का प्रकार बदलें">${{osm:"🗺️ नक्शा",clean:"🧭 साफ़",sat:"🛰️ सैटेलाइट"}[R.sty]} ▾</button><button data-rlbl aria-pressed="${R.lbl}">🏷️ नाम</button><button data-rme>📍 मैं</button><button data-rbig>${R.big?"✕ छोटा":"⛶ बड़ा"}</button></div></div>
   ${d&&d.pts.some(u=>u.P.length>1)?playHTML(d):""}
   <button class="big" data-plhere style="margin:8px 0">📍 मैं यहाँ हूँ — फोन की असली जगह से जगह जोड़ें</button>
   ${d?dayHTML(d):'<div class="empty">⏳ रूट लोड हो रहा है…</div>'}
@@ -470,16 +469,21 @@ SR.renderRoute=function(){
 function loadLeaflet(){return new Promise((res,rej)=>{if(window.L)return res();if(!document.querySelector('link[href="lib/leaflet.css"]')){const l=document.createElement("link");l.rel="stylesheet";l.href="lib/leaflet.css";document.head.appendChild(l)}
   const s=document.createElement("script");s.src="lib/leaflet.js";s.onload=()=>res();s.onerror=rej;document.head.appendChild(s)})}
 const ESRI="https://server.arcgisonline.com/ArcGIS/rest/services/",SATU=ESRI+"World_Imagery/MapServer/tile/{z}/{y}/{x}";
-/* 🛰️ साफ़ सैटेलाइट (177 MH से): Esri "Clarity" + फोन की स्क्रीन जितनी बारीक टाइल; न मिले तो पुरानी Esri — नक्शा कभी खाली नहीं
-   🗺️ सादा = CARTO Voyager (साफ़ सड़क नक्शा) */
-const SATC="https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-function satLayer(){const t=L.tileLayer(SATC,{maxZoom:21,maxNativeZoom:19,detectRetina:true,crossOrigin:true,attribution:"Imagery © Esri, Maxar, Earthstar Geographics"});
-  t.on("tileerror",e=>{const im=e.tile;if(im&&!im.dataset.fb){im.dataset.fb=1;const c=e.coords;im.src=SATU.replace("{z}",c.z).replace("{y}",c.y).replace("{x}",c.x)}});return t}
-function lblLayers(m){L.tileLayer(ESRI+"Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",{maxZoom:21,maxNativeZoom:19,opacity:.55}).addTo(m);
-  L.tileLayer(ESRI+"Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",{maxZoom:21,maxNativeZoom:19,opacity:.95}).addTo(m)}
+/* 🗺️ नक्शे — सब मुफ़्त, कोई API चाबी नहीं, कोई खर्च नहीं (06-11-2026):
+   CARTO ने मुफ़्त टाइल पर भी "API KEY REQUIRED" लगा दिया — इसलिए CARTO पूरी तरह हटाया।
+   🧭 साफ़ = Esri World Street Map (Google जैसा साफ़ सड़क-नक्शा) · 🗺️ नक्शा = OpenStreetMap (गलियाँ/इमारतें)
+   🛰️ सैटेलाइट = Esri World Imagery + हल्के सड़क/नाम (hybrid) · कोई टाइल न आए तो अपने-आप दूसरा मुफ़्त स्रोत — नक्शा कभी खाली/चाबी वाला नहीं */
+const STREET=ESRI+"World_Street_Map/MapServer/tile/{z}/{y}/{x}",OSMT="https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+const fill=(u,c)=>u.replace("{z}",c.z).replace("{y}",c.y).replace("{x}",c.x);
+const withFb=(t,fb)=>{t.on("tileerror",e=>{const im=e.tile;if(im&&!im.dataset.fb){im.dataset.fb=1;im.src=fill(fb,e.coords)}});return t};
+/* बाड़मेर में z18 से आगे फोटो नहीं होती — z18 की असली फोटो ही बड़ी करके दिखाओ (धुंधली "डेटा नहीं" टाइल नहीं) */
+function satLayer(){return withFb(L.tileLayer(SATU,{maxZoom:21,maxNativeZoom:18,attribution:"Imagery © Esri, Maxar"}),STREET)}
+function lblLayers(m){L.tileLayer(ESRI+"Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",{maxZoom:21,maxNativeZoom:19,opacity:.5}).addTo(m);
+  L.tileLayer(ESRI+"Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",{maxZoom:21,maxNativeZoom:19,opacity:.9}).addTo(m)}
 function baseLayers(m,lbl){
-  if(R.sat){satLayer().addTo(m);if(lbl)lblLayers(m)}
-  else L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",{subdomains:"abcd",maxZoom:21,maxNativeZoom:20,attribution:"© OpenStreetMap © CARTO"}).addTo(m);
+  if(R.sty==="sat"){satLayer().addTo(m);if(lbl)lblLayers(m)}
+  else if(R.sty==="osm")withFb(L.tileLayer(OSMT,{maxZoom:21,maxNativeZoom:19,attribution:"© OpenStreetMap"}),STREET).addTo(m);
+  else withFb(L.tileLayer(STREET,{maxZoom:21,maxNativeZoom:19,attribution:"© Esri, OpenStreetMap"}),OSMT).addTo(m);
 }
 const pin=(html,cls,w,h)=>L.divIcon({className:cls,html,iconSize:[w,h],iconAnchor:[w/2,h/2]});
 SR.drawMap=async function(){
@@ -726,7 +730,7 @@ function bindRoute(el){
     if(t.dataset.ccsv!==undefined){SR.saveFile("BhairavCanteen_Customers_"+today()+".csv",csvCustomers(),"text/csv");return}
     if(t.dataset.rday){if(R.date!==t.dataset.rday){R.date=t.dataset.rday;R.agg=null;R.raw=null;R.day=null;playStop();R.play.t=0;SR.renderRoute()}return}
     if(t.dataset.rwho!==undefined){R.who=t.dataset.rwho;reday();return}
-    if(t.dataset.rsat!==undefined){R.sat=!R.sat;LSx.set("se_rsat",R.sat?"1":"0");SR.renderRoute();return}
+    if(t.dataset.rsat!==undefined){R.sty={clean:"osm",osm:"sat",sat:"clean"}[R.sty]||"clean";LSx.set("se_rsty",R.sty);toast({osm:"🗺️ OpenStreetMap — गलियाँ, दुकानें, इमारतें साफ़",clean:"🧭 साफ़ सड़क नक्शा",sat:"🛰️ सैटेलाइट"}[R.sty]);SR.renderRoute();return}
     if(t.dataset.rlbl!==undefined){R.lbl=!R.lbl;LSx.set("se_rlbl",R.lbl?"1":"0");SR.renderRoute();return}
     if(t.dataset.rme!==undefined){SR.showMe();return}
     if(t.dataset.rbig!==undefined){R.big=!R.big;const w=document.getElementById("rmapw");if(w)w.classList.toggle("big",R.big);t.textContent=R.big?"✕ छोटा":"⛶ बड़ा";document.body.classList.toggle("rbig-on",R.big);setTimeout(()=>{try{R.map.invalidateSize()}catch(x){}},150);return}
@@ -810,10 +814,12 @@ SR.rateSheet=function(it){
     <div class="qrow"><label class="qf"><span>नया ₹</span><input id="rnIn" inputmode="decimal" autocomplete="off" placeholder="${old}"><span>/${u}</span></label></div>
     ${S.isOwner&&cost>0?`<p class="note" id="rnM" style="margin:0">खरीद ${rs(cost)}/${u}</p>`:""}
     <button class="big" data-rnsave>✓ नया भाव लगाएँ</button>
-    ${S.isOwner?"":`<p class="note" style="margin:0;text-align:center">नया भाव सबके फोन में तुरंत लग जाएगा</p>`}</div>`;
+    ${S.isOwner?"":`<p class="note" style="margin:0;text-align:center">नया भाव सबके फोन में तुरंत लग जाएगा · विक्रम जी की रिपोर्ट में आपके नाम से दर्ज होगा</p>`}</div>`;
   const I=$("#rnIn");
   $("#sheet").oninput=()=>{const n=num(I.value),m=$("#rnM");if(m&&n>0)m.innerHTML=`खरीद ${rs(cost)} → बिक्री ${rs(n)} · मुनाफ़ा <b style="color:${n>cost?"var(--leaf)":"var(--chili)"}">${Math.round((n-cost)/cost*100)}%</b>`};
+  let sure="";
   const save=async()=>{const n=r2(num(I.value));if(!(n>0)){toast("नया भाव लिखें");return}if(n===old){closeSheet();return}
+    if(old>0&&(n>old*3||n<old/3)&&sure!==String(n)){sure=String(n);beep(false);toast("⚠️ "+rs(old)+" → "+rs(n)+" बहुत बड़ा बदलाव है — सही है तो दोबारा दबाएँ");return}
     try{if(!S.demo){await S.db.collection("items").doc(it.id).update({sale:n,rateTs:Date.now(),rateBy:S.uid||"",rateByName:biller(),ratePrev:old});
         await S.db.collection("priceLog").doc("r"+Date.now().toString(36)).set({itemId:it.id,name:it.name,field:"sale",old,new:n,ts:Date.now(),by:S.uid||"",byName:biller()})}
       it.sale=n;closeSheet();refreshAfterCart();toast("✏️ "+it.name+": "+rs(old)+" → "+rs(n))}
@@ -854,7 +860,7 @@ SR.lockCheck=function(){
   if(Date.now()-last<IDLE){markAct();return}
   let pin="",bad=0;const el=document.createElement("div");el.id="plock";el.className="plock";document.body.appendChild(el);
   const draw=(err)=>{el.innerHTML=`<div class="pl-box"><div class="pl-logo">🛒</div><b>भैरव कैंटीन</b><span>नमस्ते ${esc(biller()||"")} 🙏 — अपना PIN डालें</span>
-    <div class="dots ${err?"bad":""}">${Array.from({length:PL()},(_,i)=>i).map(i=>`<i class="${i<pin.length?"f":""}"></i>`).join("")}</div>${err?`<p class="pl-err">${esc(err)}</p>`:""}
+    <div class="dots ${err?"bad":""}">${[0,1,2,3].map(i=>`<i class="${i<pin.length?"f":""}"></i>`).join("")}</div>${err?`<p class="pl-err">${esc(err)}</p>`:""}
     <div class="pl-keys">${["1","2","3","4","5","6","7","8","9","c","0","b"].map(k=>`<button data-pk="${k}">${k==="c"?"साफ़":k==="b"?"⌫":k}</button>`).join("")}</div>
     <button class="lnk" data-plout>दूसरा व्यक्ति? लॉग-आउट</button></div>`};
   draw();
@@ -1016,7 +1022,7 @@ SR.autoOldUdhar2=async function(db){
     try{renderPane()}catch(x){}
   }catch(e){SR._old2=0}
 };
-/* 📥 03-11 (विक्रम जी की राय के बाद): पुराने रजिस्टर पेज (26-09 से 04-10) + कॉपी की बची एंट्री; MH = 177 MH वेट कैंटीन;
+/* 📥 03-11 (विक्रम जी की राय के बाद): पुराने रजिस्टर पेज (26-09 से 04-10) + कॉपी की बची एंट्री; MH = भैरव कैंटीन;
    एडम कमांडर = वसूली नहीं (रकम छिपी, सिर्फ़ नोट); मनोज जी = मालिक के घर की सब्ज़ी (अलग खाता, रकम छिपी) */
 const OLD_UDHAR3=[];
 OLD_UDHAR3.forEach(g=>g.total=g.rows.reduce((a,r)=>a+r[1],0));
@@ -1172,7 +1178,7 @@ SR.applyInst=async function(db,P){
   }catch(e){}finally{SR._inst=0}
 };
 /* =============== 🏢 अपनी संस्थाएँ उधार में नहीं (03-11, विक्रम जी) =============== */
-const INST_K=[[/रसोई|rasoi|मारवाड़\s*रसोई/i,"रसोई","मारवाड़ रसोई (होटल)"],[/डोसा|dosa|रामविनायक/i,"डोसा","रामविनायक डोसा पॉइंट"],[/सब्ज़ी\s*एक्सप्रेस|सब्जी\s*एक्सप्रेस|sabzi|sabji/i,"सब्ज़ी","सब्ज़ी एक्सप्रेस"],[/mh\s*(wet\s*)?canteen|एमएच|177\s*mh|mh\s*(वेट\s*)?कैंटीन|^\s*mh\s*$/i,"MH","177 MH कैंटीन"]];
+const INST_K=[[/रसोई|rasoi|मारवाड़\s*रसोई/i,"रसोई","मारवाड़ रसोई (होटल)"],[/डोसा|dosa|रामविनायक/i,"डोसा","रामविनायक डोसा पॉइंट"],[/सब्ज़ी\s*एक्सप्रेस|सब्जी\s*एक्सप्रेस|sabzi|sabji/i,"सब्ज़ी","सब्ज़ी एक्सप्रेस"],[/mh\s*(wet\s*)?canteen|एमएच|177\s*mh|mh\s*(वेट\s*)?कैंटीन|^\s*mh\s*$/i,"MH","भैरव कैंटीन"]];
 SR.instOf=function(name){const n=String(name||"");for(const [re,key,def] of INST_K)if(re.test(n)){const IN=typeof insts==="function"?insts():[];return IN.find(x=>x.includes(key))||def}return ""};
 const devId=()=>{try{let d=localStorage.getItem("se_dev");if(!d){d="d"+Math.random().toString(36).slice(2,9);localStorage.setItem("se_dev",d)}return d}catch(e){return "d?"}};
 const devTxt=()=>{const u=navigator.userAgent||"";const m=u.match(/Android[^;)]*;\s*([^;)]+)/);return (m?m[1]:/iPhone/.test(u)?"iPhone":/Windows/.test(u)?"Windows कंप्यूटर":"ब्राउज़र").trim().slice(0,40)};
@@ -1259,13 +1265,14 @@ SR.miniInit=async function(){const el=document.getElementById("dMini");if(!el||!
       SR.mini={date,day:analyze(date,docs,(S.dayBills||[]).filter(b=>!b.cancelled)),ts:Date.now(),map:null}}
     const d=SR.mini.day;const t=document.getElementById("dMiniT");
     if(t)t.textContent=`${d.stops.length} जगह रुकी · लगभग ${d.km} km · ${d.stops.filter(s=>s.sales>0).length} जगह बिक्री${d.gaps&&d.gaps.length?" · ⚠ "+d.gaps.length+" बार लोकेशन बंद":""}`;
-    if(!window.L)await loadLeaflet();const el2=document.getElementById("dMini");if(!el2||el2._lm)return;
+    if(!window.L)await loadLeaflet().catch(()=>{});const el2=document.getElementById("dMini");if(!el2||el2._lm)return;
+    if(!window.L||!L.map){el2.style.display="none";return}/* नक्शा न खुले (नेट नहीं) — गिनती वाली लाइन ही दिखे, गलती नहीं */
     const m=L.map(el2,{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,tap:false});el2._lm=m;
     satLayer().addTo(m);lblLayers(m);const B=[];
     d.pts.forEach(u=>{const ll=u.P.map(p=>[p.lat,p.lng]);if(ll.length<2)return;L.polyline(ll,{color:"#fff",weight:6,opacity:.45}).addTo(m);L.polyline(ll,{color:colorOf(u.uid),weight:3.5}).addTo(m);ll.forEach(x=>B.push(x))});
     d.stops.forEach((s,i)=>{L.circleMarker([s.lat,s.lng],{radius:s.sales>0?Math.min(14,6+Math.sqrt(s.sales)/6):5,color:"#fff",weight:2,fillColor:s.sales>0?"#22c55e":"#f59e0b",fillOpacity:.95}).addTo(m);B.push([s.lat,s.lng])});
     if(B.length)m.fitBounds(B,{padding:[14,14],maxZoom:17});else m.setView([HOME.lat,HOME.lng],15);setTimeout(()=>{try{m.invalidateSize()}catch(e){}},150);
-  }catch(e){const t=document.getElementById("dMiniT");if(t)t.textContent="नक्शा नहीं बना: "+(e.code||e.message||"")}};
+  }catch(e){const t=document.getElementById("dMiniT"),el3=document.getElementById("dMini");if(el3)el3.style.display="none";if(t&&!/जगह रुकी/.test(t.textContent))t.textContent="🗺️ नक्शा इंटरनेट आने पर दिखेगा — टैप करके पूरा रास्ता देखें"}};
 document.addEventListener("click",e=>{if(!e.target.closest("[data-gorute]"))return;R.date=S.billsDate;R.raw=null;R.day=null;const t=document.querySelector('[data-tab="route"]');if(t)t.click()});
 /* SF के साथ जोड़ */
 if(window.SF){const _o=SF.onDb;SF.onDb=function(db){_o(db);try{SR.onDb(db)}catch(e){}}}

@@ -6,7 +6,7 @@ const SOD=window.SOD={};
 const num=v=>{const n=parseFloat(String(v==null?"":v).replace(",","."));return isFinite(n)?n:0};
 const qOf=it=>+(S.pstock[it.id]&&S.pstock[it.id].qty)||0;
 const need=it=>Math.max(lowOf(it),Math.ceil(lowOf(it)*2-qOf(it)));
-const MHN="177 MH कैंटीन";
+const MHN="भैरव कैंटीन";
 const LSo={get(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const clean=v=>{let d=String(v||"").replace(/\D/g,"");if(d.length>10)d=d.slice(-10);return d.length===10?d:""};
 function lastBuy(id){const P=(S.purchHist||[]).concat(S.purch||[]).filter(p=>!p.cancelled&&(p.lines||[]).some(l=>l.id===id)).sort((a,b)=>b.ts-a.ts);return P[0]||null}

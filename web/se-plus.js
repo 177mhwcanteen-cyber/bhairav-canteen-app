@@ -133,7 +133,7 @@ SX.hisabPdf=async function(pid){const p=(S.parties||[]).find(x=>x.id===pid);if(!
     const pages=[];let i=0;
     while(i<R.length||!pages.length){const cv=document.createElement("canvas");cv.width=W;cv.height=H;const g=cv.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,W,H);
       const first=!pages.length;let y=M;
-      if(first){g.fillStyle="#4f46e5";g.fillRect(0,0,W,190);g.fillStyle="#fff";g.font=`800 60px ${F}`;g.fillText("🛒 भैरव कैंटीन",M,95);g.font=`500 30px ${F}`;g.fillText("किराना · फास्ट फूड · सब्ज़ी · जसाई, बाड़मेर",M,145);
+      if(first){g.fillStyle="#7c2d12";g.fillRect(0,0,W,190);g.fillStyle="#fff";g.font=`800 60px ${F}`;g.fillText("🛒 भैरव कैंटीन",M,95);g.font=`500 30px ${F}`;g.fillText("किराना · फास्ट फूड · सब्ज़ी · जसाई, बाड़मेर",M,145);
         y=250;g.fillStyle="#111827";g.font=`800 44px ${F}`;g.fillText("उधार का हिसाब — "+p.name,M,y);y+=48;g.font=`500 28px ${F}`;g.fillStyle="#4b5563";
         g.fillText([p.qtr?"क्वार्टर "+p.qtr:"",p.phone?"मो. "+p.phone:"","तारीख "+fdate(today())].filter(Boolean).join("  ·  "),M,y);y+=40;
         g.fillStyle=due>0?"#fef2f2":"#f0fdf4";g.fillRect(M,y,W-2*M,110);g.fillStyle=due>0?"#b91c1c":"#15803d";g.font=`800 52px ${F}`;g.fillText((due>0?"कुल बाकी: ₹":"हिसाब साफ़ ✓  ₹")+due.toLocaleString("en-IN"),M+30,y+72);y+=150}
@@ -162,9 +162,14 @@ SX.orders=[];SX._oUn=null;
 SX.watchOrders=function(){if(S.demo||!S.db||SX._oUn)return;try{SX._oUn=S.db.collection("orders").where("status","in",["new","billing"]).onSnapshot(s=>{SX.orders=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>num(b.ts)-num(a.ts));SX.orderPill()},()=>{})}catch(e){}};
 SX.orderPill=function(){let el=document.getElementById("sxOrd");const n=SX.orders.filter(o=>o.status==="new").length,m=SX.orders.length;
   if(!m){if(el)el.remove();return}if(!el){el=document.createElement("button");el.id="sxOrd";el.className="sx-ord";el.type="button";el.setAttribute("data-sxorders","1");document.body.appendChild(el)}
-  el.innerHTML=`📥 ऑर्डर <b>${m}</b>${n?'<i></i>':""}`;if(n&&!SX._beeped){SX._beeped=1;try{beep(true)}catch(e){}}};
+  el.innerHTML=`📥 ऑर्डर <b>${m}</b>${n?'<i></i>':""}`;
+  /* 🔔 हर नए ऑर्डर पर: बीप ×3 + कंपन + नाम के साथ सूचना (पहले सिर्फ़ एक बार बीप होती थी) */
+  const seen=SX._seen||(SX._seen=new Set());const fresh=SX.orders.filter(o=>o.status==="new"&&!seen.has(o.id));fresh.forEach(o=>seen.add(o.id));
+  if(fresh.length&&SX._oInit){try{beep(true);setTimeout(()=>beep(true),350);setTimeout(()=>beep(true),700)}catch(e){}try{if(navigator.vibrate)navigator.vibrate([200,100,200,100,300])}catch(e){}
+    toast("📥 नया ऑर्डर: "+fresh.map(o=>(o.name||"ग्राहक")+" ("+(o.items||[]).length+" सामान)").join(", ")+" — ऊपर 📥 दबाएँ")}
+  else if(n&&!SX._oInit){try{beep(true)}catch(e){}}SX._oInit=1};
 SX.ordersSheet=function(){const L=SX.orders;$("#sheet").innerHTML=`<div class="scrim" data-close><div class="sheet px" role="dialog" aria-label="ऑर्डर"><div class="grab"></div>
-  <div class="sh-head"><div><h3>📥 ग्राहकों के ऑर्डर (${L.length})</h3><span class="note">ऑर्डर-लिंक: ${esc(pubBase()+"o.html")}</span></div><button class="x" data-close aria-label="बंद करें">✕</button></div>
+  <div class="sh-head"><div><h3>📥 ग्राहकों के ऑर्डर (${L.length})</h3><span class="note">ऑर्डर-लिंक: ${esc(pubBase()+"order/")}</span></div><button class="x" data-close aria-label="बंद करें">✕</button></div>
   ${L.length?L.map(o=>`<div class="card2 sx-o"><div class="rr-h"><b>${esc(o.name||"ग्राहक")} · ${esc(o.phone||"")}</b><small class="note">${ftime(o.ts)}${o.status==="billing"?" · 🧾 बिल बन रहा":""}</small></div>
     ${o.addr?`<p class="note" style="margin:2px 0">📍 ${esc(o.addr)}</p>`:""}<p style="margin:4px 0">${(o.items||[]).map(x=>esc(x.n)+" "+fq(num(x.q),x.u||"kg")).join(", ")}</p>${o.note?`<p class="note" style="margin:0">📝 ${esc(o.note)}</p>`:""}
     <div class="row2" style="margin-top:6px"><button class="big" data-sxobill="${esc(o.id)}">🧾 बिल बनाएँ</button><a class="big ghost" target="_blank" rel="noopener" href="${waLink(`🙏 नमस्ते ${o.name||""} जी, आपका ऑर्डर मिल गया — भैरव कैंटीन से आपका सामान जल्द पहुँचेगी 🚐🥬`,o.phone||"")}">✓ WhatsApp पुष्टि</a></div>
@@ -203,7 +208,7 @@ SX.poster=async function(){toast("🖼️ भाव-पोस्टर बन �
     x.fillStyle="#e04a00";x.font=`800 ${Math.round(ch*.27)}px "Baloo 2",sans-serif`;const pr="₹"+num(it.sale);x.fillText(pr,tx,cy+pad+ch*.72);const pw=x.measureText(pr).width;
     x.fillStyle="#6e6e73";x.font=`600 ${Math.round(ch*.15)}px "Mukta",sans-serif`;x.fillText("/"+(UNITS[it.unit]||it.unit),tx+pw+4,cy+pad+ch*.72)});
   /* नीचे: ऑर्डर QR */
-  const url=pubBase()+"o.html";let qr=null;try{if(window.QRCode){const d=document.createElement("div");new QRCode(d,{text:url,width:180,height:180,correctLevel:QRCode.CorrectLevel.M});await new Promise(r=>setTimeout(r,60));qr=d.querySelector("canvas")||await loadImg((d.querySelector("img")||{}).src)}}catch(e){}
+  const url=pubBase()+"order/";let qr=null;try{if(window.QRCode){const d=document.createElement("div");new QRCode(d,{text:url,width:180,height:180,correctLevel:QRCode.CorrectLevel.M});await new Promise(r=>setTimeout(r,60));qr=d.querySelector("canvas")||await loadImg((d.querySelector("img")||{}).src)}}catch(e){}
   x.fillStyle="#fff";x.fillRect(40,1175,200,200-30);if(qr)x.drawImage(qr,50,1180,160,160);
   x.textAlign="left";x.fillStyle="#fff";x.font='800 40px "Baloo 2",sans-serif';x.fillText("📱 घर बैठे ऑर्डर करें — QR स्कैन करें",270,1235);
   x.font='600 28px "Mukta",sans-serif';x.fillStyle="#cfe0ff";x.fillText("UPI / नकद · जसाई, बाड़मेर · सामान आपकी गली में 🚐",270,1285);
@@ -295,7 +300,7 @@ document.addEventListener("click",async e=>{const t=e.target;
   const ob=t.closest("[data-sxobill]");if(ob){SX.orderBill(ob.dataset.sxobill);return}
   const od=t.closest("[data-sxodone]");if(od){SX.orderSet(od.dataset.sxodone,"done");closeSheet();return}
   const on=t.closest("[data-sxono]");if(on){if(!on.dataset.sure){on.dataset.sure="1";on.textContent="पक्का रद्द?";return}SX.orderSet(on.dataset.sxono,"cancel");closeSheet();return}
-  if(t.closest("[data-sxolink]")){window.open(waLink("🛒 भैरव कैंटीन — अब घर बैठे ऑर्डर करें! सामान चुनें, भेजें, सामान तैयार मिलेगा 🛒\n"+pubBase()+"o.html",""),"_blank");return}
+  if(t.closest("[data-sxolink]")){window.open(waLink("🛒 भैरव कैंटीन — अब घर बैठे ऑर्डर करें! सामान चुनें, भेजें, सामान तैयार मिलेगा 🛒\n"+pubBase()+"order/",""),"_blank");return}
   if(t.closest("[data-sxposter]")){SX.poster();return}
   if(t.closest("[data-sxbk]")){SX.backupFile();return}
   const mo=t.closest("[data-sxmonth]");if(mo){SX.monthA4(mo.dataset.sxmonth);return}
@@ -304,5 +309,6 @@ document.addEventListener("click",async e=>{const t=e.target;
 document.addEventListener("change",e=>{if(e.target.id==="sxvF")SX.vy.from=e.target.value||SX.vy.from;if(e.target.id==="sxvT")SX.vy.to=e.target.value||SX.vy.to});
 /* शुरुआत: मालिक — रोज़ का बैकअप + भाव सूची (हल्के, देर से); सब — ऑर्डर सुनें */
 SX.start=function(){if(SX._st)return;SX._st=1;setTimeout(()=>{SX.watchOrders();if(S.isOwner){SX.pubRates();setTimeout(SX.autoBackup,20000)}},8000);setInterval(()=>{try{SX.checkOrderDone()}catch(e){}},15000);if(S.isOwner)setInterval(()=>{try{SX.pubRates()}catch(e){}},10*60000)};
-const wait=setInterval(()=>{if(window.S&&S.db&&S.items&&S.items.length&&(S.isOwner||S.uid)){clearInterval(wait);SX.start()}},2000);
+/* ध्यान: index.html का S "const" है — window.S नहीं होता (पहले यही गलती थी, इसलिए ऑर्डर/बैकअप/भाव-सूची कभी चालू नहीं होते थे) */
+const wait=setInterval(()=>{const st=typeof S!=="undefined"?S:null;if(st&&st.db&&st.items&&st.items.length&&(st.isOwner||st.uid)){clearInterval(wait);SX.start()}},2000);
 })();

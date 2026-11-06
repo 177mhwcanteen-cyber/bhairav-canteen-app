@@ -144,6 +144,20 @@ service cloud.firestore {
     // 🔐 मालिक का UPI मिलान, असली दुकानदार, अपने खाते — कर्मचारी पढ़ भी नहीं सकते
     match /pay/{id}      { allow read, write: if isOwner(); }
     match /payees/{id}   { allow read, write: if isOwner(); }
+    // 06-11-2026: 177 MH से आई नई सुविधाएँ — 🛍️ बाज़ार खरीद (mbuys), बारकोड याद (bcache), AI चाबी-गिनती (aikeys)
+    match /mbuys/{id} {
+      allow read: if isOwner() || (active() && (resource.data.by == request.auth.uid || resource.data.status == 'sent'));
+      allow create: if active() && request.resource.data.by == request.auth.uid && request.resource.data.status == 'sent';
+      allow update: if isOwner()
+        || (active() && resource.data.status == 'sent' && resource.data.by != request.auth.uid
+            && request.resource.data.status == 'recv' && request.resource.data.recv.by == request.auth.uid
+            && onlyKeys(['status', 'recv']));
+      allow delete: if false;
+    }
+    // एक पक्का बिल (दुकान + बिल नंबर + तारीख) सिर्फ़ एक बार — दोबारा बनाना नामुमकिन
+    // 🌐 इंटरनेट से खोजे बारकोड — एक बार खोजा, सबके फ़ोन में काम आए
+    match /bcache/{code} { allow read, create: if active(); allow update, delete: if isOwner(); }
+    match /aikeys/{key} { allow read: if active(); allow create: if active(); allow update, delete: if false; }
     match /ownerCfg/{id} { allow read, write: if isOwner(); }
 
     // पहरेदार की निजी छाप — सिर्फ़ मालिक

@@ -15,7 +15,10 @@ const acctLabel=l4=>{l4=String(l4||"").replace(/\D/g,"").slice(-4);if(!l4)return
 
 SP.onDb=function(db){
   if(!S.isOwner||S.demo&&!db)return;
-  db.collection("pay").onSnapshot(s=>{ST.pay=s.docs.map(d=>({id:d.id,...d.data()}));ST.ready=true;rer()},()=>{});
+  /* ⚡ तेज़: सिर्फ़ पिछले 180 दिन + सारे "बिना मिलान" वाले लाइव — महीनों बाद भी ऐप हल्का (पुराना डेटा Firebase में वैसा ही) */
+  const P={a:[],b:[]},mergeP=()=>{const m=new Map();P.a.concat(P.b).forEach(x=>m.set(x.id,x));ST.pay=[...m.values()];ST.ready=true;rer()};
+  db.collection("pay").where("date",">=",dayAdd(today(),-180)).onSnapshot(s=>{P.a=s.docs.map(d=>({id:d.id,...d.data()}));mergeP()},()=>{});
+  db.collection("pay").where("kind","==","unmatched").onSnapshot(s=>{P.b=s.docs.map(d=>({id:d.id,...d.data()}));mergeP()},()=>{});
   db.collection("payees").onSnapshot(s=>{ST.payees=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.total||0)-(a.total||0));rer()},()=>{});
   db.doc("ownerCfg/accounts").onSnapshot(s=>{ST.accts=(s.exists&&s.data().list)||[];rer()},()=>{});
   loadPurch();
@@ -57,7 +60,7 @@ SP.cardHTML=function(){
 /* ---------- 📄 AI के लिए HTML फाइल ---------- */
 SP.aiHTML=function(){
   const N=need();const rows=N.map((x,i)=>({n:i+1,ref:x.ref,bill:x.p?billNo(x.p):"बाकी",date:x.date,time:ftime(x.ts),kind:x.kind,shop_typed:x.shop,phone_typed:x.phone,items:x.items,amount:x.amt,paid_by:PAYN[x.mode]||x.mode,entered_by:x.by}));
-  const data={app:"bhairav-canteen",made:new Date().toISOString(),purchases:rows,known_payees:ST.payees.map(p=>({name:p.name,upi:p.upiIds||[],phones:p.phones||[],shops:p.shops||[]})),owner_accounts:ST.accts};
+  const data={app:"mh-wet-canteen",made:new Date().toISOString(),purchases:rows,known_payees:ST.payees.map(p=>({name:p.name,upi:p.upiIds||[],phones:p.phones||[],shops:p.shops||[]})),owner_accounts:ST.accts};
   const e=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   return `<!doctype html><html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>भैरव कैंटीन — UPI भुगतान मिलान</title>
 <style>body{font-family:"Noto Sans Devanagari",system-ui,sans-serif;margin:16px;color:#111;line-height:1.5}h1{font-size:22px;margin:0}h2{font-size:18px;margin:18px 0 6px}

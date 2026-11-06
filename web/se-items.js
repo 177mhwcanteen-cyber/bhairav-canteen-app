@@ -12,7 +12,7 @@ SQ.calc=async function(days){
   SQ.busy=true;const to=today(),from=dAdd(to,-(days-1));
   const B=(await SF.fetchRange(from,to)).filter(b=>!b.cancelled&&b.mode!=="inst");
   const M={};const g=(id,name,unit)=>M[id]||(M[id]={id,name,unit,qty:0,sale:0,cost:0,miss:0,days:new Set(),last:""});
-  B.forEach(b=>(b.lines||[]).forEach(l=>{if(!l.id||l.id==="xyz")return;const o=g(l.id,(item(l.id)||{}).name||l.realName||l.name,l.unit);const c=SF.lineCost?SF.lineCost(l,b.date):num(l.cost);
+  B.forEach(b=>(b.lines||[]).forEach(l=>{if(!l.id||l.id==="xyz")return;const o=g(l.id,l.name,l.unit);const c=SF.lineCost?SF.lineCost(l,b.date):num(l.cost);
     o.qty+=num(l.qty);o.sale+=l.free?0:num(l.amt);if(c>0)o.cost+=num(l.qty)*c;else o.miss+=l.free?0:num(l.amt);o.days.add(b.date);if(b.date>o.last)o.last=b.date}));
   (S.returns||[]).filter(r=>r.kind==="sale"&&!r.void&&r.date>=from&&r.date<=to).forEach(r=>(r.lines||[]).forEach(l=>{const o=M[l.id];if(!o)return;
     o.qty-=num(l.qty);o.sale-=num(l.amt);const it=item(l.id);const c=it?SF.costOf(it):0;if(c>0)o.cost-=num(l.qty)*c}));
@@ -46,7 +46,7 @@ SQ.html=function(){if(!S.isOwner)return "";const R=SQ.res&&SQ.res.days===SQ.days
     <h4 class="sq-h">💰 सबसे ज़्यादा कमाई</h4>${top.length?tbl(["सामान","बिका","बिक्री","मुनाफ़ा","%"],top.map(r=>`<tr><td>${esc(r.name)}</td>${td(fq(r.qty,r.unit))}${td(rs(r.sale))}${td("<b>"+rs(r.pf)+"</b>")}${td(r.pct+"%")}</tr>`)):'<p class="note">खरीद भाव भरने पर यहाँ दिखेगा</p>'}
     <h4 class="sq-h">🚀 सबसे तेज़ बिकने वाले</h4>${fast.length?tbl(["सामान","रोज़ औसत","कुल बिका","स्टॉक चलेगा"],fast.map(r=>{const d=r.stock!=null&&r.perDay>0?Math.floor(r.stock/r.perDay):null;
       return `<tr><td>${esc(r.name)}</td>${td(fq(r.perDay,r.unit))}${td(fq(r.qty,r.unit))}${td(d==null?"—":d<=3?`<b style="color:var(--chili)">${d} दिन ⚠</b>`:d+" दिन")}</tr>`})):'<p class="note">अभी कोई बिक्री नहीं</p>'}
-    <h4 class="sq-h">🐢 30 दिन से नहीं बिका (${R.dead.length})</h4>${R.dead.length?tbl(["सामान","स्टॉक","लागत","MRP कीमत"],R.dead.slice(0,15).map(x=>`<tr><td>${esc(x.it.name)}${x.newish?' <small class="note">(नया)</small>':""}</td>${td(fq(x.qty,x.it.unit))}${td(x.val?rs(x.val):"—")}${td(rs(x.mrpVal))}</tr>`))+
+    <h4 class="sq-h">🐢 30 दिन से नहीं बिका (${R.dead.length})</h4>${R.dead.length?tbl(["सामान","स्टॉक","लागत","MRP कीमत"],R.dead.slice(0,15).map(x=>`<tr><td>${esc(SE.capNm(x.it.name))}${x.newish?' <small class="note">(नया)</small>':""}</td>${td(fq(x.qty,x.it.unit))}${td(x.val?rs(x.val):"—")}${td(rs(x.mrpVal))}</tr>`))+
       `<p class="note" style="margin:4px 0 0">इसमें ${rs(r2(R.dead.reduce((a,x)=>a+x.val,0)))} का पैसा फँसा है — छूट देकर निकालें, या दुकान को लौटाएँ (खरीद → ↩️ माल लौटाया)</p>`:'<p class="note">सब माल बिक रहा है 👍</p>'}
     ${low.length?`<h4 class="sq-h">⚠ बहुत कम मुनाफ़ा (10% से कम)</h4>${tbl(["सामान","खरीद","बिक्री भाव","%"],low.map(r=>`<tr><td>${esc(r.name)}</td>${td(r.it?rs(SF.costOf(r.it)):"—")}${td(r.it?rs(+r.it.sale||0):"—")}${td(`<b style="color:var(--chili)">${r.pct}%</b>`)}</tr>`))}<p class="note" style="margin:4px 0 0">इनका भाव जाँचें — कहीं खरीद भाव गलत तो नहीं भरा, या बिक्री भाव बढ़ाना है</p>`:""}
     <a class="big ghost" style="display:block;text-align:center;text-decoration:none;margin-top:10px" target="_blank" rel="noopener" href="${waLink(SQ.text(),String((S.settings||{}).ownerPh||"9509553600").replace(/\D/g,"").slice(-10))}">🟢 यह रिपोर्ट WhatsApp पर</a>`}

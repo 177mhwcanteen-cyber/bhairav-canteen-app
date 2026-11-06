@@ -15,7 +15,7 @@ const staffPass=(ph,pin)=>`se-${pin}-${ph}`;
 // मालिक की ईमेल कोड में साफ़ नहीं लिखी — सिर्फ़ उसकी "छाप" (SHA-256), ताकि Public कोड में ईमेल न दिखे
 const OH={};
 async function isOwnerMail(email){email=String(email||"").trim().toLowerCase();if(!email||!CFG.ownerHash)return false;if(email in OH)return OH[email];
-  try{const d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(email));OH[email]=[...new Uint8Array(d)].map(b=>b.toString(16).padStart(2,"0")).join("")===String(CFG.ownerHash).toLowerCase()}catch(e){OH[email]=false}return OH[email]}
+  try{const d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(email));OH[email]=[].concat(CFG.ownerHash).map(x=>String(x).toLowerCase()).includes([...new Uint8Array(d)].map(b=>b.toString(16).padStart(2,"0")).join(""))}catch(e){OH[email]=false}return OH[email]}
 SE.configured=!!(CFG.firebase&&CFG.firebase.apiKey&&!/^PASTE/.test(CFG.firebase.apiKey));
 
 /* ---------- Firebase शुरू ---------- */
@@ -29,7 +29,18 @@ function initFB(){
   db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
   auth=firebase.auth();
   SE.db=db;SE.auth=auth;SE.FieldValue=firebase.firestore.FieldValue;
+  capGuard();
 }
+/* 🔠 विक्रम जी का पक्का नियम (06-11-2026): हर सामान का नाम CAPITAL अक्षरों में।
+   items/* में जो भी लिखा जाए (टाइप किया, AI ने पढ़ा, बिल से आया, पुराने ऐप से) — name/short/brand के अंग्रेज़ी अक्षर अपने-आप बड़े।
+   हिंदी (hi) वैसी ही। एक ही जगह पर पहरा, ताकि कोई रास्ता छूटे नहीं। */
+SE.capNm=s=>typeof s==="string"?s.replace(/[a-z]+/g,m=>m.toUpperCase()):s;
+SE.capItem=function(d){if(!d||typeof d!=="object")return d;let o=d;for(const k of ["name","short","brand"])if(typeof d[k]==="string"&&/[a-z]/.test(d[k])){if(o===d)o={...d};o[k]=SE.capNm(d[k])}return o};
+function capGuard(){try{const F=firebase.firestore,isI=r=>r&&typeof r.path==="string"&&/^items\/[^/]+$/.test(r.path);
+  const wrap=(P,m,pos)=>{if(!P||!P[m]||P[m]._cap)return;const f=P[m];P[m]=function(){const a=[...arguments];const r=pos?a[0]:this;if(isI(r)&&a[pos])a[pos]=SE.capItem(a[pos]);return f.apply(this,a)};P[m]._cap=1};
+  if(F.DocumentReference){wrap(F.DocumentReference.prototype,"set",0);wrap(F.DocumentReference.prototype,"update",0)}
+  if(F.WriteBatch){wrap(F.WriteBatch.prototype,"set",1);wrap(F.WriteBatch.prototype,"update",1)}
+  if(F.Transaction){wrap(F.Transaction.prototype,"set",1);wrap(F.Transaction.prototype,"update",1)}}catch(e){}}
 SE.inc=n=>firebase.firestore.FieldValue.increment(n);
 
 /* ---------- लॉगिन स्क्रीन ---------- */
@@ -55,8 +66,8 @@ function drawLogin(st){
     <div class="lgform"><button class="big" data-lg="verify-done">हो गया</button><button class="lnk" data-lg="verify-resend">लिंक दोबारा भेजें</button><button class="lnk" data-lg="logout">दूसरा खाता</button></div>`;
     return}
   L.innerHTML=`<div style="font-size:44px">🛒</div><h2>भैरव कैंटीन</h2>
-    ${st.step==="pin"?`<p class="note" style="margin:-8px 0 0">📱 ${esc(st.phone)} — अपना ${st.len||4} अंक का PIN डालें</p>
-      <div class="dots ${st.err?"bad":""}" aria-label="PIN">${Array.from({length:st.len||4},(_,i)=>i).map(i=>`<i class="${i<st.pin.length?"f":""}"></i>`).join("")}</div>`
+    ${st.step==="pin"?`<p class="note" style="margin:-8px 0 0">📱 ${esc(st.phone)} — अपना 4 अंक का PIN डालें</p>
+      <div class="dots ${st.err?"bad":""}" aria-label="PIN">${[0,1,2,3].map(i=>`<i class="${i<st.pin.length?"f":""}"></i>`).join("")}</div>`
     :`<p class="note" style="margin:-8px 0 0">अपना मोबाइल नंबर डालें</p><div class="lgphone" aria-live="polite">${esc(st.phone||"")||'<span class="note">10 अंक</span>'}</div>`}
     ${st.err?`<p class="lgerr">${esc(st.err)}</p>`:""}${st.busy?'<p class="note">जाँच रहे हैं…</p>':""}
     <div class="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join("")}<button class="t" data-k="c">साफ़</button><button data-k="0">0</button><button class="t" data-k="b" aria-label="एक अंक हटाएँ">⌫</button></div>
@@ -196,7 +207,7 @@ SE.setStaffActive=(uid,on)=>db.doc("staff/"+uid).update({active:!!on,[on?"onTs":
 /* ---------- फोटो ---------- */
 SE.bundled=new Set(window.SE_PHOTOS||[]);
 SE.photos={};
-SE.photoSrc=function(it){if(!it)return "";if(SE.photos[it.id])return SE.photos[it.id];if(it.photo&&SE.bundled.has(it.id))return "img/"+it.id+".jpg";return ""};
+SE.photoSrc=function(it){if(!it)return "";if(SE.photos[it.id])return SE.photos[it.id];if(it.photo!=="none"&&SE.bundled.has(it.id))return "img/"+it.id+".jpg";return ""};
 SE.watchPhotos=function(onChange){if(!db)return;db.collection("photos").onSnapshot(s=>{SE.photos={};s.docs.forEach(d=>{const x=d.data();if(x&&x.d)SE.photos[d.id]=x.d});onChange&&onChange()},()=>{})};
 SE.savePhoto=async function(id,blob,max,q){
   /* ऐप में फोटो छोटी (लगभग 8-12 KB) — ताकि ऐप हल्का रहे */
@@ -237,12 +248,10 @@ function webLiveScan(){
    Chrome/लैपटॉप: <video> + BarcodeDetector — सिर्फ़ बीच का हिस्सा (ROI) जाँचता है, ~9 फ्रेम/सेकंड
    सिर्फ़ दुकान वाले कोड: EAN-13/8, UPC-A/E (1D), Code-128 (लेबल), QR (2D) — कम प्रकार = तेज़
    EAN/UPC का जाँच-अंक मिलाकर ही मानता है; एक पैकेट सामने रुका रहे तो एक ही बार जुड़ेगा */
-function gtinOk(c){if(!/^\d+$/.test(c)||![8,12,13,14].includes(c.length))return true;let s=0;const d=c.slice(0,-1);
-  for(let i=0;i<d.length;i++)s+=(+d[d.length-1-i])*(i%2?1:3);return (10-s%10)%10===+c[c.length-1]}
-/* 🔫 बारकोड-गन इंजन (177 MH से, 05-11-2026) — कैमरा, हाथ वाली USB/ब्लूटूथ गन, फोटो — सबका कोड एक ही तरह साफ़ होता है
-   • किसी भी दिशा (उल्टा/तिरछा) — ML Kit/BarcodeDetector 360° पढ़ते हैं; कई कोड दिखें तो बीच वाला
-   • EAN/UPC का जाँच-अंक ज़रूरी · बिना जाँच-अंक वाले (Code39, ITF, Codabar) 2 बार एक-सा पढ़ने पर ही
-   • GS1 (QR/DataMatrix में (01)GTIN) → 13 अंक · 12 अंक UPC-A / 14 अंक GTIN / UPC-E → एक ही सामान · AIM उपसर्ग व अदृश्य अक्षर हटें */
+/* 🔫 बारकोड-गन इंजन (05-11-2026) — कैमरा, हाथ वाली USB/ब्लूटूथ गन, फोटो — सबका कोड एक ही तरह साफ़ होता है
+   • किसी भी दिशा (उल्टा/तिरछा/दाएँ-बाएँ) — ML Kit/BarcodeDetector 360° पढ़ते हैं; हम सिर्फ़ बीच वाला चुनते हैं
+   • EAN/UPC का जाँच-अंक मिलना ज़रूरी · जिन कोड में जाँच-अंक नहीं (Code39, ITF, Codabar) उन्हें 2 बार एक-सा पढ़ने पर ही मानें
+   • GS1 (QR/DataMatrix/GS1-128 में (01)GTIN) → असली 13 अंक का बारकोड · AIM उपसर्ग (]E0 ]C1 ]Q3 ]d2) और अदृश्य अक्षर हटें */
 SE.normCode=function(raw){let c=String(raw==null?"":raw).replace(/[\u0000-\u001c\u001e\u001f\u007f]/g,"").replace(/\u001d/g,"|").trim();
   c=c.replace(/^\][A-Za-z]\d/,"");
   const g=/^\(?01\)?(\d{14})/.exec(c.replace(/\|/g,""));if(g&&c.length>16&&/^\(?01/.test(c))c=g[1];
@@ -251,14 +260,14 @@ SE.normCode=function(raw){let c=String(raw==null?"":raw).replace(/[\u0000-\u001c
 SE.codeVariants=function(c){c=SE.normCode(c);const v=[c];if(/^\d{12}$/.test(c))v.push("0"+c);if(/^0\d{12}$/.test(c))v.push(c.slice(1));
   if(/^[01]\d{7}$/.test(c)){const d=c.slice(1,7),x=c[7],m=d[5];let a;if("012".includes(m))a=d.slice(0,2)+m+"0000"+d.slice(2,5);else if(m==="3")a=d.slice(0,3)+"00000"+d.slice(3,5);else if(m==="4")a=d.slice(0,4)+"00000"+d[4];else a=d.slice(0,5)+"0000"+m;const up=c[0]+a+x;v.push(up,"0"+up)}
   return [...new Set(v)]};
-SE.pickCenter=function(L,cx,cy){let best=L[0],bd=1e18;for(const b of L){let x=null,y=null;const bb=b.boundingBox||b.bounds;const cp=b.cornerPoints;
-  if(bb&&bb.width!=null){x=(bb.x!=null?bb.x:bb.left)+bb.width/2;y=(bb.y!=null?bb.y:bb.top)+bb.height/2}
-  else if(Array.isArray(cp)&&cp.length){x=0;y=0;cp.forEach(p=>{x+=(p.x!=null?p.x:p[0]);y+=(p.y!=null?p.y:p[1])});x/=cp.length;y/=cp.length}
-  if(x==null)continue;const d=(x-cx)**2+(y-cy)**2;if(d<bd){bd=d;best=b}}return best};
 const NOCHK=/code_?39|itf|codabar|CODE_39|ITF|CODABAR/i;
-SE.cam={on:false,torch:false,_seen:{},_cand:{},_h:[],_stream:null,_t:0,GAP:900,zoom:1,maxZoom:1,
+function gtinOk(c){if(!/^\d+$/.test(c)||![8,12,13,14].includes(c.length))return true;let s=0;const d=c.slice(0,-1);
+  for(let i=0;i<d.length;i++)s+=(+d[d.length-1-i])*(i%2?1:3);return (10-s%10)%10===+c[c.length-1]}
+SE.cam={on:false,torch:false,_seen:{},_h:[],_stream:null,_t:0,GAP:900,zoom:1,maxZoom:1,
   canTorch:false,canZoom:false,
+  _cand:{},
   _emit(code,cb,fmt){code=SE.normCode(code);if(!code||code.length<4)return;if(!gtinOk(code)&&!(code.length===8&&SE.codeVariants(code).slice(1).some(gtinOk)))return;const now=Date.now();
+    /* बिना जाँच-अंक वाले कोड: 700ms में 2 बार एक-सा पढ़ा जाए तभी */
     if(fmt&&NOCHK.test(String(fmt))){const k=this._cand[code];this._cand[code]=now;if(!(k&&now-k<700))return}
     const last=this._seen[code];this._seen[code]=now;if(last&&now-last<this.GAP)return;
     for(const k in this._seen)if(now-this._seen[k]>5000)delete this._seen[k];
@@ -273,7 +282,7 @@ SE.cam={on:false,torch:false,_seen:{},_cand:{},_h:[],_stream:null,_t:0,GAP:900,z
     if(this.on)return true;this._seen={};
     if(SE.isNative){const B=N.BarcodeScanner,F=N.BarcodeFormat;
       const pm=await B.checkPermissions().catch(()=>({}));if(pm.camera!=="granted"){const r=await B.requestPermissions().catch(()=>({}));if(r.camera!=="granted")throw {msg:"कैमरे की अनुमति नहीं मिली — फोन की सेटिंग में भैरव कैंटीन को कैमरा दें"}}
-      this._h.push(await B.addListener("barcodesScanned",ev=>{const L=((ev&&ev.barcodes)||[]).filter(b=>b&&b.rawValue);if(!L.length)return;const b=L.length>1?SE.pickCenter(L,window.innerWidth/2,window.innerHeight*.3):L[0];this._emit(String(b.rawValue),cb,b.format)}));
+      this._h.push(await B.addListener("barcodesScanned",ev=>{const L=((ev&&ev.barcodes)||[]).filter(b=>b&&b.rawValue);if(!L.length)return;const b=L.length>1?SE.pickCenter(L,window.innerWidth/2,(window.innerHeight)*.3):L[0];this._emit(String(b.rawValue),cb,b.format)}));
       document.documentElement.classList.add("camnative");
       await B.startScan({formats:[F.Ean13,F.Ean8,F.UpcA,F.UpcE,F.Code128,F.Code39,F.Code93,F.Itf,F.Codabar,F.QrCode,F.DataMatrix].filter(Boolean)});
       try{this.canTorch=!!(await B.isTorchAvailable()).available}catch(e){this.canTorch=false}
@@ -308,6 +317,11 @@ SE.cam={on:false,torch:false,_seen:{},_cand:{},_h:[],_stream:null,_t:0,GAP:900,z
   async toggleTorch(){try{if(SE.isNative){await N.BarcodeScanner.toggleTorch();this.torch=!this.torch}
     else if(this._stream){this.torch=!this.torch;await this._stream.getVideoTracks()[0].applyConstraints({advanced:[{torch:this.torch}]})}}catch(e){}return this.torch}
 };
+/* कई बारकोड दिखें तो वही जो खिड़की के बीच के सबसे पास */
+SE.pickCenter=function(L,cx,cy){let best=L[0],bd=1e18;for(const b of L){let x=null,y=null;const bb=b.boundingBox||b.bounds;const cp=b.cornerPoints;
+  if(bb&&bb.width!=null){x=(bb.x!=null?bb.x:bb.left)+bb.width/2;y=(bb.y!=null?bb.y:bb.top)+bb.height/2}
+  else if(Array.isArray(cp)&&cp.length){x=0;y=0;cp.forEach(p=>{x+=(p.x!=null?p.x:p[0]);y+=(p.y!=null?p.y:p[1])});x/=cp.length;y/=cp.length}
+  if(x==null)continue;const d=(x-cx)**2+(y-cy)**2;if(d<bd){bd=d;best=b}}return best};
 SE.canLiveScan=()=>SE.isNative||("BarcodeDetector" in window&&!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia));
 /* null = बंद किया, undefined = यह फोन लाइव स्कैन नहीं कर सकता */
 SE.scan=async function(){
@@ -411,8 +425,8 @@ function canvasToEscPos(cv){
 function toB64(parts){let n=0;parts.forEach(p=>n+=p.length);const all=new Uint8Array(n);let o=0;parts.forEach(p=>{all.set(p,o);o+=p.length});
   let s="";for(let i=0;i<all.length;i+=0x8000)s+=String.fromCharCode.apply(null,all.subarray(i,i+0x8000));return btoa(s)}
 /* TSPL (लेबल प्रिंटर, जैसे Xprinter XP-D4601B) — कोई भी तस्वीर छापो */
-/* 🏷️ लेबल खिसकाना (177 MH वाला सुधार, 05-11-2026): रोल थोड़ा दाएँ/बाएँ या गैप-सेंसर ऊपर/नीचे हो तो पूरी छपाई उतनी खिसकाओ —
-   + X = दाएँ, + Y = नीचे (8 डॉट = 1 mm, 203 DPI)। डिज़ाइन खुद 3 mm किनारा छोड़ता है, इसलिए कुछ नहीं कटता */
+/* 🏷️ लेबल खिसकाना (मिलीमीटर): लेबल रोल प्रिंटर में थोड़ा दाएँ/बाएँ या गैप-सेंसर ऊपर/नीचे हो तो पूरी छपाई उतनी खिसकाओ —
+   + X = दाएँ, + Y = नीचे (8 डॉट = 1 mm, 203 DPI)। किनारे कभी न कटें, इसलिए लेबल का डिज़ाइन खुद 3 mm किनारा छोड़ता है */
 function lblShift(cv){const sx=parseFloat(ls.get("se_lsx"))||0,sy=parseFloat(ls.get("se_lsy"))||0;if(!sx&&!sy)return cv;
   const c=document.createElement("canvas");c.width=cv.width;c.height=cv.height;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.imageSmoothingEnabled=false;x.drawImage(cv,Math.round(sx*8),Math.round(sy*8));return c}
 SE.tsplCalib=function(wmm,hmm,gap){const g=gap!=null?gap:(ls.get("se_lgap")||"2");
@@ -493,6 +507,92 @@ SE.checkUpdate=async function(toast){
   }catch(e){}
 };
 SE._busy=()=>false;
+/* 🤖 Google Gemini — Apps Script के ज़रिए (चाबी Script में, ऐप में नहीं) */
+/* ऐप की सेटिंग (index.html का S — window पर नहीं होता, इसलिए typeof से) */
+const _set=()=>{try{return (typeof S!=="undefined"&&S&&S.settings)||{}}catch(e){return {}}};
+SE._ogk="";/* मालिक की चाबी ownerCfg/ai से (se-quick.js) — साथियों के फोन में नहीं */
+SE.gk=()=>String(SE._ogk||_set().gk||"").replace(/\s+/g,"");
+SE.scriptUrl=()=>CFG.photoUrl||_set().scriptUrl||"";
+SE.aiReady=()=>!!(SE.gk()||SE.scriptUrl());
+/* सीधा Gemini (चाबी ऐप की सेटिंग में — सिर्फ़ लॉगिन वाले साथी पढ़ सकते हैं; GitHub/कोड में नहीं) */
+const AI_P={code:c=>'Search the web (Google) for the retail product with barcode / EAN / GTIN "'+c+'" sold in India. Use only what you actually find for this exact barcode; if nothing reliable is found, set found=false. Reply with ONLY one JSON object, no other words: {"found":true,"name":"Brand Item Size (short, for a shop bill, e.g. Parle-G Biscuit 100g)","hi":"हिंदी नाम","brand":"","size":"","mrp":0,"category":"namkeen|biscuit|chocolate|drinks|dairy|rashan|masala|clean|personal|tobacco|other","source":"website name"}',
+  img:'This is a photo of a retail product pack (front or back label) in an Indian shop. Read it. Reply with ONLY one JSON object: {"found":true,"name":"Brand Item Size (short, e.g. Haldiram Bhujia 200g)","hi":"हिंदी नाम","brand":"","size":"","mrp":0,"barcode":"digits if visible else empty","exp":"YYYY-MM if expiry/best-before visible else empty","category":"namkeen|biscuit|chocolate|drinks|dairy|rashan|masala|clean|personal|tobacco|other"}. mrp = printed MRP in rupees (number only). If not readable, use 0 / empty. If this is not a product, found=false.'};
+/* मॉडल: फोटो पढ़ने के लिए सबसे समझदार (Pro) पहले, सीमा खत्म हो तो तेज़ वाला (Flash) — बारकोड खोज के लिए Flash (Google खोज के साथ) */
+const GM={img:["gemini-flash-latest","gemini-2.5-flash","gemini-2.0-flash","gemini-2.5-pro"],code:["gemini-flash-latest","gemini-2.5-flash","gemini-2.0-flash"],ping:["gemini-2.5-flash-lite","gemini-2.0-flash","gemini-flash-latest"]};
+SE.aiLast="";
+/* Android ऐप में Google को सीधा (फ़ोन की मशीनी नेटवर्क से — ब्राउज़र की CORS रोक नहीं); वेब में सामान्य fetch */
+async function gfetch(url,opt,ms){
+  const H=N.CapacitorHttp;
+  if(SE.isNative&&H&&H.request){
+    const r=await Promise.race([H.request({url,method:opt.method||"GET",headers:opt.headers||{},data:opt.body?JSON.parse(opt.body):undefined,connectTimeout:ms,readTimeout:ms}),
+      new Promise((_,rej)=>setTimeout(()=>{const e=new Error("timeout");e.name="AbortError";rej(e)},ms+2000))]);
+    const txt=typeof r.data==="string"?r.data:JSON.stringify(r.data);
+    return {ok:r.status>=200&&r.status<300,status:r.status,text:async()=>txt,json:async()=>typeof r.data==="string"?JSON.parse(r.data):r.data}}
+  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),ms);
+  try{return await fetch(url,{...opt,signal:ctl.signal})}finally{clearTimeout(tm)}}
+async function geminiDirect(p,key){
+  let parts,tools=null;
+  if(p.mode==="ping")parts=[{text:"Reply with exactly: OK"}];
+  else if(p.mode==="code"){const c=String(p.code||"").replace(/\D/g,"").slice(0,14);if(c.length<8)return {ok:false,error:"bad-code"};parts=[{text:AI_P.code(c)}];tools=[{google_search:{}}]}
+  else if(p.mode==="img")parts=[{inline_data:{mime_type:"image/jpeg",data:String(p.b64||"")}},{text:AI_P.img}];else return {ok:false,error:"mode"};
+  const own=_set().gmodel;const list=[...(own?[own]:[]),...GM[p.mode]];let last="",quota=false,busy=false;const tries=[];
+  for(const m of list){
+    const body={contents:[{role:"user",parts}],generationConfig:{temperature:0.1}};if(tools)body.tools=tools;
+    if(p.onStep)try{p.onStep(m)}catch(e){}
+    let r;try{r=await gfetch("https://generativelanguage.googleapis.com/v1beta/models/"+m+":generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body:JSON.stringify(body)},p.mode==="ping"?30000:60000)}
+    catch(e){const em=String(e.message||e);if(e.name==="AbortError"||/time ?out/i.test(em)){last="समय खत्म ("+m+")";tries.push(m+": समय खत्म");continue}tries.push(m+": "+em.slice(0,60));last=em;continue}
+    if(r.ok){const j=await r.json();SE.aiLast=m;const t=((((j.candidates||[])[0]||{}).content||{}).parts||[]).map(x=>x.text||"").join("");
+      if(p.mode==="ping")return {ok:true,pong:true,model:m};const a=t.indexOf("{"),z=t.lastIndexOf("}");
+      if(a<0||z<a)return {ok:true,found:false,model:m};try{return {...JSON.parse(t.slice(a,z+1)),ok:true,model:m}}catch(e){return {ok:true,found:false,model:m}}}
+    const t=await r.text().catch(()=>"");let msg=t;try{const e=JSON.parse(t).error;msg=(e.status||"")+" "+(e.message||"")}catch(e){}
+    if(r.status===404){last="model "+m;continue}
+    if(r.status===429){quota=true;last=msg;continue}
+    if(r.status===503||r.status===500){busy=true;last=msg;if(!p._re){p._re=1;await new Promise(z=>setTimeout(z,2500));const rr=await geminiDirect(p,key);if(rr.ok)return rr}continue}
+    if([400,401,403].includes(r.status)&&/API[_ ]?key|PERMISSION|UNAUTHENTICATED|credential|ACCESS_TOKEN|not valid/i.test(msg))return {ok:false,error:"bad-key",detail:msg.slice(0,200)};
+    last=r.status+" "+msg.slice(0,160)}
+  if(p.mode==="ping"&&(busy||quota))return {ok:true,pong:true,busy:true,model:"Google व्यस्त"};
+  return {ok:false,error:quota?"quota":busy?"busy":"ai",detail:(tries.length?tries.join(" · "):String(last)).slice(0,240)}}
+SE.ai=async function(p){if(navigator.onLine===false)return {ok:false,error:"offline",detail:"फ़ोन का इंटरनेट बंद है"};
+  const k=SE.gk();if(k){try{return await geminiDirect(p,k)}catch(e){return {ok:false,error:String(e.message||e)}}}
+  const u=SE.scriptUrl();if(!u)return {ok:false,error:"no-url"};if(navigator.onLine===false)return {ok:false,error:"offline"};
+  try{const tok=await firebase.auth().currentUser.getIdToken();const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),25000);
+    const r=await fetch(u,{method:"POST",signal:ctl.signal,headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({idToken:tok,apiKey:CFG.firebase.apiKey,act:"ai",...p})});clearTimeout(tm);
+    return await r.json()}catch(e){return {ok:false,error:e.name==="AbortError"?"timeout":String(e.message||e)}}};
+/* 🔄 "ऐप अपडेट करें" बटन — GitHub (Pages) से नया संस्करण अभी लाकर तुरंत लगाओ।
+   Play Store / WhatsApp जैसे ऐप का "Update now" तरीका: जाँचो → डाउनलोड (प्रतिशत दिखाओ) → लगाओ → ऐप अपने-आप दोबारा खुले।
+   डेटा Firebase में है, इसलिए अपडेट से कोई बिल/स्टॉक/सामान नहीं मिटता; चालू बिल के टैब फ़ोन में सेव रहते हैं। */
+SE.latest=async function(){const r=await fetch(CFG.updateUrl.replace(/\/?$/,"/")+"update/version.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error("सर्वर "+r.status);return r.json()};
+SE.updateNow=async function(say){
+  say=say||(()=>{});
+  if(!CFG.updateUrl){say("अपडेट का पता सेट नहीं है","bad");return}
+  if(!navigator.onLine){say("इंटरनेट बंद है — चालू करके दोबारा दबाएँ","bad");return}
+  say("🔍 नया संस्करण देख रहे हैं…");
+  let v;try{v=await SE.latest()}catch(e){say("GitHub से जवाब नहीं आया — थोड़ी देर बाद दबाएँ","bad");return}
+  if(!v||!v.version){say("संस्करण नहीं मिला","bad");return}
+  if(v.version===SE.version){say("✅ ऐप पूरा नया है — संस्करण "+SE.version,"ok");return}
+  if(SE.isNative&&v.minNative&&+v.minNative>+(window.SE_NATIVE_MIN||1)){say("नई APK चाहिए — GitHub Releases से mh-wet-canteen.apk डाउनलोड करके इंस्टॉल करें","bad");return}
+  if(SE.isNative&&N.CapacitorUpdater){const U=N.CapacitorUpdater;let h=null;
+    try{h=await U.addListener("download",e=>{const pc=Math.round(+e.percent||0);say("⬇️ नया संस्करण "+v.version+" आ रहा है… "+pc+"%","busy",pc)})}catch(e){}
+    try{let b=null;try{const l=await U.list();b=(l.bundles||[]).find(x=>x.version===v.version&&x.status!=="error")}catch(e){}
+      if(!b){const base=new URL(v.url,CFG.updateUrl.replace(/\/?$/,"/")).href;
+        try{b=await U.download({url:base,version:v.version})}
+        catch(e1){say("⬇️ दोबारा कोशिश… (नेटवर्क धीमा)","busy",0);try{const l=await U.list();for(const x of (l.bundles||[]))if(x.version===v.version)try{await U.delete({id:x.id})}catch(e){}}catch(e){}
+          await new Promise(r=>setTimeout(r,2500));b=await U.download({url:base+"?t="+Date.now(),version:v.version})}}
+      try{h&&h.remove()}catch(e){}
+      say("✨ लग रहा है — ऐप 2 सेकंड में दोबारा खुलेगा","ok",100);try{SE.beforeUpdate&&SE.beforeUpdate()}catch(e){}
+      await new Promise(r=>setTimeout(r,900));await U.set({id:b.id});
+    }catch(e){try{h&&h.remove()}catch(x){}say("अपडेट नहीं हुआ (नेटवर्क) — 1 मिनट बाद दोबारा दबाएँ, या नीचे से पूरा नया ऐप लें","bad");
+      const bx=document.querySelector(".updbox");if(bx&&!bx.querySelector(".apkl")){const a2=document.createElement("a");a2.className="big ghost apkl";a2.style.cssText="display:block;text-align:center;text-decoration:none;margin-top:8px";a2.href="https://github.com/177mhwcanteen-cyber/177-MH-/releases/latest/download/mh-wet-canteen.apk";a2.target="_blank";a2.rel="noopener";a2.textContent="📲 पूरा नया ऐप (APK) डाउनलोड करें — डेटा सुरक्षित रहेगा";bx.appendChild(a2)}}
+    return}
+  // वेब (Chrome): पुराना कैश हटाकर नया पेज
+  say("✨ नया संस्करण "+v.version+" लग रहा है…","ok",100);try{SE.beforeUpdate&&SE.beforeUpdate()}catch(e){}
+  try{if(navigator.serviceWorker){const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()))}if(window.caches){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}}catch(e){}
+  location.replace(location.pathname+"?v="+encodeURIComponent(v.version));
+};
+/* ऐप खुला रहे तब भी हर 30 मिनट और फ़ोन पर वापस आते ही चुपचाप जाँच */
+SE.autoUpdateLoop=function(toast){if(SE._loop)return;SE._loop=1;
+  setInterval(()=>{if(document.visibilityState==="visible")SE.checkUpdate(toast)},30*60000);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&Date.now()-(SE._lastChk||0)>10*60000){SE._lastChk=Date.now();SE.checkUpdate(toast)}})};
 SE.applyUpdateNow=async()=>{if(SE._pendingBundle)try{await N.CapacitorUpdater.set({id:SE._pendingBundle.id})}catch(e){}};
 
 /* वेब (Chrome) के लिए ऑफ़लाइन कैश */

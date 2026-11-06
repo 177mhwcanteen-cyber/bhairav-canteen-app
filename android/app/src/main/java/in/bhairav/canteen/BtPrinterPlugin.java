@@ -46,7 +46,7 @@ import java.util.UUID;
 @CapacitorPlugin(
     name = "BtPrinter",
     permissions = {
-        @Permission(alias = "bt", strings = { Manifest.permission.BLUETOOTH_CONNECT }),
+        @Permission(alias = "bt", strings = { Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN }),
         @Permission(alias = "loc", strings = { Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION }),
         @Permission(alias = "notif", strings = { Manifest.permission.POST_NOTIFICATIONS })
     }
@@ -116,7 +116,8 @@ public class BtPrinterPlugin extends Plugin {
             try {
                 BluetoothAdapter a = adapter();
                 if (a == null || !a.isEnabled()) throw new Exception("फोन का Bluetooth चालू करें");
-                a.cancelDiscovery();
+                // Android 12+ पर cancelDiscovery को BLUETOOTH_SCAN चाहिए — हम खोज करते ही नहीं, इसलिए न मिले तो छोड़ दो
+                try { a.cancelDiscovery(); } catch (SecurityException ignore) {}
                 BluetoothDevice dev = a.getRemoteDevice(address);
                 byte[] bytes = Base64.decode(data, Base64.DEFAULT);
                 try {
