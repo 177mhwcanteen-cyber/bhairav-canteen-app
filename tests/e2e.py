@@ -251,6 +251,8 @@ async def main():
         await pg.screenshot(path=f"{SHOTS}/3b-pack-popup.png")
         await pg.click('#sheet [data-pk="t-vimal"]'); await pg.wait_for_timeout(150)
         await pg.click('#grid [data-item="t-vimal"] .tile'); await pg.click('#sheet [data-pk="t-vimal-pk"]'); await pg.wait_for_timeout(150)
+        # टाइल नीचे की बिल-पट्टी के पीछे न रहे (भैरव का लेआउट) — पहले बीच में लाओ
+        await pg.locator('#grid [data-item="t-rajni"] .tile').evaluate("e=>e.scrollIntoView({block:'center'})"); await pg.wait_for_timeout(100)
         await pg.click('#grid [data-item="t-rajni"] .tile')
         c = await pg.evaluate("S.cart.map(l=>[l.id,l.qty])")
         assert ["t-vimal",1] in c and ["t-vimal-pk",1] in c and ["t-rajni",1] in c, c
