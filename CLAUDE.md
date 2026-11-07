@@ -3,13 +3,23 @@
 > 06-11-2026: यह ऐप 177 MH वाले नए कोड पर लाया गया (बहन ऐप `177mhwcanteen-cyber/177-MH-`)। दोनों का कोड लगभग एक — कोई सुधार एक में करो तो दूसरे में भी।
 > भैरव का अपना: नाम/पता, UPI (CHARAN KANCHAN NAKHATDAN), Firebase `bhairav-canteen`, सिर्फ़ 4 श्रेणी (किराना 4 हिस्से · फास्ट फूड · मिठाई · जनरल — CATS/SUBS/SUBMAP/msub), STAFF_DOMAIN staff.bhairavcanteen.in, नीला-बैंगनी रंग, 🏢 se-firms.js (सभी फर्म — रिपोर्ट में), 📥 se-file.js (स्टॉक फाइल — स्टॉक टैब), NATIVE_MIN 2, मेला नहीं।
 
+## 🏢 संस्था-पहरा — भैरव और 177 MH का डेटा कभी न मिले (विक्रम जी, 07-11-2026)
+- यह रिपो **भैरव** है: `web/config.js` में `org: "bhairav"` + Firebase `bhairav-canteen`। 177 MH का रिपो `177-MH-` है (`org: "mh177"`)।
+- **कोड** (web/se-*.js, index.html के सुधार) MH से लाया जा सकता है — 3-तरफ़ा merge से (`git merge-file`), भैरव का नाम/श्रेणी/UPI/रंग बचाकर।
+- **डेटा कभी नहीं लाना:** MH का `migrate.json`, `web/data/`, `web/p/`, `docs/खरीद-बही/` (MH की बही/रजिस्टर/बिल), MH के सप्लायर/भाव/सिगरेट-कोड।
+- पहरा अपने-आप: `migrate.json._org`, खेप `org`, बही-कोड `org` — दूसरी संस्था का हो तो ऐप में "⛔ … नहीं चढ़ेगा"। `scripts/org-guard.mjs` build से पहले:
+  ग़लत org/Firebase/रिपो या दूसरी संस्था का डेटा मिला तो build रुक जाता है (फ़ोन तक कुछ नहीं जाता)। जाँच: `tests/org.py`।
+- रैक-नक्शा (SRK MAP/OLD/HOME/सुनहरे खाने) सिर्फ़ MH का — भैरव में खाली; विक्रम जी सेटिंग से भैरव के रैक/खाने जोड़ें।
+- खरीद-बही: MH की बही (आर्टिफैक्ट) सिर्फ़ MH की। भैरव के बिल चाहिए तो **अलग** बही बनाओ (उसका कोड `org:"bhairav"`)।
+- 📏 GitHub सीमा: docs/टेस्ट बदलने पर build नहीं; APK सिर्फ़ Android बदलने पर; पुरानी रिलीज़ 5 से ज़्यादा नहीं; फोटो ≤20 KB, web/ 800 MB तक (org-guard)।
+
 मालिक: **विक्रम जी** (हमेशा "विक्रम जी" कहें, आसान हिंदी में, जवाब छोटे 3-6 लाइन — उनकी Claude लिमिट जल्दी खत्म होती है)।
 वे सिर्फ़ मोबाइल से काम करते हैं, कोडिंग नहीं जानते। टीम के लोगों को "स्टाफ" न लिखें — नाम से (मुकेश भाई, मनोहर जी…) या "साथी"।
 
 ## पत्थर के नियम (कभी न तोड़ें)
 1. **पुराना डेटा कभी न मिटे, न बदले।** migrate.json सिर्फ़ जोड़ता है (जो doc है उसे छोड़ता है)। पुराना सामान हटाना हो तो `active:false` (replaces से), delete नहीं।
 2. **काम शुरू करने से पहले `git pull --rebase`** — दूसरा Claude/चैट भी इसी repo में push करता है। push से पहले फिर pull।
-3. **बदलाव के बाद:** `node scripts/build.mjs` → `python3 tests/e2e.py www <shots-dir>` (लेबल छुआ तो `tests/label.py`, बिल की छपाई छुई तो `tests/receipt.py`, फ़ेवरेट/डैशबोर्ड/पॉइंट/याद/AI चाबी छुई तो `tests/quick.py`, ऑनलाइन दुकान छुई तो `tests/online.py`, फोटो छुई तो `tests/photo.py` भी) — "✅ पूरा टेस्ट पास" आए तभी commit/push। हर टैब बिना JS error खुले।
+3. **बदलाव के बाद:** `node scripts/build.mjs` → `python3 tests/e2e.py www <shots-dir>` (लेबल छुआ तो `tests/label.py`, बिल की छपाई छुई तो `tests/receipt.py`, फ़ेवरेट/डैशबोर्ड/पॉइंट/याद/AI चाबी छुई तो `tests/quick.py`, ऑनलाइन दुकान छुई तो `tests/online.py`, फोटो छुई तो `tests/photo.py`, बारकोड-पहरा छुआ तो `tests/bcode.py`, रैक छुआ तो `tests/rack.py`, खरीद-जाँच छुई तो `tests/kharid.py`, GitHub खेप छुई तो `tests/packs.py`, संस्था/डेटा-पहरा छुआ तो `tests/org.py` भी) — "✅ पूरा टेस्ट पास" आए तभी commit/push। हर टैब बिना JS error खुले।
 4. Gemini चाबी कोड/GitHub में कभी नहीं — मालिक की चाबी Firebase `ownerCfg/ai.gk` में (साथी नहीं पढ़ सकते); `settings/main.gk` सिर्फ़ तब जब मालिक "साथियों को सीधा AI" चालू करें या Apps Script न हो।
 11. `S` (index.html) `const` है — दूसरे मॉड्यूल में `window.S` कभी नहीं, `typeof S` से जाँचें (इसी गलती से ऑर्डर/बैकअप बंद पड़े थे)। नया मॉड्यूल नाम चुनने से पहले `grep window.<नाम>` करें।
 5. हर छोटी जगह का अच्छा उपयोग (compact), अच्छे ग्राफिक्स; हर नए सामान की टाइल अपने-आप सुंदर (art()/फोटो)।
@@ -23,7 +33,7 @@
 ## ढाँचा
 - `web/index.html` मुख्य (top-level `const S`, `window.__S__` भी) · मॉड्यूल `web/se-*.js`:
   platform (लॉगिन, OTA, कैमरा, प्रिंटर, Gemini) · features (रिपोर्ट, कागज़ी बिल) · bill (बिल शीट, संस्था चालान) · market (बाज़ार खरीद) ·
-  stock · intake · route · pay · plus (मालिक के औज़ार) · galla · open (ओपनिंग स्टॉक) · return · items (सामान-वार मुनाफ़ा) · order · watch (Sentry) · label (🏷️ बारकोड छपाई: लिस्ट, 6 डिज़ाइन, सेटिंग) · receipt (🧾 बिल की थीम + चालू/बंद) · quick = window.SA (⭐ फ़ेवरेट, 📊 डैशबोर्ड, 🔢 बिल-बारकोड से वापसी, 🎁 पॉइंट, 📲 उधार की याद, 🔐 AI चाबी ownerCfg/ai, 📦 बैकअप का हाल)
+  stock · intake · route · pay · plus (मालिक के औज़ार) · galla · open (ओपनिंग स्टॉक) · return · items (सामान-वार मुनाफ़ा) · order · watch (Sentry) · label (🏷️ बारकोड छपाई: लिस्ट, 6 डिज़ाइन, सेटिंग) · receipt (🧾 बिल की थीम + चालू/बंद) · bcode = window.SBC (🏷️ बारकोड पहरा) · rack = window.SRK (📍 रैक-खाना — भैरव में नक्शा खाली, मालिक जोड़ें) · kharid = window.SKJ (🔍 खरीद-जाँच — सिर्फ़ org "bhairav" का कोड) · packs = window.SPK (📦 GitHub खेपें web/data/items + web/p, सिर्फ़ org "bhairav"; औज़ार scripts/pack.py) · galla (💵 साथी को खरीद के लिए पैसा → हिसाब) · quick = window.SA (⭐ फ़ेवरेट, 📊 डैशबोर्ड, 🔢 बिल-बारकोड से वापसी, 🎁 पॉइंट, 📲 उधार की याद, 🔐 AI चाबी ownerCfg/ai, 📦 बैकअप का हाल)
 - Firebase प्रोजेक्ट `bhairav-canteen` (Firestore + Email लॉगिन) · नियम `firestore.rules` (विक्रम जी खुद Firebase में डालते हैं)।
 - CI: `.github/workflows/build.yml` → GitHub Pages (OTA अपडेट) + APK (releases/latest/download/bhairav-canteen.apk)।
   `.github/check-request` बदलने पर check.yml जाँच करके `checks/report.txt` लिखता है।

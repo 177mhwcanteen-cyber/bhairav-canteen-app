@@ -6,6 +6,12 @@
 const CFG=window.SE_CONFIG||{};
 const N=window.SENative||{isNative:false};
 const SE=window.SE={version:window.SE_BUILD||"dev",isNative:!!N.isNative,cfg:CFG};
+/* 🏢 संस्था-पहरा: हर डेटा (migrate.json, GitHub खेप, खरीद-बही का कोड) पर "org" — दूसरी संस्था का डेटा इस ऐप में कभी नहीं चढ़ता।
+   177 MH = "mh177" · भैरव = "bhairav" (हर रिपो की config.js में; scripts/org-guard.mjs build से पहले जाँचता है)। org न लिखा हो तो उसे "mh177" का माना जाता है। */
+SE.org=CFG.org||"mh177";
+SE.ORGNAME={mh177:"177 MH कैंटीन",bhairav:"भैरव कैंटीन"};
+SE.orgOk=function(o){o=o||"mh177";return o===SE.org};
+SE.orgErr=o=>"⛔ यह "+(SE.ORGNAME[o||"mh177"]||o)+" का डेटा है — "+(SE.ORGNAME[SE.org]||SE.org)+" के ऐप में नहीं चढ़ेगा";
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
@@ -207,7 +213,9 @@ SE.setStaffActive=(uid,on)=>db.doc("staff/"+uid).update({active:!!on,[on?"onTs":
 /* ---------- फोटो ---------- */
 SE.bundled=new Set(window.SE_PHOTOS||[]);
 SE.photos={};
-SE.photoSrc=function(it){if(!it)return "";if(SE.photos[it.id])return SE.photos[it.id];if(it.photo!=="none"&&SE.bundled.has(it.id))return "img/"+it.id+".jpg";return ""};
+SE.photoSrc=function(it){if(!it)return "";if(SE.photos[it.id])return SE.photos[it.id];if(it.photo!=="none"&&SE.bundled.has(it.id))return "img/"+it.id+".jpg";
+  /* 📦 GitHub खेप वाली असली फोटो — Pages से (CDN), OTA ज़िप में नहीं */
+  if(it.ph&&it.photo!=="none")return (SE.isNative&&CFG.updateUrl?CFG.updateUrl.replace(/\/?$/,"/"):"")+"p/"+encodeURIComponent(it.id)+".jpg?v="+encodeURIComponent(it.ph);return ""};
 SE.watchPhotos=function(onChange){if(!db)return;db.collection("photos").onSnapshot(s=>{SE.photos={};s.docs.forEach(d=>{const x=d.data();if(x&&x.d)SE.photos[d.id]=x.d});onChange&&onChange()},()=>{})};
 SE.savePhoto=async function(id,blob,max,q){
   /* ऐप में फोटो छोटी (लगभग 8-12 KB) — ताकि ऐप हल्का रहे */
@@ -485,11 +493,28 @@ SE.printA4=async function(title,bodyHTML){
   printHTMLWeb(html);
 };
 
-/* ---------- अपने-आप अपडेट (APK दोबारा नहीं भेजनी पड़ेगी) ---------- */
+/* ---------- अपने-आप अपडेट (APK दोबारा नहीं भेजनी पड़ेगी) ----------
+   🩹 07-11-2026 सुधार: पहले "मैं ठीक चल रहा हूँ" (notifyAppReady) सिर्फ़ लॉगिन के 4 सेकंड बाद बोला जाता था।
+   Capgo 15 सेकंड में यह न सुने तो नया संस्करण "खराब" मानकर पुराना वापस लगा देता है (rollback) — इसी से
+   "अपडेट दबाया पर लगा नहीं" होता था। अब ऐप खुलते ही बोलते हैं, लॉगिन से पहले भी जाँचते हैं,
+   और अगली बार खुलने पर पक्का करते हैं कि नया संस्करण सच में लगा (न लगे तो साफ़ बताकर दोबारा)। */
+const _U=()=>SE.isNative&&N.CapacitorUpdater;
+if(_U()){try{N.CapacitorUpdater.notifyAppReady().catch(()=>{})}catch(e){}
+  document.addEventListener("DOMContentLoaded",()=>{try{N.CapacitorUpdater.notifyAppReady().catch(()=>{})}catch(e){}})}
+/* पिछली बार कौन-सा संस्करण लगाने चले थे — लगा या वापस हो गया? */
+SE.updInfo=(()=>{try{const o=JSON.parse(ls.get("se_upd_try")||"null");if(!o||!o.v)return null;ls.set("se_upd_try","");
+  if(o.v===SE.version)return {ok:true,v:o.v};if(Date.now()-(+o.ts||0)<30*60000)return {ok:false,v:o.v,from:SE.version};}catch(e){}return null})();
+const _markTry=v=>ls.set("se_upd_try",JSON.stringify({v,ts:Date.now(),from:SE.version}));
+/* अटका/खराब बंडल हटाओ ताकि दोबारा साफ़ डाउनलोड हो */
+async function _dropBundles(U,ver){try{const l=await U.list();for(const x of (l.bundles||[]))if(x.version===ver||x.status==="error")try{await U.delete({id:x.id})}catch(e){}}catch(e){}}
 SE.checkUpdate=async function(toast){
-  if(!SE.isNative||!N.CapacitorUpdater||!CFG.updateUrl)return;
+  if(!_U()||!CFG.updateUrl)return;
   const U=N.CapacitorUpdater;
   try{await U.notifyAppReady()}catch(e){}
+  if(toast&&SE.updInfo){const I=SE.updInfo;SE.updInfo=null;
+    if(I.ok)toast("✅ अपडेट लग गया — संस्करण "+I.v);
+    else{toast("⚠ पिछला अपडेट ("+I.v+") नहीं लगा — फिर से ला रहे हैं");ls.set("se_upd_ready","");await _dropBundles(U,I.v)}}
+  if(SE._chk)return;SE._chk=1;
   try{
     const r=await fetch(CFG.updateUrl.replace(/\/?$/,"/")+"update/version.json?t="+Date.now(),{cache:"no-store"});
     if(!r.ok)return;const v=await r.json();
@@ -497,15 +522,17 @@ SE.checkUpdate=async function(toast){
     if(v.minNative&&+v.minNative>+(window.SE_NATIVE_MIN||1)){toast&&toast("नई APK आई है — विक्रम जी से नया ऐप लें");return}
     const pend=ls.get("se_upd_ready");
     let b;
-    if(pend===v.version){try{const l=await U.list();b=(l.bundles||[]).find(x=>x.version===v.version)}catch(e){}}
+    if(pend===v.version){try{const l=await U.list();b=(l.bundles||[]).find(x=>x.version===v.version&&x.status!=="error")}catch(e){}}
     // पिछली बार डाउनलोड हो चुका — ऐप खुलते ही (कोई बिल चालू न हो तो) तुरंत लगा दो
-    if(b&&!SE._busy()){toast&&toast("✨ नया अपडेट "+v.version+" लग रहा है…");try{await U.set({id:b.id});return}catch(e){}}
+    if(b&&!SE._busy()){toast&&toast("✨ नया अपडेट "+v.version+" लग रहा है…");try{_markTry(v.version);await U.set({id:b.id});return}catch(e){}}
     if(!b){b=await U.download({url:new URL(v.url,CFG.updateUrl.replace(/\/?$/,"/")).href,version:v.version});ls.set("se_upd_ready",v.version)}
     SE._pendingBundle=b;
     toast&&toast("✨ नया अपडेट "+v.version+" आ गया — ऐप बंद करके खोलते ही लग जाएगा");
-    N.App.addListener("appStateChange",async s=>{if(!s.isActive&&SE._pendingBundle&&!SE._busy()){try{await U.set({id:SE._pendingBundle.id})}catch(e){}}});
-  }catch(e){}
+    if(!SE._asl){SE._asl=1;N.App.addListener("appStateChange",async s=>{if(!s.isActive&&SE._pendingBundle&&!SE._busy()){try{_markTry(SE._pendingBundle.version||"");await U.set({id:SE._pendingBundle.id})}catch(e){}}})}
+  }catch(e){}finally{SE._chk=0}
 };
+/* लॉगिन का इंतज़ार किए बिना भी जाँचो (लॉगिन पन्ने पर अटका पुराना ऐप भी नया हो जाए) */
+if(_U())setTimeout(()=>SE.checkUpdate(),6000);
 SE._busy=()=>false;
 /* 🤖 Google Gemini — Apps Script के ज़रिए (चाबी Script में, ऐप में नहीं) */
 /* ऐप की सेटिंग (index.html का S — window पर नहीं होता, इसलिए typeof से) */
@@ -518,7 +545,14 @@ SE.aiReady=()=>!!(SE.gk()||SE.scriptUrl());
 const AI_P={code:c=>'Search the web (Google) for the retail product with barcode / EAN / GTIN "'+c+'" sold in India. Use only what you actually find for this exact barcode; if nothing reliable is found, set found=false. Reply with ONLY one JSON object, no other words: {"found":true,"name":"Brand Item Size (short, for a shop bill, e.g. Parle-G Biscuit 100g)","hi":"हिंदी नाम","brand":"","size":"","mrp":0,"category":"namkeen|biscuit|chocolate|drinks|dairy|rashan|masala|clean|personal|tobacco|other","source":"website name"}',
   img:'This is a photo of a retail product pack (front or back label) in an Indian shop. Read it. Reply with ONLY one JSON object: {"found":true,"name":"Brand Item Size (short, e.g. Haldiram Bhujia 200g)","hi":"हिंदी नाम","brand":"","size":"","mrp":0,"barcode":"digits if visible else empty","exp":"YYYY-MM if expiry/best-before visible else empty","category":"namkeen|biscuit|chocolate|drinks|dairy|rashan|masala|clean|personal|tobacco|other"}. mrp = printed MRP in rupees (number only). If not readable, use 0 / empty. If this is not a product, found=false.'};
 /* मॉडल: फोटो पढ़ने के लिए सबसे समझदार (Pro) पहले, सीमा खत्म हो तो तेज़ वाला (Flash) — बारकोड खोज के लिए Flash (Google खोज के साथ) */
-const GM={img:["gemini-flash-latest","gemini-2.5-flash","gemini-2.0-flash","gemini-2.5-pro"],code:["gemini-flash-latest","gemini-2.5-flash","gemini-2.0-flash"],ping:["gemini-2.5-flash-lite","gemini-2.0-flash","gemini-flash-latest"]};
+/* 🏷️ बारकोड पहरा: कौन-सा सामान फ़ैक्ट्री पैकेट (कंपनी बारकोड छपा) और कौन-सा खुला/दुकान का (अपना लेबल) — EAN सिर्फ़ सुझाव */
+AI_P.bcfind=L=>'You help an Indian army canteen shop. For EACH product below (id | name | brand | size), use Google search and decide:\n'+
+ '"pack" = factory-packed branded retail product whose pack carries a printed manufacturer barcode (EAN-13/GTIN, usually starting 890);\n'+
+ '"loose" = shop-made, loose, unbranded, sold by weight/plate, handmade sweets/snacks, or no manufacturer barcode.\n'+
+ 'Only if you find the EXACT EAN-13 for that exact brand+product+size on a reliable page, put it in "ean"; otherwise "". Never guess digits.\n'+
+ 'Reply with ONLY one JSON object, no other words: {"r":[{"id":"<id>","k":"pack|loose","ean":"","why":"max 8 words"}]}\n\n'+
+ L.map(x=>String(x.id)+" | "+String(x.n||"")+" | "+String(x.b||"")+" | "+String(x.s||"")).join("\n");
+const GM={bcfind:["gemini-flash-latest","gemini-2.5-flash","gemini-2.0-flash"],img:["gemini-flash-latest","gemini-2.5-flash","gemini-2.0-flash","gemini-2.5-pro"],code:["gemini-flash-latest","gemini-2.5-flash","gemini-2.0-flash"],ping:["gemini-2.5-flash-lite","gemini-2.0-flash","gemini-flash-latest"]};
 SE.aiLast="";
 /* Android ऐप में Google को सीधा (फ़ोन की मशीनी नेटवर्क से — ब्राउज़र की CORS रोक नहीं); वेब में सामान्य fetch */
 async function gfetch(url,opt,ms){
@@ -534,6 +568,7 @@ async function geminiDirect(p,key){
   let parts,tools=null;
   if(p.mode==="ping")parts=[{text:"Reply with exactly: OK"}];
   else if(p.mode==="code"){const c=String(p.code||"").replace(/\D/g,"").slice(0,14);if(c.length<8)return {ok:false,error:"bad-code"};parts=[{text:AI_P.code(c)}];tools=[{google_search:{}}]}
+  else if(p.mode==="bcfind"){const L=(p.items||[]).slice(0,25);if(!L.length)return {ok:false,error:"no-items"};parts=[{text:AI_P.bcfind(L)}];tools=[{google_search:{}}]}
   else if(p.mode==="img")parts=[{inline_data:{mime_type:"image/jpeg",data:String(p.b64||"")}},{text:AI_P.img}];else return {ok:false,error:"mode"};
   const own=_set().gmodel;const list=[...(own?[own]:[]),...GM[p.mode]];let last="",quota=false,busy=false;const tries=[];
   for(const m of list){
@@ -574,13 +609,14 @@ SE.updateNow=async function(say){
   if(SE.isNative&&N.CapacitorUpdater){const U=N.CapacitorUpdater;let h=null;
     try{h=await U.addListener("download",e=>{const pc=Math.round(+e.percent||0);say("⬇️ नया संस्करण "+v.version+" आ रहा है… "+pc+"%","busy",pc)})}catch(e){}
     try{let b=null;try{const l=await U.list();b=(l.bundles||[]).find(x=>x.version===v.version&&x.status!=="error")}catch(e){}
+      if(!b)await _dropBundles(U,v.version);
       if(!b){const base=new URL(v.url,CFG.updateUrl.replace(/\/?$/,"/")).href;
         try{b=await U.download({url:base,version:v.version})}
         catch(e1){say("⬇️ दोबारा कोशिश… (नेटवर्क धीमा)","busy",0);try{const l=await U.list();for(const x of (l.bundles||[]))if(x.version===v.version)try{await U.delete({id:x.id})}catch(e){}}catch(e){}
           await new Promise(r=>setTimeout(r,2500));b=await U.download({url:base+"?t="+Date.now(),version:v.version})}}
       try{h&&h.remove()}catch(e){}
       say("✨ लग रहा है — ऐप 2 सेकंड में दोबारा खुलेगा","ok",100);try{SE.beforeUpdate&&SE.beforeUpdate()}catch(e){}
-      await new Promise(r=>setTimeout(r,900));await U.set({id:b.id});
+      await new Promise(r=>setTimeout(r,900));_markTry(v.version);await U.set({id:b.id});
     }catch(e){try{h&&h.remove()}catch(x){}say("अपडेट नहीं हुआ (नेटवर्क) — 1 मिनट बाद दोबारा दबाएँ, या नीचे से पूरा नया ऐप लें","bad");
       const bx=document.querySelector(".updbox");if(bx&&!bx.querySelector(".apkl")){const a2=document.createElement("a");a2.className="big ghost apkl";a2.style.cssText="display:block;text-align:center;text-decoration:none;margin-top:8px";a2.href="https://github.com/177mhwcanteen-cyber/177-MH-/releases/latest/download/mh-wet-canteen.apk";a2.target="_blank";a2.rel="noopener";a2.textContent="📲 पूरा नया ऐप (APK) डाउनलोड करें — डेटा सुरक्षित रहेगा";bx.appendChild(a2)}}
     return}
@@ -593,7 +629,7 @@ SE.updateNow=async function(say){
 SE.autoUpdateLoop=function(toast){if(SE._loop)return;SE._loop=1;
   setInterval(()=>{if(document.visibilityState==="visible")SE.checkUpdate(toast)},30*60000);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&Date.now()-(SE._lastChk||0)>10*60000){SE._lastChk=Date.now();SE.checkUpdate(toast)}})};
-SE.applyUpdateNow=async()=>{if(SE._pendingBundle)try{await N.CapacitorUpdater.set({id:SE._pendingBundle.id})}catch(e){}};
+SE.applyUpdateNow=async()=>{if(SE._pendingBundle)try{_markTry(SE._pendingBundle.version||"");await N.CapacitorUpdater.set({id:SE._pendingBundle.id})}catch(e){}};
 
 /* वेब (Chrome) के लिए ऑफ़लाइन कैश */
 if(!SE.isNative&&"serviceWorker" in navigator&&location.protocol==="https:"){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}

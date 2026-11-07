@@ -4,6 +4,7 @@ import { build } from "esbuild";
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
+import { orgGuard } from "./org-guard.mjs";
 
 const R = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const W = path.join(R, "web"), OUT = path.join(R, "www"), DIST = path.join(R, "dist");
@@ -12,6 +13,7 @@ const VERSION = process.env.SE_VERSION ||
   `${now.getFullYear()}.${p(now.getMonth() + 1)}${p(now.getDate())}.${p(now.getHours())}${p(now.getMinutes())}`;
 const NATIVE_MIN = 2; // जब Android में नई मशीनी सुविधा जुड़े तब बढ़ाएँ — तब नई APK चाहिए
 
+orgGuard(R); // 🏢 दूसरी संस्था का डेटा या GitHub सीमा पार — build यहीं रुके
 const rm = d => fs.rmSync(d, { recursive: true, force: true });
 const cp = (a, b) => { fs.mkdirSync(path.dirname(b), { recursive: true }); fs.cpSync(a, b, { recursive: true }); };
 rm(OUT); rm(DIST); fs.mkdirSync(path.join(OUT, "lib"), { recursive: true });
@@ -21,7 +23,7 @@ await build({ entryPoints: [path.join(W, "src/vendor.js")], bundle: true, minify
   target: ["chrome90"], charset: "ascii", outfile: path.join(OUT, "lib/vendor.js"), legalComments: "none", logLevel: "warning" });
 
 // 2) बाकी फ़ाइलें
-for (const f of ["index.html", "pehchan.json", "se-platform.js", "se-features.js", "se-nutri.js", "se-route.js", "se-pay.js", "se-bill.js", "se-stock.js", "se-intake.js", "se-market.js", "se-label.js", "se-receipt.js", "se-quick.js", "se-photo.js", "se-watch.js", "se-plus.js", "se-online.js", "se-galla.js", "se-open.js", "se-return.js", "se-items.js", "se-order.js", "se-firms.js", "se-file.js", "h.html", "o.html", "config.js", "manifest.webmanifest", "migrate.json", "icon.png"])
+for (const f of ["index.html", "pehchan.json", "se-platform.js", "se-features.js", "se-nutri.js", "se-route.js", "se-pay.js", "se-bill.js", "se-stock.js", "se-intake.js", "se-market.js", "se-label.js", "se-receipt.js", "se-quick.js", "se-photo.js", "se-bcode.js", "se-rack.js", "se-kharid.js", "se-packs.js", "se-watch.js", "se-plus.js", "se-online.js", "se-galla.js", "se-open.js", "se-return.js", "se-items.js", "se-order.js", "se-firms.js", "se-file.js", "h.html", "o.html", "config.js", "manifest.webmanifest", "migrate.json", "icon.png"])
   if (fs.existsSync(path.join(W, f))) cp(path.join(W, f), path.join(OUT, f));
 if (fs.existsSync(path.join(W, "order"))) cp(path.join(W, "order"), path.join(OUT, "order")); /* 🛵 ग्राहक का ऑर्डर पेज (/order/) */
 if (fs.existsSync(path.join(W, "img"))) cp(path.join(W, "img"), path.join(OUT, "img")); else fs.mkdirSync(path.join(OUT, "img"), { recursive: true });
@@ -65,6 +67,8 @@ e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.req
 
 // 6) dist = वेबसाइट (GitHub Pages) + Android अपडेट ज़िप
 cp(OUT, DIST);
+/* 📦 सामान की खेपें + असली फोटो: सिर्फ़ वेबसाइट (Pages/CDN) पर — OTA ज़िप में नहीं, ताकि 5000 फोटो के बाद भी अपडेट हल्का रहे */
+for (const d of ["data", "p"]) if (fs.existsSync(path.join(W, d))) cp(path.join(W, d), path.join(DIST, d));
 fs.mkdirSync(path.join(DIST, "update"), { recursive: true });
 const zipName = `bundle-${VERSION}.zip`;
 execSync(`cd "${OUT}" && zip -qr "${path.join(DIST, "update", zipName)}" . -x sw.js`);

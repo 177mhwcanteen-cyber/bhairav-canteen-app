@@ -2,6 +2,7 @@
    firebase: Firebase कंसोल → Project settings → Web app से मिला कोड यहाँ आता है।
    (यह गुप्त नहीं है — डेटा की सुरक्षा firestore.rules से होती है) */
 window.SE_CONFIG = {
+  org: "bhairav", // 🏢 संस्था — कभी न बदलें (177 MH का "mh177")
   firebase: {
     // Firebase प्रोजेक्ट "bhairav-canteen" (marwarrasoimr@gmail.com) — 26-10-2026
     apiKey: "AIzaSyDjDe0x6qL1HNABh9QJs3T4xH1ar07uu3k",
