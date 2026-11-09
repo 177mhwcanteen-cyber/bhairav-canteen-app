@@ -110,7 +110,7 @@ async def main():
         t = await pg.inner_text('[data-crow="b8901786140503"]'); assert "(-2)" in t, t
         await pg.screenshot(path=f"{SHOTS}/pk-count.png")
         # 📍 वही सामान दूसरे खाने में भी (xloc): स्टॉक में +5, खाने-वार हिसाब, दोबारा नहीं
-        json.dump({"app": "mh177-pack", "org": "bhairav", "v": 5, "id": "S-TEST-02", "items": [{"id": "g-test-pc", "name": "X", "xloc": {"6-11": 5}}]},
+        json.dump({"app": "mh177-pack", "v": 5, "id": "S-TEST-02", "items": [{"id": "g-test-pc", "name": "X", "xloc": {"6-11": 5}}]},
                   open(os.path.join(WWW, "data/items/S-TEST-02.json"), "w"), ensure_ascii=False)
         json.dump({"app": "mh177-packs", "v": 5, "packs": [{"id": "S-TEST-01", "n": 4, "sha": "x1"}, {"id": "S-TEST-02", "n": 1, "sha": "x2"}]},
                   open(os.path.join(WWW, "data/items/index.json"), "w"))
