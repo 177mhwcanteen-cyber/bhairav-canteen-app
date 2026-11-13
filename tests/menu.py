@@ -63,7 +63,7 @@ async def main():
         # ---- ⚙️ सेटिंग मेन्यू ----
         await pg.evaluate("S.tab='set';showTab()"); await pg.wait_for_timeout(1500)
         st = await pg.evaluate("SMN.setState()")
-        for k in ["items", "new", "photo", "sbc", "rack", "plog", "shop", "staff", "online", "printer", "rc", "lblp", "sl", "upd", "bk", "skj", "ai", "old", "zero"]:
+        for k in ["items", "new", "photo", "sbc", "rack", "plog", "shop", "staff", "printer", "rc", "lblp", "sl", "upd", "bk", "skj", "ai", "old", "zero"]:
             assert k in st["keys"], (k, st["keys"])
         assert st["cur"] == "" and await pg.locator("#p-set .smn-row").count() == len(st["keys"])
         h = await pg.evaluate("document.documentElement.scrollHeight"); assert h < 2400, h   # पहले ~11,700px
@@ -100,9 +100,16 @@ async def main():
         await pg.evaluate("document.getElementById('sheet').innerHTML='<div class=\"sheet\">x</div>'")
         assert await pg.evaluate("SMN.back()") == "sheet" and await pg.evaluate("document.getElementById('sheet').innerHTML") == ""
         # दूसरे टैब से लौटने पर सेटिंग मेन्यू से शुरू
-        await pg.evaluate("SMN.openSet('rc')"); await pg.click('#tabs [data-tab="report"]'); await pg.wait_for_timeout(200)
-        await pg.click('#tabs [data-tab="set"]'); await pg.wait_for_timeout(400)
+        await pg.evaluate("SMN.openSet('rc')"); await pg.evaluate("S.tab='report';showTab()"); await pg.wait_for_timeout(200)
+        await pg.evaluate("S.tab='set';showTab()"); await pg.wait_for_timeout(400)
         assert (await pg.evaluate("SMN.setState().cur")) == "" and await pg.is_visible("#p-set .smn")
+        # ---------- दाएँ तैरता "बिलिंग" बटन (नीचे की पट्टी हटी, ऊपर सब टैब) ----------
+        assert await pg.locator("#bnav").count() == 0
+        await pg.evaluate("S.tab='stock';showTab()"); await pg.wait_for_timeout(200)
+        assert await pg.locator('#tabs [data-tab]').count() >= 8 and await pg.is_visible("#bfab")
+        bx = await pg.locator("#bfab").bounding_box(); vw = await pg.evaluate("innerWidth"); assert bx["x"] > vw/2 and bx["x"]+bx["width"] <= vw, bx
+        await pg.click("#bfab"); await pg.wait_for_timeout(300)
+        assert await pg.evaluate("S.tab") == "bill" and not await pg.is_visible("#bfab")
 
         # ---- साथी: मालिक वाले काम नहीं ----
         await pg.evaluate("S.isOwner=false;S.demo=false;S.tab='bill';showTab()"); await pg.wait_for_timeout(200)

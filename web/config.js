@@ -2,6 +2,7 @@
    firebase: Firebase कंसोल → Project settings → Web app से मिला कोड यहाँ आता है।
    (यह गुप्त नहीं है — डेटा की सुरक्षा firestore.rules से होती है) */
 window.SE_CONFIG = {
+  online: false, // 🚫 भैरव में होम डिलीवरी/ऑनलाइन ऑर्डर नहीं — सिर्फ़ काउंटर (विक्रम जी, 13-11-2026)
   org: "bhairav", // 🏢 संस्था — कभी न बदलें (177 MH का "mh177")
   firebase: {
     // Firebase प्रोजेक्ट "bhairav-canteen" (marwarrasoimr@gmail.com) — 26-10-2026

@@ -179,3 +179,7 @@ const css=document.createElement("style");css.textContent=`
 /* बदलाव पर अपने-आप दोबारा भेजो (हर 2 मिनट जाँच — सिर्फ़ बदला हो तब) */
 setInterval(()=>{try{if(typeof S!=="undefined"&&S.db&&!S.demo&&S.items&&S.items.length){SON.publish(false);SON.publishPhotos(false)}}catch(e){}},120000);
 })();
+
+/* 🚫 ऑनलाइन दुकान बंद (config.js → online:false): भैरव में सिर्फ़ काउंटर पर बिक्री — न सेटिंग का कार्ड, न भाव छपना, न ऑर्डर सुनना */
+if(window.SE_CONFIG&&SE_CONFIG.online===false&&window.SON){const N=window.SON;N.off=true;N.settingsHTML=()=>"";["publish","publishPhotos","watch","alarm","sheet","qrSheet"].forEach(k=>{N[k]=async()=>{}});N.list=()=>[];
+  try{const st=document.createElement("style");st.textContent="[data-sxolink],[data-noonline],#sxOrd{display:none!important}";document.head.appendChild(st)}catch(e){}}
