@@ -1842,7 +1842,7 @@ let PEH=null;async function pehchan(){if(PEH)return PEH;PEH=new Map();
   const g=PEH.get.bind(PEH);PEH.get=c=>{const V=window.SE&&SE.codeVariants?SE.codeVariants(c):[c];for(const v of V){const x=g(v);if(x)return x}return undefined};return PEH}
 const PEH_SUB={NAM:"namkeen",DRY:"dryfruit",SAU:"achar",RAS:"rashan",MAS:"masala",BAK:"bakery",BEV:"drinks",BIS:"sweet",CHO:"sweet",DAI:"dairy",ICE:"ice",TOB:"tob",OTH:"clean",POO:"pooja",DIS:"disposal",PAR:"party"};
 async function pehchanFill(code){const m=await pehchan(),x=m.get(code);window.PEH_HIT=x?{code,x}:null;if(!x){if($("#nbName")&&window.SM)SM.fillNew(code);return}if(!$("#nbName"))return;
-  $("#nbName").value=SE.capNm?SE.capNm(x.short||x.bill):(x.short||x.bill);$("#nbHi").value=x.hi||"";if(x.mrp)$("#nbMrp").value=x.mrp;
+  $("#nbName").value=SE.capNm?SE.capNm(x.short||x.bill):(x.short||x.bill);$("#nbHi").value=x.hi||"";if(x.mrp)$("#nbMrp").value=x.mrp;if(x.rate&&$("#nbSale"))$("#nbSale").value=x.rate;
   const sb=$("#nbSub"),want=x.mh?(SUBMAP[x.sub]||""):PEH_SUB[x.cat];if(sb&&want&&[...sb.options].some(o=>o.value===want)){sb.value=want;sb.dataset.peh=want}
   if(x.mh){const c=mcat(x),cn=(CATS.find(k=>k[0]===c)||[])[1]||c;x._cat=c;
     const t=document.createElement("p");t.className="note";t.style.cssText="margin:0 0 8px";t.textContent=`📂 श्रेणी: ${cn}${msub(x)?" › "+((SUBS.kirana.find(k=>k[0]===msub(x))||[])[1]||""):""}${x.size?" · "+x.size:""}${x.perPack?" · पैकेट में "+x.perPack:""}`;
@@ -1908,6 +1908,7 @@ function unknownCode(code){
       /* 177 MH की पहचान: श्रेणी/उप-श्रेणी MH वाली (mcat/msub भैरव के 4 हिस्सों में दिखाते हैं) — जब तक साथी ने "किस में रखें" न बदला हो */
       const mh=pc&&pc.mh&&(!$("#nbSub").dataset.peh||$("#nbSub").dataset.peh===sub)?pc:null;const cat=mh?(mh.cat||"kirana"):"kirana",sb2=mh?(mh.sub||sub):sub;
       const it={name,hi:$("#nbHi").value.trim(),emoji:mh&&mh.emoji||"📦",cat,sub:sb2,unit:mh&&mh.unit||"pc",mrp,sale,cost,code:nextCode(mcat({cat,sub:sb2})),brand:pc?pc.brand||"":"",size:pc?pc.size||"":"",secret:pc&&pc.secret?pc.secret:"",hue:210,order:S.items.length+1,active:true,barcode:code,track:true,min:5,alias:mh&&mh.alias||"",
+        ...(isTob({sub:sb2,name,hi:$("#nbHi").value,alias:mh&&mh.alias||""})&&!(pc&&pc.secret)?{secret:nextSecret(),sub:"tob"}:{}),
         ...(mh?{short:mh.short||"",peh:"mh177",...(mh.perPack?{perPack:+mh.perPack}:{}),...(mh.packMrp?{packMrp:+mh.packMrp}:{}),...(mh.ctn?{ctn:+mh.ctn}:{}),...(mh.phUrl?{phUrl:mh.phUrl}:{})}:{}),
         addedBy:S.uid||"",addedByName:biller(),addedTs:Date.now(),pending:!own};
       try{if(!S.demo)await S.db.collection("items").doc(id).set(it);if(!item(id))S.items.push({id,...it});if(!S.demo&&own)logPrice(id,"sale",0,sale);

@@ -59,6 +59,18 @@ async def main():
         c13 = next((x["barcodes"][0]["code"] for x in PM if len(x["barcodes"][0]["code"]) == 13 and x["barcodes"][0]["code"].startswith("0")), None)
         if c13:
             assert await pg.evaluate(f"pehchan().then(m=>!!m.get('{c13[1:]}'))")
+        # 3b) MH ऐप वाला बिक्री भाव (rate) भरता है; तम्बाकू पर अपने-आप गुप्त कोड
+        await pg.evaluate("""pehchan().then(m=>{m.set('8901725999990',{barcodes:[{code:'8901725999990'}],bill:'GOLD FLAKE KINGS 10',mh:1,cat:'kirana',sub:'tob',mrp:200,rate:195,unit:'pc'});
+          m.set('8906000000017',{barcodes:[{code:'8906000000017'}],bill:'TEST MAGGI 70G',mh:1,cat:'kirana',sub:'rashan',mrp:15,rate:14,unit:'pc',phUrl:'pm/b8906000000017.jpg'})})""")
+        await pg.evaluate("closeSheet();unknownCode('8906000000017')"); await pg.wait_for_timeout(600)
+        assert await pg.evaluate("document.getElementById('nbSale').value") == "14"
+        await pg.click("[data-nbsave]"); await pg.wait_for_timeout(600)
+        m2 = await pg.evaluate("(()=>{const i=S.items.find(i=>String(i.barcode)==='8906000000017');return [i.sale,i.phUrl,SE.photoSrc(i)]})()")
+        assert m2 == [14, "pm/b8906000000017.jpg", "pm/b8906000000017.jpg"], m2
+        await pg.evaluate("closeSheet();unknownCode('8901725999990')"); await pg.wait_for_timeout(600)
+        await pg.click("[data-nbsave]"); await pg.wait_for_timeout(600)
+        t = await pg.evaluate("(()=>{const i=S.items.find(i=>String(i.barcode)==='8901725999990');return [i.sub,/^S-\\d+$/.test(i.secret||''),i.sale,isTob(i)]})()")
+        assert t == ["tob", True, 195, True], t
         # 4) अनजान (किसी सूची में नहीं) → कुछ नहीं भरता, गलती नहीं
         await pg.evaluate("closeSheet();unknownCode('8999999999994')"); await pg.wait_for_timeout(600)
         assert await pg.evaluate("document.getElementById('nbName').value") == ""

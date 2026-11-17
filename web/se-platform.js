@@ -213,7 +213,7 @@ SE.setStaffActive=(uid,on)=>db.doc("staff/"+uid).update({active:!!on,[on?"onTs":
 /* ---------- फोटो ---------- */
 SE.bundled=new Set(window.SE_PHOTOS||[]);
 SE.photos={};
-SE.photoSrc=function(it){if(!it)return "";if(SE.photos[it.id])return SE.photos[it.id];if(it.phUrl&&it.photo!=="none"&&/^https:\/\/177mhwcanteen-cyber\.github\.io\//.test(it.phUrl))return it.phUrl;if(it.photo!=="none"&&SE.bundled.has(it.id))return "img/"+it.id+".jpg";
+SE.photoSrc=function(it){if(!it)return "";if(SE.photos[it.id])return SE.photos[it.id];if(it.phUrl&&it.photo!=="none"&&/^https:\/\/177mhwcanteen-cyber\.github\.io\//.test(it.phUrl))return it.phUrl;if(it.phUrl&&it.photo!=="none"&&/^pm\/[\w-]+\.jpg$/.test(it.phUrl))return (SE.isNative&&CFG.updateUrl?CFG.updateUrl.replace(/\/?$/,"/"):"")+it.phUrl;if(it.photo!=="none"&&SE.bundled.has(it.id))return "img/"+it.id+".jpg";
   /* 📦 GitHub खेप वाली असली फोटो — Pages से (CDN), OTA ज़िप में नहीं */
   if(it.ph&&it.photo!=="none")return (SE.isNative&&CFG.updateUrl?CFG.updateUrl.replace(/\/?$/,"/"):"")+"p/"+encodeURIComponent(it.id)+".jpg?v="+encodeURIComponent(it.ph);return ""};
 SE.watchPhotos=function(onChange){if(!db)return;db.collection("photos").onSnapshot(s=>{SE.photos={};s.docs.forEach(d=>{const x=d.data();if(x&&x.d)SE.photos[d.id]=x.d});onChange&&onChange()},()=>{})};

@@ -43,7 +43,7 @@ export function orgGuard(R) {
     if (s.isDirectory()) { walk(a); continue }
     tot += s.size;
     if (s.size > 20 * 1024 * 1024) bad.push(`बहुत बड़ी फ़ाइल: ${path.relative(R, a)} (${Math.round(s.size / 1048576)} MB)`);
-    if (a.includes(path.sep + "p" + path.sep) && f.endsWith(".jpg") && s.size > 24 * 1024) bad.push(`फोटो 20 KB से बड़ी: ${path.relative(R, a)}`);
+    if ((a.includes(path.sep + "p" + path.sep) || a.includes(path.sep + "pm" + path.sep)) && f.endsWith(".jpg") && s.size > 24 * 1024) bad.push(`फोटो 20 KB से बड़ी: ${path.relative(R, a)}`);
   } })(W);
   if (tot > 800 * 1024 * 1024) bad.push(`web/ कुल ${Math.round(tot / 1048576)} MB — GitHub Pages की 1 GB सीमा के पास`);
   if (bad.length) { console.error("⛔ संस्था/सीमा पहरा:\n  " + bad.join("\n  ")); process.exit(1) }

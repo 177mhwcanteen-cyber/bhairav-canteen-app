@@ -68,7 +68,7 @@ e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.req
 // 6) dist = वेबसाइट (GitHub Pages) + Android अपडेट ज़िप
 cp(OUT, DIST);
 /* 📦 सामान की खेपें + असली फोटो: सिर्फ़ वेबसाइट (Pages/CDN) पर — OTA ज़िप में नहीं, ताकि 5000 फोटो के बाद भी अपडेट हल्का रहे */
-for (const d of ["data", "p"]) if (fs.existsSync(path.join(W, d))) cp(path.join(W, d), path.join(DIST, d));
+for (const d of ["data", "p", "pm"]) if (fs.existsSync(path.join(W, d))) cp(path.join(W, d), path.join(DIST, d));
 fs.mkdirSync(path.join(DIST, "update"), { recursive: true });
 const zipName = `bundle-${VERSION}.zip`;
 execSync(`cd "${OUT}" && zip -qr "${path.join(DIST, "update", zipName)}" . -x sw.js`);

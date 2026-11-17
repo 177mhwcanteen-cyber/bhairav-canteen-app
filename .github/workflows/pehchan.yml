@@ -1,9 +1,9 @@
 # 🗂️ 177 MH की पहचान-सूची रोज़ ताज़ा (विक्रम जी 17-11-2026)
-# MH में नई खेप/सामान जुड़े → यहाँ web/pehchan-mh.json अपने-आप नई (सिर्फ़ पहचान: नाम/श्रेणी/MRP/फोटो-लिंक — भाव/स्टॉक/सप्लायर कभी नहीं)।
+# MH ऐप (pub/pk_* — मालिक के फोन से) + MH रिपो की खेपें → नाम, श्रेणी, MRP, बिक्री भाव, फोटो। MH में नई खेप/सामान जुड़े → यहाँ web/pehchan-mh.json अपने-आप नई (सिर्फ़ पहचान: नाम/श्रेणी/MRP/फोटो-लिंक — भाव/स्टॉक/सप्लायर कभी नहीं)।
 # बदली हो तभी commit → build.yml से फोन तक "ऐप अपडेट" में पहुँचती है। हाथ से भी: Actions → pehchan → Run.
 name: pehchan
 on:
-  schedule: [{ cron: "40 20 * * *" }]   # रोज़ रात 2:10 (भारत)
+  schedule: [{ cron: "40 */6 * * *" }]   # हर 6 घंटे
   workflow_dispatch:
 permissions:
   contents: write
@@ -16,9 +16,10 @@ jobs:
       - run: git clone --depth 1 https://github.com/177mhwcanteen-cyber/177-MH- /tmp/mh
       - run: python3 scripts/mh-pehchan.py /tmp/mh && node scripts/org-guard.mjs
       - run: |
-          if git diff --quiet web/pehchan-mh.json; then echo "कोई नया सामान नहीं"; exit 0; fi
+          git add -N web/pm 2>/dev/null || true
+          if git diff --quiet web/pehchan-mh.json web/pm 2>/dev/null; then echo "कोई नया सामान नहीं"; exit 0; fi
           git config user.name "pehchan-bot"; git config user.email "pehchan-bot@users.noreply.github.com"
-          git add web/pehchan-mh.json && git commit -m "🗂️ 177 MH की पहचान-सूची ताज़ा ($(python3 -c "import json;print(len(json.load(open('web/pehchan-mh.json'))['items']))") सामान)"
+          git add web/pehchan-mh.json && (git add web/pm 2>/dev/null || true) && git commit -m "🗂️ 177 MH की पहचान-सूची ताज़ा ($(python3 -c "import json;print(len(json.load(open('web/pehchan-mh.json'))['items']))") सामान)"
           git pull --rebase -q && git push
           gh workflow run build.yml
         env:
