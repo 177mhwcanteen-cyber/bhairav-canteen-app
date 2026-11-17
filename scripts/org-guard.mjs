@@ -27,6 +27,11 @@ export function orgGuard(R) {
     const j = JSON.parse(fs.readFileSync(path.join(D, f), "utf8"));
     if ((j.org || "mh177") !== org) bad.push(`data/items/${f} का org ${j.org || "(नहीं)"} ≠ ${org}`);
   }
+  // 🗂️ pehchan-mh.json (177 MH की पहचान-सूची, विक्रम जी 17-11-2026) में सिर्फ़ पहचान — भाव/स्टॉक/सप्लायर/गुप्त कोड कभी नहीं
+  const pm = path.join(W, "pehchan-mh.json");
+  if (fs.existsSync(pm)) { const j = JSON.parse(fs.readFileSync(pm, "utf8"));
+    for (const x of j.items || []) for (const k of ["cost", "sale", "oldSale", "rack", "xloc", "open", "supplier", "mfr", "secret", "code", "stock", "batch"])
+      if (k in x) { bad.push(`pehchan-mh.json में "${k}" (सिर्फ़ पहचान रखनी है): ${x.bill}`); break } }
   // दूसरी संस्था का Firebase नाम web/ के किसी डेटा/कोड में न हो
   for (const [k, o] of Object.entries(ORGS)) if (k !== org) {
     for (const f of fs.readdirSync(W).filter(f => /\.(js|json|html)$/.test(f)))

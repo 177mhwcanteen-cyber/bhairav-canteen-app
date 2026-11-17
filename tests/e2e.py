@@ -326,6 +326,7 @@ async def main():
         txt = await pg.evaluate("SK.ownerText()")
         assert "बिक्री" in txt and "मुनाफ़ा" in txt and "भैरव" in txt, txt
         # 🏢 सभी फर्म (भैरव की अपनी रिपोर्ट) — रिपोर्ट-सूची में
+        await pg.evaluate("document.querySelectorAll('#p-report .rp-g.shut').forEach(g=>g.classList.remove('shut'))")  # समूह मुड़े हों तो खोलो (13-11 से)
         await pg.click('#p-report .rp-go[data-rsel="firms"]'); await pg.wait_for_selector(".sfm"); await pg.wait_for_timeout(600)
         if await pg.locator("#sfmPw").count():
             await pg.fill("#sfmPw", "secret123"); await pg.click("[data-sfmlogin]"); await pg.wait_for_timeout(1500)

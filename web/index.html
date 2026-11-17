@@ -1832,13 +1832,23 @@ async function handleScan(code){
   toast("✓ "+it.name+" · "+rs(p)+(inCart>1?" · कुल "+inCart:"")+(left!=null&&left<0?" · ⚠ स्टॉक में इतना नहीं दिखता":""));
 }
 /* 🗂️ पहचान सूची (पुराने Vyapar के 657 सामान) — सिर्फ़ नाम/कंपनी/पिछला भाव भरने के लिए; स्टॉक नहीं */
-let PEH=null;async function pehchan(){if(PEH)return PEH;try{const r=await fetch("pehchan.json");const j=await r.json();PEH=new Map();j.items.forEach(x=>x.barcodes.forEach(b=>PEH.set(b.code,x)))}catch(e){PEH=new Map()}return PEH}
+/* 🗂️ पहचान-सूची (छिपी, सिर्फ़ पढ़ने को): pehchan-mh.json = 177 MH का हर सामान (नाम/श्रेणी/MRP/फोटो — भाव, स्टॉक, सप्लायर नहीं; scripts/mh-pehchan.py)
+   + pehchan.json (Vyapar सूची)। अनजान बारकोड स्कैन करते ही नाम-श्रेणी अपने-आप (विक्रम जी 17-11-2026) */
+let PEH=null;async function pehchan(){if(PEH)return PEH;PEH=new Map();
+  const ld=async f=>{try{const r=await fetch(f,{cache:"no-cache"});return r.ok?(await r.json()).items||[]:[]}catch(e){return []}};
+  const [mh,vy]=await Promise.all([ld("pehchan-mh.json"),ld("pehchan.json")]);
+  mh.forEach(x=>x.barcodes.forEach(b=>PEH.set(b.code,x)));
+  vy.forEach(x=>x.barcodes.forEach(b=>{const m=PEH.get(b.code);if(!m)PEH.set(b.code,x);else{["lastSale","lastPur","secret"].forEach(k=>{if(x[k]!=null&&m[k]==null)m[k]=x[k]});if(!m.vcat)m.vcat=x.cat}}));
+  const g=PEH.get.bind(PEH);PEH.get=c=>{const V=window.SE&&SE.codeVariants?SE.codeVariants(c):[c];for(const v of V){const x=g(v);if(x)return x}return undefined};return PEH}
 const PEH_SUB={NAM:"namkeen",DRY:"dryfruit",SAU:"achar",RAS:"rashan",MAS:"masala",BAK:"bakery",BEV:"drinks",BIS:"sweet",CHO:"sweet",DAI:"dairy",ICE:"ice",TOB:"tob",OTH:"clean",POO:"pooja",DIS:"disposal",PAR:"party"};
 async function pehchanFill(code){const m=await pehchan(),x=m.get(code);window.PEH_HIT=x?{code,x}:null;if(!x){if($("#nbName")&&window.SM)SM.fillNew(code);return}if(!$("#nbName"))return;
-  $("#nbName").value=x.bill;$("#nbHi").value=x.hi||"";if(x.mrp)$("#nbMrp").value=x.mrp;
-  const sb=$("#nbSub");if(sb&&PEH_SUB[x.cat]&&[...sb.options].some(o=>o.value===PEH_SUB[x.cat]))sb.value=PEH_SUB[x.cat];
+  $("#nbName").value=SE.capNm?SE.capNm(x.short||x.bill):(x.short||x.bill);$("#nbHi").value=x.hi||"";if(x.mrp)$("#nbMrp").value=x.mrp;
+  const sb=$("#nbSub"),want=x.mh?(SUBMAP[x.sub]||""):PEH_SUB[x.cat];if(sb&&want&&[...sb.options].some(o=>o.value===want)){sb.value=want;sb.dataset.peh=want}
+  if(x.mh){const c=mcat(x),cn=(CATS.find(k=>k[0]===c)||[])[1]||c;x._cat=c;
+    const t=document.createElement("p");t.className="note";t.style.cssText="margin:0 0 8px";t.textContent=`📂 श्रेणी: ${cn}${msub(x)?" › "+((SUBS.kirana.find(k=>k[0]===msub(x))||[])[1]||""):""}${x.size?" · "+x.size:""}${x.perPack?" · पैकेट में "+x.perPack:""}`;
+    const c2=$("#sheet .card2");if(c2)c2.insertBefore(t,c2.firstChild)}
   const n=document.createElement("p");n.className="note";n.style.cssText="background:var(--soft,#eef3ff);padding:8px 10px;border-radius:10px;margin:0 0 10px";
-  n.textContent=`🗂️ पहचान सूची से भरा: ${x.brand?x.brand+" · ":""}${x.bill}`+(x.lastSale?` — पिछली बार ₹${x.lastSale} में बिका`:"")+(S.isOwner&&x.lastPur?`, खरीद ₹${x.lastPur}`:"")+`। आज का MRP पैकेट पर देखकर भाव लिखें।`;
+  n.textContent=`🗂️ ${x.mh?"177 MH की ":""}पहचान सूची से भरा: ${x.brand?x.brand+" · ":""}${x.bill}`+(x.lastSale?` — पिछली बार ₹${x.lastSale} में बिका`:"")+(S.isOwner&&x.lastPur?`, खरीद ₹${x.lastPur}`:"")+`। आज का MRP पैकेट पर देखकर भाव लिखें।`;
   const c=$("#sheet .card2");if(c)c.parentNode.insertBefore(n,c)}
 /* 🔒 गुप्त कोड वाले सामान (गुटखा/ज़र्दा/सिगरेट): बिल/प्रिंट/WhatsApp पर असली नाम नहीं छपता */
 /* ✂️ स्थायी नियम: बिल व लेबल पर छोटा नाम (24 अक्षर तक) — "कंपनी + सामान + साइज़"। it.short हो तो वही, नहीं तो अपने-आप छोटा */
@@ -1895,7 +1905,10 @@ function unknownCode(code){
       if(findByCode(code)){closeSheet();handleScan(code);return}
       const id="b"+Date.now().toString(36),sub=$("#nbSub").value;
       const pc=window.PEH_HIT&&PEH_HIT.code===code?PEH_HIT.x:null;
-      const it={name,hi:$("#nbHi").value.trim(),emoji:"📦",cat:"kirana",sub,unit:"pc",mrp,sale,cost,code:nextCode("kirana"),brand:pc?pc.brand||"":"",size:pc?pc.size||"":"",secret:pc&&pc.secret?pc.secret:"",hue:210,order:S.items.length+1,active:true,barcode:code,track:true,min:5,alias:"",
+      /* 177 MH की पहचान: श्रेणी/उप-श्रेणी MH वाली (mcat/msub भैरव के 4 हिस्सों में दिखाते हैं) — जब तक साथी ने "किस में रखें" न बदला हो */
+      const mh=pc&&pc.mh&&(!$("#nbSub").dataset.peh||$("#nbSub").dataset.peh===sub)?pc:null;const cat=mh?(mh.cat||"kirana"):"kirana",sb2=mh?(mh.sub||sub):sub;
+      const it={name,hi:$("#nbHi").value.trim(),emoji:mh&&mh.emoji||"📦",cat,sub:sb2,unit:mh&&mh.unit||"pc",mrp,sale,cost,code:nextCode(mcat({cat,sub:sb2})),brand:pc?pc.brand||"":"",size:pc?pc.size||"":"",secret:pc&&pc.secret?pc.secret:"",hue:210,order:S.items.length+1,active:true,barcode:code,track:true,min:5,alias:mh&&mh.alias||"",
+        ...(mh?{short:mh.short||"",peh:"mh177",...(mh.perPack?{perPack:+mh.perPack}:{}),...(mh.packMrp?{packMrp:+mh.packMrp}:{}),...(mh.ctn?{ctn:+mh.ctn}:{}),...(mh.phUrl?{phUrl:mh.phUrl}:{})}:{}),
         addedBy:S.uid||"",addedByName:biller(),addedTs:Date.now(),pending:!own};
       try{if(!S.demo)await S.db.collection("items").doc(id).set(it);if(!item(id))S.items.push({id,...it});if(!S.demo&&own)logPrice(id,"sale",0,sale);
         if(window.SO&&SO.active()){closeSheet();toast("✓ "+name+" जुड़ गया · कोड "+it.code);SO.addNew(id,qty);return}

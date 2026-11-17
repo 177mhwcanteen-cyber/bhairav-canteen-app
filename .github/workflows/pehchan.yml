@@ -1,0 +1,25 @@
+# 🗂️ 177 MH की पहचान-सूची रोज़ ताज़ा (विक्रम जी 17-11-2026)
+# MH में नई खेप/सामान जुड़े → यहाँ web/pehchan-mh.json अपने-आप नई (सिर्फ़ पहचान: नाम/श्रेणी/MRP/फोटो-लिंक — भाव/स्टॉक/सप्लायर कभी नहीं)।
+# बदली हो तभी commit → build.yml से फोन तक "ऐप अपडेट" में पहुँचती है। हाथ से भी: Actions → pehchan → Run.
+name: pehchan
+on:
+  schedule: [{ cron: "40 20 * * *" }]   # रोज़ रात 2:10 (भारत)
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: git clone --depth 1 https://github.com/177mhwcanteen-cyber/177-MH- /tmp/mh
+      - run: python3 scripts/mh-pehchan.py /tmp/mh && node scripts/org-guard.mjs
+      - run: |
+          if git diff --quiet web/pehchan-mh.json; then echo "कोई नया सामान नहीं"; exit 0; fi
+          git config user.name "pehchan-bot"; git config user.email "pehchan-bot@users.noreply.github.com"
+          git add web/pehchan-mh.json && git commit -m "🗂️ 177 MH की पहचान-सूची ताज़ा ($(python3 -c "import json;print(len(json.load(open('web/pehchan-mh.json'))['items']))") सामान)"
+          git pull --rebase -q && git push
+          gh workflow run build.yml
+        env:
+          GH_TOKEN: ${{ github.token }}
