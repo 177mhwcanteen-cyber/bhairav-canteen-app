@@ -3,6 +3,7 @@
    अधूरा काम फोन में (bh_open) रहता है। "पक्का करें" पर ही स्टॉक बदलता है; पुराना स्टॉक/एक्सपायरी/खरीद भाव openings/{id} में सुरक्षित। */
 (function(){
 "use strict";
+{const c=document.createElement("style");c.id="so-camcss";c.textContent="html.camon .so-card .so-ph,html.camon .so-card .so-ask{display:none}html.camon .so-card .so-nm{margin-top:0}html.camon .so-prog{margin:4px 0}";document.head.appendChild(c)} /* कैमरा चालू: कार्ड छोटा, नाम+गिनती तुरंत दिखे */
 const SO=window.SO={};
 const K="mh_open";
 const num=v=>{const n=parseFloat(String(v==null?"":v).replace(",","."));return isFinite(n)?n:0};
@@ -34,10 +35,10 @@ SO.render=function(){
   const L=ids(),it=cur(),dn=doneN(),pc=L.length?Math.round(dn/L.length*100):0;
   if(O.view==="list")return drawList(el,L,dn);
   if(!it){el.innerHTML=`<h2 class="sec">🏁 ओपनिंग स्टॉक</h2><p class="note">कोई पैकेट वाला सामान नहीं — बारकोड स्कैन करके नया सामान जोड़ें।</p>${foot(dn,L.length)}`;return}
-  const e=O.exp[it.id]||"",c=O.cost[it.id]!=null?O.cost[it.id]:(costOf(it)||""),q=O.n[it.id],s=st(it.id);
+  const e=O.exp[it.id]||"",c=O.cost[it.id]!=null?O.cost[it.id]:(costOf(it)||""),q=O.n[it.id],s=st(it.id),sl=(O.sale&&O.sale[it.id]!=null)?O.sale[it.id]:(+it.sale||"");
   const oldExp=window.SF&&SF.nearExp?SF.nearExp(it):(it.exp||"");
   el.innerHTML=`<div class="so-top"><div><h2 class="sec" style="margin:0">🏁 ओपनिंग स्टॉक</h2><span class="note">${fdate(O.date)} · शुरू ${ftime(O.start)}</span></div>
-    <button class="chip" data-so="list">📋 सूची</button></div>
+    <span style="display:flex;gap:6px"><button class="chip" data-so="cam" aria-pressed="${!!(SE.cam&&SE.cam.on)}">📷 कैमरा</button><button class="chip" data-so="list">📋 सूची</button></span></div>
   <div class="so-prog"><i style="width:${pc}%"></i><span>${dn} / ${L.length} हुए</span></div>
   <div class="card2 so-card ${s}">
     <div class="so-ph">${tileHTML(it)}</div>
@@ -46,13 +47,15 @@ SO.render=function(){
     <p class="note so-meta">#${esc(it.code||"")}${it.barcode?" · "+esc(String(it.barcode).split(",")[0]):""}${+it.mrp?" · MRP ₹"+(+it.mrp):""} · बिक्री ₹${+it.sale||0}</p>
     <div class="so-q-l">कितने हैं? स्कैन करें या संख्या लिखें</div>
     <div class="so-q"><button type="button" data-so="dec" aria-label="एक कम">−</button><input class="inp" id="soQ" inputmode="decimal" value="${q!=null?q:""}" placeholder="—" aria-label="${esc(SE.capNm(it.name))} कितने हैं" autocomplete="off"><button type="button" data-so="inc" aria-label="एक और">+</button></div>
-    <div class="row2" style="margin:8px 0 0"><label class="fld">एक्सपायरी (हो तो)<input class="inp" id="soE" type="date" value="${esc(e)}"></label><label class="fld">खरीद भाव ₹<input class="inp" id="soC" inputmode="decimal" value="${esc(String(c))}" placeholder="पता हो तो"></label></div>
+    <div class="row2" style="margin:8px 0 0"><label class="fld">बिक्री भाव ₹ <small>(गलत हो तो बदलें)</small><input class="inp so-sale" id="soS" inputmode="decimal" value="${esc(String(sl))}" placeholder="भाव"></label><label class="fld">खरीद भाव ₹<input class="inp" id="soC" inputmode="decimal" value="${esc(String(c))}" placeholder="पता हो तो"></label></div>
+    <div class="row2" style="margin:6px 0 0"><label class="fld">एक्सपायरी (हो तो)<input class="inp" id="soE" type="date" value="${esc(e)}"></label><span class="note" style="align-self:end">${!(+sl)?'<b style="color:var(--chili)">⚠ बिक्री भाव भरें</b> · ':""}${+it.mrp?"MRP ₹"+(+it.mrp)+(+sl>+it.mrp?' · <b style="color:var(--chili)">⚠ भाव MRP से ज़्यादा</b>':""):""}${O.sale&&O.sale[it.id]!=null&&+O.sale[it.id]!==+it.sale?' · <b>भाव बदला: ₹'+(+it.sale||0)+" → ₹"+O.sale[it.id]+"</b>":""}</span></div>
     <p class="note so-old">ऐप में पहले: ${fq(qOf(it),it.unit)}${oldExp?" · पुरानी एक्सपायरी "+fdate(oldExp):""}${s==="off"?' · <b style="color:var(--chili)">🚫 बंद किया</b>':""}</p>
     <button class="big" data-so="next">✓ अगला${q!=null?" ("+q+")":""}</button>
     <div class="so-b3"><button class="big ghost" data-so="prev" ${O.i?"":"disabled"}>← पिछला</button><button class="big ghost" data-so="zero">0 — नहीं है</button><button class="big ghost" data-so="off">🚫 अब नहीं बेचते</button></div>
   </div>
   ${foot(dn,L.length)}`;
-  setTimeout(()=>{const f=$("#soQ");if(f&&!document.querySelector("#sheet .scrim")){f.focus();try{f.select()}catch(x){}}},40);
+  if(SE.cam&&SE.cam.on){try{document.body.scrollTop=0;window.scrollTo(0,0)}catch(x){}} /* कैमरा के नीचे सबसे ऊपर नाम + गिनती दिखे */
+  setTimeout(()=>{const f=$("#soQ");if(f&&!document.querySelector("#sheet .scrim")&&!(SE.cam&&SE.cam.on)){f.focus();try{f.select()}catch(x){}}},40); /* कैमरा चालू हो तो कीबोर्ड नहीं — कैमरा न हटे */
 };
 const foot=(dn,n)=>`<div style="height:120px"></div><div class="cartbar px cntbar"><button class="big ghost" data-so="cancel">रद्द</button><button class="big" data-so="finish">🏁 पूरा करें (${dn}/${n})</button></div>`;
 function drawList(el,L,dn){
@@ -63,6 +66,7 @@ function keep(){const it=cur();if(!it)return;const q=$("#soQ"),e=$("#soE"),c=$("
   if(q){const v=String(q.value).trim();if(v==="")delete O.n[it.id];else{O.n[it.id]=Math.max(0,r2(num(v)));delete O.off[it.id]}}
   if(e){if(e.value)O.exp[it.id]=e.value;else delete O.exp[it.id]}
   if(c){const v=String(c.value).trim();if(v==="")delete O.cost[it.id];else O.cost[it.id]=r2(num(v))}
+  const sv=$("#soS");if(sv){O.sale=O.sale||{};const v=String(sv.value).trim();if(v===""||r2(num(v))===r2(+it.sale||0))delete O.sale[it.id];else if(num(v)>0)O.sale[it.id]=r2(num(v))}
   save()}
 function go(d){O.i=Math.max(0,Math.min(ids().length-1,(O.i||0)+d));save();SO.render()}
 
@@ -115,7 +119,7 @@ async function apply(leftMode){
     const old=r2(qOf(it)),qty=O.off[id]?0:r2(num(O.n[id]));
     const oldCost=costOf(it),cost=O.cost[id]!=null?O.cost[id]:oldCost;
     lines.push({id,name:it.name,code:it.code||"",unit:it.unit,old,qty,diff:r2(qty-old),exp:O.exp[id]||"",oldExp:it.exp||"",
-      oldNear:(window.SF&&SF.nearExp?SF.nearExp(it):"")||"",cost:r2(cost||0),oldCost:r2(oldCost||0),off:!!O.off[id],added:O.added.includes(id)});
+      oldNear:(window.SF&&SF.nearExp?SF.nearExp(it):"")||"",cost:r2(cost||0),oldCost:r2(oldCost||0),sale:r2((O.sale&&O.sale[id]!=null)?O.sale[id]:(+it.sale||0)),oldSale:r2(+it.sale||0),off:!!O.off[id],added:O.added.includes(id)});
   }
   if(!lines.length){toast("अभी कुछ नहीं गिना");throw new Error("empty")}
   const doc={date,ts,start:O.start,by:S.uid||"",byName:biller(),n:lines.length,lines,
@@ -124,9 +128,9 @@ async function apply(leftMode){
   if(!S.demo)await S.db.collection("openings").doc(oid).set(doc);   // पहले रिकॉर्ड — फिर बदलाव
   await adjStock(lines.filter(l=>l.diff).map(l=>[l.id,l.diff]),"ओपनिंग स्टॉक "+fdate(date));
   for(const l of lines){const it=item(l.id);const p={openTs:ts,openQty:l.qty,exp:l.exp||""};
-    if(l.off)p.active=false;if(l.cost>0&&l.cost!==l.oldCost)p.cost=l.cost;
+    if(l.off)p.active=false;if(l.cost>0&&l.cost!==l.oldCost)p.cost=l.cost;if(l.sale>0&&l.sale!==l.oldSale)p.sale=l.sale; /* 💰 ओपनिंग में बदला बिक्री भाव */
     Object.assign(it,p);
-    if(!S.demo){try{await S.db.doc("items/"+l.id).update(p)}catch(e){}if(p.cost)try{logPrice(l.id,"cost",l.oldCost,l.cost)}catch(e){}}
+    if(!S.demo){try{await S.db.doc("items/"+l.id).update(p)}catch(e){}if(p.cost)try{logPrice(l.id,"cost",l.oldCost,l.cost)}catch(e){}if(p.sale)try{logPrice(l.id,"sale",l.oldSale,l.sale)}catch(e){}}
     if(l.exp&&l.qty>0){const bt={itemId:l.id,exp:l.exp,qty:l.qty,date,ts,src:"opening"};S.batches.push({id:"t"+ts+l.id,...bt});if(!S.demo)S.db.collection("batches").doc("op"+ts.toString(36)+l.id).set(bt).catch(()=>{})}
   }
   const sp={openDate:date,openTs:ts,openId:oid};Object.assign(S.settings,sp);
@@ -144,6 +148,7 @@ document.addEventListener("click",e=>{
   const li=e.target.closest("[data-soi]");if(li){O.i=+li.dataset.soi;O.view="";save();SO.render();return}
   const b=e.target.closest("[data-so]");if(!b||!document.getElementById("p-stock").contains(b))return;
   const k=b.dataset.so;
+  if(k==="cam"){keep();(async()=>{try{if(SE.cam&&SE.cam.on){if(typeof camOff==="function")await camOff(true)}else if(typeof camOn==="function")await camOn()}catch(x){}SO.render()})();return}
   if(k==="list"){keep();O.view="list";save();SO.render();return}
   if(k==="card"){O.view="";save();SO.render();return}
   if(k==="inc"||k==="dec"){const q=$("#soQ");q.value=Math.max(0,r2(num(q.value)+(k==="inc"?1:-1)));keep();return}

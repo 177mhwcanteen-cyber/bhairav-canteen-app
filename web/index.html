@@ -1969,7 +1969,7 @@ function camROI(){const w=$("#camwin"),f=w&&w.querySelector(".cfr");if(!w||!f)re
 $("#camOff").onclick=()=>camOff(true);
 $("#camZoom").onclick=async()=>{const z=await SE.cam.cycleZoom();$("#camZoom").textContent=(+z||1).toFixed(1).replace(".0","")+"x";toast("🔍 ज़ूम "+(+z).toFixed(1)+"x")};
 $("#camTorch").onclick=async()=>{const t=await SE.cam.toggleTorch();$("#camTorch").textContent=t?"🔦 बंद":"🔦";lsSet("se_torch",t?"1":"0");toast(t?"🔦 टॉर्च चालू — अगली बार भी अपने-आप":"🔦 टॉर्च बंद")};
-function camAuto(){const want=(S.tab==="bill"||(S.tab==="mkt"&&window.SM&&SM.wantCam())||(S.tab==="kharid"&&!(window.SI&&SI.active()))||(S.tab==="stock"&&window.SK&&SK.counting())||(S.tab==="day"&&S.scanIn)||(S.tab==="label"&&window.SL&&SL.wantCam()));if(!want&&SE.cam.on)camOff(false);else if(want&&!SE.cam.on&&SE.isNative&&lsGet("se_cam")==="1"&&!document.hidden)camOn()}
+function camAuto(){const want=(S.tab==="bill"||(S.tab==="mkt"&&window.SM&&SM.wantCam())||(S.tab==="kharid"&&!(window.SI&&SI.active()))||(S.tab==="stock"&&window.SK&&SK.counting())||(S.tab==="stock"&&window.SO&&SO.active())||(S.tab==="day"&&S.scanIn)||(S.tab==="label"&&window.SL&&SL.wantCam()));if(!want&&SE.cam.on)camOff(false);else if(want&&!SE.cam.on&&SE.isNative&&lsGet("se_cam")==="1"&&!document.hidden)camOn()}
 document.addEventListener("visibilitychange",()=>{if(document.hidden){if(SE.cam.on){SE.cam.stop();camUi(false);camAuto._resume=true}}else if(camAuto._resume){camAuto._resume=false;camAuto()}});
 async function liveScan(){
   if(SE.cam.on){camOff(true);return}
