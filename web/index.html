@@ -1837,10 +1837,13 @@ async function handleScan(code){
 /* 🗂️ पहचान सूची (पुराने Vyapar के 657 सामान) — सिर्फ़ नाम/कंपनी/पिछला भाव भरने के लिए; स्टॉक नहीं */
 /* 🗂️ पहचान-सूची (छिपी, सिर्फ़ पढ़ने को): pehchan-mh.json = 177 MH का हर सामान (नाम/श्रेणी/MRP/फोटो — भाव, स्टॉक, सप्लायर नहीं; scripts/mh-pehchan.py)
    + pehchan.json (Vyapar सूची)। अनजान बारकोड स्कैन करते ही नाम-श्रेणी अपने-आप (विक्रम जी 17-11-2026) */
+window.PEH_PH=new Map();
 let PEH=null;async function pehchan(){if(PEH)return PEH;PEH=new Map();
   const ld=async f=>{try{const r=await fetch(f,{cache:"no-cache"});return r.ok?(await r.json()).items||[]:[]}catch(e){return []}};
   const [mh,vy]=await Promise.all([ld("pehchan-mh.json"),ld("pehchan.json")]);
   mh.forEach(x=>x.barcodes.forEach(b=>PEH.set(b.code,x)));
+  /* 📸 विक्रम जी 18-11: पुराने सामान की फोटो भी 177 MH से — सिर्फ़ कंपनी-बारकोड से (दुकान के 200… कभी नहीं), डेटा नहीं बदलता */
+  mh.forEach(x=>{if(x.phUrl)x.barcodes.forEach(b=>{const c=String(b.code).replace(/^0+/,"");if(c&&!c.startsWith("2000000"))window.PEH_PH.set(c,x.phUrl)})});
   vy.forEach(x=>x.barcodes.forEach(b=>{const m=PEH.get(b.code);if(!m)PEH.set(b.code,x);else{["lastSale","lastPur","secret"].forEach(k=>{if(x[k]!=null&&m[k]==null)m[k]=x[k]});if(!m.vcat)m.vcat=x.cat}}));
   const g=PEH.get.bind(PEH);PEH.get=c=>{const V=window.SE&&SE.codeVariants?SE.codeVariants(c):[c];for(const v of V){const x=g(v);if(x)return x}return undefined};return PEH}
 const PEH_SUB={NAM:"namkeen",DRY:"dryfruit",SAU:"achar",RAS:"rashan",MAS:"masala",BAK:"bakery",BEV:"drinks",BIS:"sweet",CHO:"sweet",DAI:"dairy",ICE:"ice",TOB:"tob",OTH:"clean",POO:"pooja",DIS:"disposal",PAR:"party"};
@@ -2633,7 +2636,7 @@ async function boot(){
   if(S.isOwner&&!S.demo)setTimeout(autoNewData,6000);
   if(S.isOwner&&!S.demo&&window.SPK)setTimeout(()=>SPK.apply(),9000);
   const sortItems=a=>a.sort((x,y)=>(x.order??999)-(y.order??999)||x.name.localeCompare(y.name,"hi"));
-  db.collection("items").onSnapshot(s=>{S.items=sortItems(s.docs.map(d=>({id:d.id,...d.data()})));if(window.SR)SR.addVirtual();if(S.isOwner&&window.SF&&S.items.some(i=>!i.plu))SF.ensurePLU();S.cart.forEach(l=>{const it=item(l.id);if(it&&!l.changed&&!l.free){l.board=priceOf(it);l.rate=l.board;l.cost=+it.cost||0;l.amt=r2(l.qty*l.rate)}});paneSoon();renderCart()},()=>toast("सामान की लिस्ट लोड नहीं हुई"));
+  db.collection("items").onSnapshot(s=>{S.items=sortItems(s.docs.map(d=>({id:d.id,...d.data()})));if(!PEH)setTimeout(()=>pehchan().then(()=>billSoon()).catch(()=>{}),800);/* 📸 MH की फोटो-सूची */if(window.SR)SR.addVirtual();if(S.isOwner&&window.SF&&S.items.some(i=>!i.plu))SF.ensurePLU();S.cart.forEach(l=>{const it=item(l.id);if(it&&!l.changed&&!l.free){l.board=priceOf(it);l.rate=l.board;l.cost=+it.cost||0;l.amt=r2(l.qty*l.rate)}});paneSoon();renderCart()},()=>toast("सामान की लिस्ट लोड नहीं हुई"));
   db.doc("settings/main").onSnapshot(s=>{S.settings=s.exists?s.data():{};checkLock();if(S.tab!=="set")paneSoon()});
   if(S.isOwner)db.collection("presence").onSnapshot(s=>{S.presence=s.docs.map(d=>d.data());if(S.tab==="bills")renderBills()},()=>{});
   setTimeout(()=>{flushOutbox();beat();netbar()},1500);

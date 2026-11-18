@@ -215,7 +215,10 @@ SE.bundled=new Set(window.SE_PHOTOS||[]);
 SE.photos={};
 SE.photoSrc=function(it){if(!it)return "";if(SE.photos[it.id])return SE.photos[it.id];if(it.phUrl&&it.photo!=="none"&&/^https:\/\/177mhwcanteen-cyber\.github\.io\//.test(it.phUrl))return it.phUrl;if(it.phUrl&&it.photo!=="none"&&/^pm\/[\w-]+\.jpg$/.test(it.phUrl))return (SE.isNative&&CFG.updateUrl?CFG.updateUrl.replace(/\/?$/,"/"):"")+it.phUrl;if(it.photo!=="none"&&SE.bundled.has(it.id))return "img/"+it.id+".jpg";
   /* 📦 GitHub खेप वाली असली फोटो — Pages से (CDN), OTA ज़िप में नहीं */
-  if(it.ph&&it.photo!=="none")return (SE.isNative&&CFG.updateUrl?CFG.updateUrl.replace(/\/?$/,"/"):"")+"p/"+encodeURIComponent(it.id)+".jpg?v="+encodeURIComponent(it.ph);return ""};
+  if(it.ph&&it.photo!=="none")return (SE.isNative&&CFG.updateUrl?CFG.updateUrl.replace(/\/?$/,"/"):"")+"p/"+encodeURIComponent(it.id)+".jpg?v="+encodeURIComponent(it.ph);
+  /* 📸 फोटो नहीं — 177 MH की पहचान-सूची में इसी कंपनी-बारकोड की फोटो हो तो वही (200… दुकान वाले कोड कभी नहीं) */
+  if(it.photo!=="none"&&window.PEH_PH&&PEH_PH.size){for(const c0 of String(it.barcode||"").split(",")){const c=c0.trim().replace(/^0+/,"");if(c&&!c.startsWith("2000000")&&PEH_PH.has(c)){const u=PEH_PH.get(c);if(/^https:\/\/177mhwcanteen-cyber\.github\.io\//.test(u))return u;if(/^pm\/[\w-]+\.jpg$/.test(u))return (SE.isNative&&CFG.updateUrl?CFG.updateUrl.replace(/\/?$/,"/"):"")+u}}}
+  return ""};
 SE.watchPhotos=function(onChange){if(!db)return;db.collection("photos").onSnapshot(s=>{SE.photos={};s.docs.forEach(d=>{const x=d.data();if(x&&x.d)SE.photos[d.id]=x.d});onChange&&onChange()},()=>{})};
 SE.savePhoto=async function(id,blob,max,q){
   /* ऐप में फोटो छोटी (लगभग 8-12 KB) — ताकि ऐप हल्का रहे */
