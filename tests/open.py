@@ -30,15 +30,29 @@ async def main():
         assert await pg.evaluate("window.__off") == 0, "ओपनिंग में स्कैन पर कैमरा बंद हुआ"
         assert await pg.evaluate("S.tab") == "stock"
         assert await pg.evaluate("document.activeElement&&document.activeElement.id") != "soQ", "कैमरा चालू में कीबोर्ड खुला"
-        assert await pg.input_value("#soQ") == "3"
+        v = await pg.input_value("#soQ");         assert v == "3", v
+        assert v == "3", v
         await pg.screenshot(path=f"{SHOTS}/o0-scan.png")
         await pg.fill("#soS", str(A[2] + 7)); await pg.dispatch_event("#soS", "change")
         await pg.click("[data-so=next]"); await pg.wait_for_timeout(200)
         await pg.screenshot(path=f"{SHOTS}/o1-card.png")
+        # 🔍 नाम से खोज: बिना बारकोड वाला सामान
+        B = await pg.evaluate("(()=>{const it=S.items.find(i=>i.track&&i.active!==false&&!i.virtual&&!i.packOf&&i.id!=='%s');return [it.id,(it.short||it.name).split(' ')[0]]})()" % A[0])
+        await pg.fill("#soF", B[1]); await pg.wait_for_timeout(200)
+        assert await pg.locator("#soFR [data-sopick]").count() >= 1
+        await pg.screenshot(path=f"{SHOTS}/o2-search.png")
+        await pg.click(f'#soFR [data-sopick="{B[0]}"]'); await pg.wait_for_timeout(300)
+        assert await pg.input_value("#soQ") == "1"
+        # लिखी गिनती पर बाहर से रेंडर आए तो खोए नहीं
+        await pg.fill("#soQ", "7"); await pg.evaluate("document.activeElement.blur();SO.soft()"); await pg.wait_for_timeout(100)
+        assert await pg.input_value("#soQ") == "7", "लिखी गिनती खो गई"
+        await pg.evaluate("SO.soft&&SO.soft()")
         await pg.evaluate("SO.render&&0"); await pg.click("[data-so=finish]"); await pg.wait_for_timeout(300)
+        t = await pg.inner_text("#sheet"); assert "पक्का करने से पहले जाँचें" in t
+        await pg.screenshot(path=f"{SHOTS}/o3-verify.png")
         await pg.click("[data-solm=zero]"); await pg.click("[data-soapply]"); await pg.wait_for_timeout(800)
-        r = await pg.evaluate(f"[item('{A[0]}').sale,+(S.pstock['{A[0]}']||{{}}).qty]")
-        assert r == [A[2] + 7, 3], r
+        r = await pg.evaluate(f"[item('{A[0]}').sale,+(S.pstock['{A[0]}']||{{}}).qty,+(S.pstock['{B[0]}']||{{}}).qty]")
+        assert r == [A[2] + 7, 3, 7], r
         await br.close()
     bad = [e for e in errs if "TUNNEL" not in e]
     assert not bad, bad

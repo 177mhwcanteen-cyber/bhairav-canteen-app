@@ -3,7 +3,7 @@
    अधूरा काम फोन में (bh_open) रहता है। "पक्का करें" पर ही स्टॉक बदलता है; पुराना स्टॉक/एक्सपायरी/खरीद भाव openings/{id} में सुरक्षित। */
 (function(){
 "use strict";
-{const c=document.createElement("style");c.id="so-camcss";c.textContent="html.camon .so-card .so-ph,html.camon .so-card .so-ask{display:none}html.camon .so-card .so-nm{margin-top:0}html.camon .so-prog{margin:4px 0}";document.head.appendChild(c)} /* कैमरा चालू: कार्ड छोटा, नाम+गिनती तुरंत दिखे */
+{const c=document.createElement("style");c.id="so-camcss";c.textContent="html.camon .so-card .so-ph,html.camon .so-card .so-ask{display:none}html.camon .so-card .so-nm{margin-top:0}html.camon .so-prog{margin:4px 0}.so-find{margin:6px 0 8px}.so-find .inp{width:100%}#soFR{display:flex;flex-direction:column;gap:4px;margin-top:4px}.so-hit{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1.5px solid var(--line,#dde);border-radius:12px;background:var(--card,#fff);text-align:left;color:inherit}.so-hit .tile,.so-hit .card{width:40px;height:40px;flex:none}.so-hit span{flex:1;min-width:0;display:flex;flex-direction:column}.so-hit b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.so-hit small{color:var(--mut,#667)}.so-hit i{font-style:normal;font-weight:800;background:var(--brand,#5b3df5);color:#fff;border-radius:10px;padding:6px 10px}.so-ver td,.so-ver th{padding:5px 6px;font-size:13.5px}.so-ver .z{color:var(--chili,#d33);font-weight:800}";document.head.appendChild(c)} /* कैमरा चालू: कार्ड छोटा, नाम+गिनती तुरंत दिखे */
 const SO=window.SO={};
 const K="mh_open";
 const num=v=>{const n=parseFloat(String(v==null?"":v).replace(",","."));return isFinite(n)?n:0};
@@ -30,6 +30,14 @@ SO.start=function(){
 };
 
 /* ---------- स्क्रीन ---------- */
+let SQ=""; /* 🔍 नाम से खोज (बिना बारकोड वाले सामान) */
+const hits=q=>{q=String(q||"").trim().toLowerCase();if(!q)return [];const dq=q.replace(/\D/g,"");
+  return S.items.filter(i=>i.track&&!i.virtual&&!i.packOf&&i.active!==false&&((i.name+" "+(i.hi||"")+" "+(i.short||"")+" "+(i.alias||"")+" "+(i.brand||"")).toLowerCase().includes(q)||String(i.code)===q||(dq.length>=4&&String(i.barcode||"").includes(dq)))).slice(0,8)};
+const hitsHTML=()=>{const H=hits(SQ);if(!SQ.trim())return "";return H.length?H.map(it=>`<button type="button" class="so-hit" data-sopick="${esc(it.id)}">${tileHTML(it)}<span><b>${esc(SE.capNm(it.short||it.name))}</b><small>#${esc(it.code||"")} · ₹${+it.sale||0}${O.n[it.id]!=null?" · गिने "+O.n[it.id]:""}</small></span><i>+1</i></button>`).join(""):'<p class="note" style="margin:4px 0">कोई सामान नहीं मिला — स्कैन करें, नया सामान बन जाएगा</p>'};
+/* बाहर से (स्टॉक बदलना/स्नैपशॉट) — कुछ टाइप हो रहा हो तो स्क्रीन मत बदलो */
+SO.soft=function(){if(!O)return;const a=document.activeElement;if(a&&a.matches&&a.matches("#p-stock input")&&!O.view)return;
+  const pv=document.querySelector("#p-stock .so-card[data-soid]"),c0=cur();if(pv&&c0&&pv.dataset.soid===c0.id&&O.view!=="list")keep(); /* भरी हुई गिनती/भाव कभी न खोए */
+  SO.render()};
 SO.render=function(){
   const el=$("#p-stock");if(!el||!O)return;
   const L=ids(),it=cur(),dn=doneN(),pc=L.length?Math.round(dn/L.length*100):0;
@@ -40,7 +48,8 @@ SO.render=function(){
   el.innerHTML=`<div class="so-top"><div><h2 class="sec" style="margin:0">🏁 ओपनिंग स्टॉक</h2><span class="note">${fdate(O.date)} · शुरू ${ftime(O.start)}</span></div>
     <span style="display:flex;gap:6px"><button class="chip" data-so="cam" aria-pressed="${!!(SE.cam&&SE.cam.on)}">📷 कैमरा</button><button class="chip" data-so="list">📋 सूची</button></span></div>
   <div class="so-prog"><i style="width:${pc}%"></i><span>${dn} / ${L.length} हुए</span></div>
-  <div class="card2 so-card ${s}">
+  <div class="so-find"><input class="inp" id="soF" type="search" placeholder="🔍 बिना बारकोड वाला सामान — नाम लिखें (जैसे खजूर)" value="${esc(SQ)}" autocomplete="off" aria-label="नाम से सामान खोजें"><div id="soFR">${hitsHTML()}</div></div>
+  <div class="card2 so-card ${s}" data-soid="${esc(it.id)}">
     <div class="so-ph">${tileHTML(it)}</div>
     <div class="so-ask">विक्रम जी, यह है —</div>
     <h3 class="so-nm">${esc(SE.capNm(it.name))}</h3>
@@ -59,7 +68,7 @@ SO.render=function(){
 };
 const foot=(dn,n)=>`<div style="height:120px"></div><div class="cartbar px cntbar"><button class="big ghost" data-so="cancel">रद्द</button><button class="big" data-so="finish">🏁 पूरा करें (${dn}/${n})</button></div>`;
 function drawList(el,L,dn){
-  el.innerHTML=`<div class="so-top"><div><h2 class="sec" style="margin:0">🏁 ओपनिंग — सूची</h2><span class="note">${dn} / ${L.length} हुए · किसी पर दबाएँ</span></div><button class="chip" data-so="card">← एक-एक करके</button></div>
+  el.innerHTML=`<div class="so-find" style="margin-top:0"><input class="inp" id="soF" type="search" placeholder="🔍 नाम से खोजें" value="${esc(SQ)}" autocomplete="off" aria-label="नाम से सामान खोजें"><div id="soFR">${hitsHTML()}</div></div><div class="so-top"><div><h2 class="sec" style="margin:0">🏁 ओपनिंग — सूची</h2><span class="note">${dn} / ${L.length} हुए · किसी पर दबाएँ</span></div><button class="chip" data-so="card">← एक-एक करके</button></div>
   <div class="list">${L.map((id,i)=>{const it=item(id),s=st(id);return `<button class="li cntrow ${s==="ok"?"ok":""}" data-soi="${i}">${tileHTML(it)}<div class="mid"><b>${esc(SE.capNm(it.name))}</b><span>#${esc(it.code||"")}${O.added.includes(id)?" · 🆕 नया":""}</span></div><div class="rt">${s==="off"?"🚫 बंद":s==="zero"?"0":s==="ok"?fq(O.n[id],it.unit):'<span class="note">— बाकी</span>'}</div></button>`}).join("")}</div>${foot(dn,L.length)}`;
 }
 function keep(){const it=cur();if(!it)return;const q=$("#soQ"),e=$("#soE"),c=$("#soC");
@@ -75,7 +84,7 @@ SO.scan=function(it){
   if(!O)return;if(!it.track){toast(it.name+" पैकेट वाला सामान नहीं (गिनती नहीं रखी जाती)");return}
   if(S.tab!=="stock"){S.tab="stock";try{showTab()}catch(e){}}
   if(O.view==="list")O.view="";
-  const c=cur();if(c&&c.id!==it.id)keep();
+  const c=cur();if(c)keep(); /* लिखी हुई गिनती पहले बचाओ, फिर +1 */
   if(!O.order.includes(it.id))O.order.push(it.id);
   O.i=ids().indexOf(it.id);O.n[it.id]=r2((+O.n[it.id]||0)+1);delete O.off[it.id];save();SO.render();
   toast("✓ "+it.name+" · "+O.n[it.id]);
@@ -102,6 +111,9 @@ function finishSheet(){
     ${s.noCost?`<p class="note" style="color:var(--chili)">⚠ ${s.noCost} सामान का खरीद भाव नहीं भरा — उनकी लागत इसमें नहीं जुड़ी (बाद में भी भर सकते हैं)</p>`:""}
     ${s.left.length?`<div class="warn">⚠ ${s.left.length} सामान अभी नहीं गिने: ${s.left.slice(0,6).map(i=>esc(SE.capNm(i.name))).join(", ")}${s.left.length>6?" …":""}</div>
       <div class="paym" style="margin:6px 0"><button data-solm="keep" aria-pressed="${leftMode==="keep"}">जैसे हैं वैसे रहने दें</button><button data-solm="zero" aria-pressed="${leftMode==="zero"}">इन्हें 0 मानें</button></div>`:""}
+    <details class="so-verd" open><summary><b>📋 पक्का करने से पहले जाँचें — ${s.done.length} सामान</b></summary><div class="tblwrap" style="max-height:42vh;overflow:auto"><table class="rrt so-ver"><thead><tr><th>सामान</th><th class="r">गिनती</th><th class="r">भाव ₹</th></tr></thead><tbody>
+    ${s.done.map(it=>{const sv=(O.sale&&O.sale[it.id]!=null)?O.sale[it.id]:(+it.sale||0),ch=O.sale&&O.sale[it.id]!=null&&+O.sale[it.id]!==+it.sale;return `<tr><td>${esc(SE.capNm(it.short||it.name))}${O.added.includes(it.id)?" 🆕":""}</td><td class="r ${O.off[it.id]||!+O.n[it.id]?"z":""}">${O.off[it.id]?"🚫":fq(+O.n[it.id]||0,it.unit)}</td><td class="r">${ch?"<s>"+(+it.sale||0)+"</s> <b>"+sv+"</b>":sv||'<b class="z">0 ⚠</b>'}</td></tr>`}).join("")}</tbody></table></div>
+    <p class="note" style="margin:4px 0 0">कुछ गलत दिखे तो "← वापस" दबाकर उसी सामान पर जाएँ और ठीक करें।</p></details>
     <p class="note">"पक्का करें" दबाते ही यही नया स्टॉक लग जाएगा। पुराना स्टॉक, पुरानी एक्सपायरी और पुराना खरीद भाव "ओपनिंग रिकॉर्ड" में सुरक्षित रहेंगे — कुछ मिटेगा नहीं।</p>
     <button class="big" data-soapply>✓ पक्का करें — आज से नया स्टॉक</button>
     <button class="big ghost" data-close style="margin-top:8px">← वापस, और गिनना है</button></div></div>`};
@@ -140,11 +152,15 @@ async function apply(leftMode){
   if(window.SK)SK.render();
 }
 
+/* 🔍 खोज टाइप करते ही नतीजे (पूरी स्क्रीन नहीं बदलती) */
+document.addEventListener("input",e=>{if(e.target&&e.target.id==="soF"&&O){SQ=e.target.value;const r=$("#soFR");if(r)r.innerHTML=hitsHTML()}});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target&&e.target.id==="soF"&&O){e.preventDefault();const H=hits(SQ);if(H.length===1||(H[0]&&String(H[0].code)===SQ.trim())){SQ="";SO.scan(H[0])}}});
 /* ---------- बटन ---------- */
 document.addEventListener("click",e=>{
   const st0=e.target.closest("[data-sostart]");if(st0){SO.start();return}
   const r=e.target.closest("[data-soresume]");if(r){S.tab="stock";try{showTab()}catch(x){}SO.render();return}
   if(!O)return;
+  const pk=e.target.closest("[data-sopick]");if(pk){const it=item(pk.dataset.sopick);SQ="";if(it){SO.scan(it)}return}
   const li=e.target.closest("[data-soi]");if(li){O.i=+li.dataset.soi;O.view="";save();SO.render();return}
   const b=e.target.closest("[data-so]");if(!b||!document.getElementById("p-stock").contains(b))return;
   const k=b.dataset.so;

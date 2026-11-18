@@ -26,7 +26,7 @@ SK.onDb=function(db){
 /* ---------- मुख्य स्क्रीन ---------- */
 SK.render=function(){
   const el=$("#p-stock");if(!el)return;
-  if(window.SO&&SO.active())return SO.render();
+  if(window.SO&&SO.active())return SO.soft?SO.soft():SO.render();
   if(C)return renderCount(el);
   if(el.contains(document.activeElement)&&document.activeElement.id==="skq")return drawList();
   const T=tracked(),low=T.filter(isLow),xp=T.filter(it=>qOf(it)>0&&expInfo(it)).sort((a,b)=>(expInfo(a).d??999)-(expInfo(b).d??999));
