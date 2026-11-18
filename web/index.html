@@ -13,6 +13,8 @@
 <script src="build.js"></script>
 <script src="se-firms.js"></script>
 <script src="se-file.js"></script>
+<script src="se-bahi.js"></script>
+<script src="se-fix.js"></script>
 <script src="se-watch.js"></script>
 <script src="lib/qrcode.min.js"></script>
 <script src="lib/vendor.js"></script>
@@ -1792,6 +1794,7 @@ async function adjStock(pairs,why){
   for(const [id,d] of pairs){
     const cur=+(S.pstock[id]?.qty)||0;S.pstock[id]={...(S.pstock[id]||{}),qty:r2(cur+d),ts:Date.now()};
     if(!S.demo){try{await S.db.collection("pstock").doc(id).set({qty:SE.inc(r2(d)),ts:Date.now(),by:S.uid||"",byName:biller(),last:why||""},{merge:true});S.db.collection("stockLog").doc("m"+Date.now().toString(36)+Math.random().toString(36).slice(2,5)).set({itemId:id,d:r2(d),why:why||"",ts:Date.now(),date:today(),by:S.uid||"",byName:biller()}).catch(()=>{})}catch(e){toast("स्टॉक अपडेट नहीं हुआ")}}
+    else (S.demoLog=S.demoLog||[]).push({itemId:id,d:r2(d),why:why||"",ts:Date.now(),date:today(),byName:typeof biller==="function"?biller():""}); /* डेमो में भी 📒 बही */
   }
 }
 function packMap(id,q){const it=item(id);return it&&it.packOf&&+it.perPack>0&&item(it.packOf)?[it.packOf,r2(q*it.perPack)]:[id,q]}
@@ -2384,7 +2387,7 @@ function setItemEdit(it){return `<div class="setitem" data-sid="${esc(it.id)}">
       <input class="inp code" id="b-${esc(it.id)}" data-if="barcode" value="${esc(it.barcode||"")}" placeholder="बारकोड" style="width:150px" aria-label="${esc(SE.capNm(it.name))} का बारकोड">
       <label class="note"><input type="checkbox" id="t-${esc(it.id)}" data-if="track" ${it.track?"checked":""}> स्टॉक गिनें</label>
       <label class="note"><input type="checkbox" id="f-${esc(it.id)}" data-if="flex" ${it.flex?"checked":""}> बिलर भाव बदल सके</label>
-      <button type="button" class="chip" data-lbladd="${esc(it.id)}" aria-label="${esc(SE.capNm(it.name))} के बारकोड लेबल छापें">🏷️ लेबल</button>
+      <button type="button" class="chip" data-lbladd="${esc(it.id)}" aria-label="${esc(SE.capNm(it.name))} के बारकोड लेबल छापें">🏷️ लेबल</button>${S.isOwner&&it.track?`<button type="button" class="chip" data-bhitem="${esc(it.id)}" aria-label="${esc(SE.capNm(it.name))} की स्टॉक बही">📒 बही</button>`:""}
       <button type="button" class="chip" data-noonline="${esc(it.id)}" aria-pressed="${!it.noOnline}" aria-label="${esc(SE.capNm(it.name))} ऑनलाइन दिखे">🌐</button>
       <button type="button" class="chip" data-favpin="${esc(it.id)}" aria-pressed="${((S.settings.favs||[]).includes(it.id))}" aria-label="${esc(SE.capNm(it.name))} फ़ेवरेट">⭐</button></div>
       <div class="flds3">

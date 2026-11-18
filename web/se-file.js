@@ -42,7 +42,8 @@ SFI.parse=function(text){let j;try{j=JSON.parse(String(text).replace(/^﻿/,""))
   return {j,batch,done,rows}};
 
 /* ---------- 2) झलक ---------- */
-SFI.preview=function(text){let D;try{D=SFI.parse(text)}catch(e){toast(e.msg||"फाइल नहीं पढ़ी");return}
+SFI.preview=function(text){try{const j=JSON.parse(String(text).replace(/^\uFEFF/,""));if(j&&j.app==="bhairav-fix"&&window.SFX)return SFX.preview(j)}catch(e){} /* 🩹 सुधार फाइल */
+  let D;try{D=SFI.parse(text)}catch(e){toast(e.msg||"फाइल नहीं पढ़ी");return}
   const st={mode:"open",price:false};
   const R=D.rows,nNew=R.filter(x=>!x.ex).length,nOld=R.length-nNew,nPack=R.filter(x=>x.modes==="both"&&x.perPack>1&&x.packSale>0).length,
     nLbl=R.filter(x=>!x.bc&&x.r.cat!=="fast"&&x.r.unit!=="pl"&&!(x.ex&&String(x.ex.barcode||"").split(",")[0])).length,pcs=r2(R.reduce((a,x)=>a+x.qty,0)),

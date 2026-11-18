@@ -28,6 +28,8 @@ const ACTS=[
  {k:"rkx",i:"📍",t:"रैक बदलें",d:"माल एक खाने से दूसरे खाने में",g:"maal",run:()=>SRX.open(),need:"SRX",kw:"rack transfer khana जगह"},
  {k:"rkv",i:"🗄️",t:"रैक देखें",d:"किस खाने में क्या रखा है",g:"maal",run:()=>SRX.open(null,{tab:"rack"}),need:"SRX",kw:"rack khana kahan कहाँ"},
  {k:"rki",i:"🧠",t:"जमावट के सुझाव",d:"क्या कहाँ रखना ठीक रहेगा",g:"maal",run:()=>SRX.open(null,{tab:"idea"}),need:"SRX",kw:"sujhav idea supermarket"},
+ {k:"bahi",i:"📒",t:"स्टॉक बही",d:"इस तारीख को कितना था · आया · बिका · बचा",g:"maal",run:()=>SBH.range(),need:"SBH",own:1,kw:"bahi ledger hisab stock history kitna tha तारीख"},
+ {k:"hand",i:"🤝",t:"दुकान सौंपने की रिपोर्ट",d:"हर सामान की गिनती + दस्तख़त (A4)",g:"maal",run:()=>SBH.handover(),need:"SBH",own:1,kw:"handover saunpna report charge"},
  {k:"label",i:"🏷️",t:"लेबल छापें",d:"भाव और बारकोड के स्टिकर",g:"chhap",tab:"label",kw:"label barcode sticker print"},
  {k:"sbc",i:"🔖",t:"बारकोड पहरा",d:"जिन पर बारकोड नहीं — छापें, लगाएँ",g:"chhap",run:()=>SBC.open("need"),need:"SBC",kw:"barcode pehra"},
  {k:"report",i:"📈",t:"रिपोर्ट",d:"बिक्री · मुनाफ़ा · सामान-वार",g:"malik",tab:"report",kw:"report profit munafa bikri"},
@@ -35,7 +37,7 @@ const ACTS=[
  {k:"set",i:"⚙️",t:"सेटिंग",d:"भाव, साथी, प्रिंटर, डिज़ाइन, बैकअप",g:"malik",tab:"set",kw:"setting rate bhav"}
 ];
 const tabsNow=()=>{try{return typeof tabsList==="function"?tabsList().map(x=>x[0]):[]}catch(e){return []}};
-SMN.acts=function(){const T=tabsNow();return ACTS.filter(a=>a.tab?T.includes(a.tab):!!window[a.need])};
+SMN.acts=function(){const T=tabsNow();return ACTS.filter(a=>(!a.own||own())&&(a.tab?T.includes(a.tab):!!window[a.need]))};
 const HV={open:false,q:""};
 function bump(k){const U=LS.get("smn_use",{});U[k]=(U[k]||0)+1;LS.set("smn_use",U)}
 SMN.go=function(k){const a=ACTS.find(x=>x.k===k);if(!a)return false;bump(k);SMN.closeHome();

@@ -233,7 +233,9 @@ SX.autoBackup=async function(){if(!S.isOwner||S.demo||!S.db)return;const y=dayAd
     if(js.length<1000000)await ref.set(JSON.parse(js));LS.set("sx_bk",y)}catch(e){}};
 SX.backupFile=async function(){if(!S.isOwner)return;toast("📦 बैकअप फ़ाइल बन रही है… (30 दिन)");const out={app:"भैरव कैंटीन",made:new Date().toISOString(),days:{}};
   try{const g=async c=>(await S.db.collection(c).get()).docs.map(d=>({id:d.id,...d.data()}));
-    [out.items,out.parties,out.ledger,out.suppliers,out.supPay]=await Promise.all(["items","parties","ledger","suppliers","supPay"].map(g));
+    [out.items,out.parties,out.ledger,out.suppliers,out.supPay,out.pstock,out.openings,out.returns]=await Promise.all(["items","parties","ledger","suppliers","supPay","pstock","openings","returns"].map(g));
+    /* 📒 स्टॉक की पूरी बही + गिनतियाँ + सेटिंग (विक्रम जी 18-11: Claude बैकअप से असली स्टॉक जाँच सके) */
+    try{out.stockLog=(await S.db.collection("stockLog").where("ts",">=",Date.now()-90*864e5).get()).docs.map(d=>({id:d.id,...d.data()}));out.counts=(await S.db.collection("counts").get()).docs.map(d=>({id:d.id,...d.data()}));const st=await S.db.doc("settings/main").get();if(st.exists){const x={...st.data()};delete x.gk;out.settings=x}}catch(e){}
     out.purchases=(await S.db.collection("purchases").where("date",">=",dayAdd(today(),-30)).get()).docs.map(d=>({id:d.id,...d.data()}));
     for(let k=0;k<30;k++){const d=dayAdd(today(),-k);const b=(await S.db.collection("days/"+d+"/bills").get()).docs.map(x=>x.data());const st=await S.db.doc("days/"+d+"/meta/stock").get();if(b.length||st.exists)out.days[d]={bills:b,stock:st.exists?st.data():null}}
   }catch(e){toast("बैकअप अधूरा: "+(e.code||e.message||""))}
