@@ -37,12 +37,20 @@ function rowOf(o,i){const bad=t=>({i,ok:false,html:`<div class="fx-r bad"><b>${i
     const nq=o.qty!=null?+o.qty:l.qty,nr=o.rate!=null?+o.rate:l.rate;
     return {i,ok:true,html:`<label class="fx-r"><input type="checkbox" data-fx="${i}" checked><div><b>${i+1}. 🧾 खरीद ${fdate(P.date)} · ${esc(P.supName||"")}</b>${o.why?`<br><small class="note">${esc(o.why)}</small>`:""}
       <div class="fx-c">${esc(l.name)}: <s>${l.qty} × ₹${l.rate}</s> → <b>${nq} × ₹${nr}</b> = ₹${r2(nq*nr)}</div>${nq!==l.qty&&item(o.item)?`<div class="fx-c">स्टॉक: ${qOf(o.item)} → <b>${r2(qOf(o.item)+nq-l.qty)}</b></div>`:""}</div></label>`}}
+  if(o.op==="new"){const x=o.item||{};if(!o.id||!x.name)return bad("नया सामान अधूरा");if(item(o.id))return {i,ok:false,skip:true,html:`<div class="fx-r same"><b>${i+1}.</b> ✓ ${esc(x.name)} पहले से ऐप में</div>`};
+    const bc=String(x.barcode||"").split(",")[0];const dup=bc&&findByCode(bc);if(dup)return bad(`बारकोड ${esc(bc)} पहले से "${esc(nm(dup))}" पर है`);
+    return {i,ok:true,html:`<label class="fx-r"><input type="checkbox" data-fx="${i}" checked><div><b>${i+1}. 🆕 ${esc(x.name)}</b>${x.secret?` · 🔒 ${esc(x.secret)}`:""}${o.why?`<br><small class="note">${esc(o.why)}</small>`:""}
+      <div class="fx-c">${esc(showK("cat",x.cat))}${x.sub?" › "+esc(showK("sub",x.sub)):""} · भाव <b>₹${+x.sale||0}</b>${x.mrp?` · MRP ₹${x.mrp}`:""}${x.cost?` · खरीद ₹${x.cost}`:""}${x.packOf?` · पूरा पैकेट (${x.perPack} पीस)`:x.perPack?` · खुला, पैकेट में ${x.perPack}`:""}</div><div class="fx-c"><small>बारकोड: ${esc(x.barcode||"—")}</small></div></div></label>`}}
+  if(o.op==="buy"){if(!o.id||!Array.isArray(o.lines))return bad("खरीद अधूरी");if(o._have)return {i,ok:false,skip:true,html:`<div class="fx-r same"><b>${i+1}.</b> ✓ खरीद ${esc(o.no||o.id)} पहले से चढ़ी</div>`};
+    return {i,ok:true,html:`<label class="fx-r"><input type="checkbox" data-fx="${i}" checked><div><b>${i+1}. 🚚 माल आया · ${esc(o.sup||"")} · ${esc(o.no?"चालान "+o.no:"")} · ${fdate(o.date||today())}</b>${o.why?`<br><small class="note">${esc(o.why)}</small>`:""}
+      ${o.lines.map(l=>{const it=item(l.id)||((D.ops.find(x=>x.op==="new"&&x.id===l.id)||{}).item);return `<div class="fx-c">${esc(it?nm(it):l.name||l.id)}: <b>+${l.qty}</b> × ₹${l.rate} = ₹${r2(l.qty*l.rate)}</div>`}).join("")}<div class="fx-c"><b>कुल ₹${r2(o.lines.reduce((a,l)=>a+l.qty*l.rate,0))}</b></div></div></label>`}}
   return bad("अनजाना सुधार: "+esc(o.op))}
 SFX.preview=async function(j){if(!S.isOwner){toast("सुधार फाइल सिर्फ़ विक्रम जी चढ़ा सकते हैं");return}
   if(!j||j.app!=="bhairav-fix"||!Array.isArray(j.ops)){toast("यह सुधार फाइल नहीं");return}
   const done=((S.settings||{}).fixFiles||[]);if(j.id&&done.includes(j.id)){toast("⛔ यह सुधार फाइल ("+j.id+") पहले ही चढ़ चुकी है");return}
   D=j;PUR={};
   for(const pid of [...new Set(j.ops.filter(o=>o.op==="pur").map(o=>o.pid))]){try{if(S.demo)PUR[pid]=(S.purchases||[]).find(p=>p.id===pid);else{const s=await S.db.doc("purchases/"+pid).get();if(s.exists)PUR[pid]={id:pid,...s.data()}}}catch(e){}}
+  for(const o of j.ops.filter(o=>o.op==="buy")){try{if(S.demo)o._have=(S.purchases||[]).some(p=>p.id===o.id);else{const x=await S.db.doc("purchases/"+o.id).get();o._have=x.exists}}catch(e){}}
   const rows=j.ops.map(rowOf);D._rows=rows;const n=rows.filter(r=>r.ok).length;
   $("#sheet").innerHTML=`<div class="scrim" data-close><div class="sheet px" role="dialog" aria-label="सुधार फाइल"><div class="grab"></div>
   <div class="sh-head"><div><h3>🩹 सुधार फाइल ${esc(j.id||"")}</h3><span class="note">${esc(j.note||"")} · ${n} सुधार बाकी</span></div><button class="x" data-close aria-label="बंद करें">✕</button></div>
@@ -57,10 +65,18 @@ SFX.apply=async function(){const pick=[...$("#sheet").querySelectorAll("[data-fx
     if(o.op==="set"){const it=item(o.id);const p={},before={};Object.entries(o.set||{}).forEach(([k,v])=>{if(OK_KEYS.includes(k)){p[k]=v;before[k]=it[k]??null}});p.fixTs=ts;p.fixBy=D.id||"";await upd(o.id,p);log.push({op:"set",id:o.id,before,after:o.set})}
     else if(o.op==="merge"){const k=item(o.keep),d=item(o.drop),q=qOf(d.id);
       if(q)await adjStock([[k.id,q],[d.id,-q]],tag+" · "+nm(d)+" → "+nm(k)+" में मिलाया");
-      const codes=[...new Set([...String(k.barcode||"").split(","),...String(d.barcode||"").split(",")].map(s=>s.trim()).filter(Boolean))];
+      const codes=[...new Set([...String(k.barcode||"").split(","),...String(d.barcode||"").split(",").filter(c=>!/^2\d{12}$/.test(c.trim()))].map(s=>s.trim()).filter(Boolean))]; /* छिपने वाले का दुकान-कोड (2…) नहीं आता — टकराव न हो */
       await upd(k.id,{barcode:codes.join(","),alias:[k.alias,d.name,d.hi].filter(Boolean).join(" ").slice(0,200)});
       await upd(d.id,{active:false,mergedInto:k.id,hiddenBy:"merge",mergeTs:ts});log.push({op:"merge",keep:k.id,drop:d.id,moved:q,oldBarcode:k.barcode||""})}
     else if(o.op==="stock"){const cur=qOf(o.id),d=r2(+o.to-cur);if(d)await adjStock([[o.id,d]],tag+(o.why?" · "+o.why:""));log.push({op:"stock",id:o.id,before:cur,after:+o.to})}
+    else if(o.op==="new"){const x={...o.item,active:true,track:o.item.track!==false,addedTs:ts,addedByName:"🩹 "+(D.id||""),fixBy:D.id||""};delete x.id;
+      if(!S.demo)await S.db.doc("items/"+o.id).set(x);if(!item(o.id))S.items.push({id:o.id,...x}); /* खरीद इसी फाइल में — सामान तुरंत दिखे */log.push({op:"new",id:o.id})}
+    else if(o.op==="buy"){const lines=o.lines.map(l=>{const it=item(l.id)||{};return {id:l.id,name:l.name||it.name||"",qty:+l.qty,rate:+l.rate,amt:r2(l.qty*l.rate),billAmt:r2(l.qty*l.rate),unit:l.unit||it.unit||"pc",prev:0}});
+      const tot=r2(lines.reduce((a,l)=>a+l.amt,0));
+      const doc={supName:o.sup||"",supId:o.supId||"",supPhone:"",date:o.date||today(),ts,lines,total:tot,gross:tot,disc:0,paid:+o.paid||0,due:r2(tot-(+o.paid||0)),pay:o.pay||"",src:o.src||"",note:(o.no?"चालान "+o.no+" · ":"")+(o.note||""),billNo:o.no||"",photos:[],photoPending:0,cancelled:false,by:S.uid||"",byName:typeof biller==="function"?biller():"",fixBy:D.id||""};
+      if(S.demo)(S.purchases=S.purchases||[]).push({id:o.id,...doc});else await S.db.doc("purchases/"+o.id).set(doc);
+      const pr=lines.filter(l=>{const it=item(l.id);return it&&(it.track||(it.packOf&&item(it.packOf)&&item(it.packOf).track))}).map(l=>[l.id,l.qty]);
+      if(pr.length)await adjStock(pr,"खरीद "+(o.no?"चालान "+o.no+" · ":"")+(o.sup||""));log.push({op:"buy",id:o.id,total:tot})}
     else if(o.op==="pur"){const P=PUR[o.pid];const lines=(P.lines||[]).map(l=>{if(l.id!==o.item)return l;const nq=o.qty!=null?+o.qty:l.qty,nr=o.rate!=null?+o.rate:l.rate;
         return {...l,fix:{qty:l.qty,rate:l.rate,amt:l.amt,ts,by:D.id||"",why:o.why||""},qty:nq,rate:nr,amt:r2(nq*nr),billAmt:r2(nq*nr)}});
       const old=(P.lines||[]).find(l=>l.id===o.item),nl=lines.find(l=>l.id===o.item),dAmt=r2(nl.amt-old.amt);

@@ -1087,6 +1087,11 @@ function lowOf(it){return +it.min>0?+it.min:LOW}
 function isLow(it){return !!it.track&&(+(S.pstock[it.id]?.qty)||0)<=lowOf(it)}
 function expInfo(it){const e0=window.SF&&SF.nearExp?SF.nearExp(it):it.exp;if(e0!==it.exp)it={...it,exp:e0};if(!it.exp)return it.chk?{k:"chk",t:"तारीख जाँचें"}:null;const d=Math.floor((new Date(String(it.exp)+"T23:59:59")-Date.now())/864e5);if(isNaN(d))return null;if(d<0)return {k:"dead",t:"एक्सपायर",d};if(d<=30)return {k:"soon",t:d+" दिन बचे",d};return it.chk?{k:"chk",t:"तारीख जाँचें"}:null}
 function ean13(s12){let t=0;for(let i=0;i<12;i++)t+=(+s12[i])*(i%2?3:1);return s12+((10-t%10)%10)}
+/* 🏷️ दुकान का अपना बारकोड (विक्रम जी 18-11-2026): भैरव "2900000"+कोड, 177 MH "2000000"+कोड — ताकि दोनों ऐप के अपने बारकोड कभी न टकराएँ
+   और MH का बना बारकोड (जैसे बेकरी बिस्कुट का स्टिकर) भैरव में भी वही सामान खोले। पुराने भैरव 200… कोड ownLegacy से पहचाने जाते हैं। */
+const OWN_PFX=((window.SE_CONFIG||{}).org==="bhairav")?"2900000":"2000000";
+function ownCode(code){return ean13(OWN_PFX+String(code)+"0")}
+function ownLegacy(it,c){return !!it&&OWN_PFX!=="2000000"&&String(c)===ean13("2000000"+String(it.code||"")+"0")}
 /* 🔢 हर सामान का अपना 4 अंक का कोड (विक्रम जी, 09-11-2026: "हमेशा चालू रखना" — बारकोड न चले तो 4 अंक लिखकर बिल)।
    किस्म-वार हिस्सा, भर जाए तो अगला खाली हिस्सा, फिर 1001–9999 में कोई भी खाली — कभी 5 अंक या दोहरा कोड नहीं। */
 const CODE_RG={kirana:[[1001,1999],[6001,6999]],fast:[[2001,2999]],sabzi:[[3001,3999]],daily:[[4001,4999]],mithai:[[5001,5999]],mela:[[7001,7999]],stationery:[[8001,8999]],gift:[[8001,8999]],kapde:[[8001,8999]]};
@@ -1843,7 +1848,7 @@ let PEH=null;async function pehchan(){if(PEH)return PEH;PEH=new Map();
   const [mh,vy]=await Promise.all([ld("pehchan-mh.json"),ld("pehchan.json")]);
   mh.forEach(x=>x.barcodes.forEach(b=>PEH.set(b.code,x)));
   /* 📸 विक्रम जी 18-11: पुराने सामान की फोटो भी 177 MH से — सिर्फ़ कंपनी-बारकोड से (दुकान के 200… कभी नहीं), डेटा नहीं बदलता */
-  mh.forEach(x=>{if(x.phUrl)x.barcodes.forEach(b=>{const c=String(b.code).replace(/^0+/,"");if(c&&!c.startsWith("2000000"))window.PEH_PH.set(c,x.phUrl)})});
+  mh.forEach(x=>{if(x.phUrl)x.barcodes.forEach(b=>{const c=String(b.code).replace(/^0+/,"");if(c)window.PEH_PH.set(c,x.phUrl)})});
   vy.forEach(x=>x.barcodes.forEach(b=>{const m=PEH.get(b.code);if(!m)PEH.set(b.code,x);else{["lastSale","lastPur","secret"].forEach(k=>{if(x[k]!=null&&m[k]==null)m[k]=x[k]});if(!m.vcat)m.vcat=x.cat}}));
   const g=PEH.get.bind(PEH);PEH.get=c=>{const V=window.SE&&SE.codeVariants?SE.codeVariants(c):[c];for(const v of V){const x=g(v);if(x)return x}return undefined};return PEH}
 const PEH_SUB={NAM:"namkeen",DRY:"dryfruit",SAU:"achar",RAS:"rashan",MAS:"masala",BAK:"bakery",BEV:"drinks",BIS:"sweet",CHO:"sweet",DAI:"dairy",ICE:"ice",TOB:"tob",OTH:"clean",POO:"pooja",DIS:"disposal",PAR:"party"};
@@ -2516,11 +2521,11 @@ $("#p-set").addEventListener("click",async e=>{
     const code=nextCode($("#ni-cat").value),bar=$("#ni-bar").value.trim().replace(/\s+/g,""),cat=$("#ni-cat").value,unit=$("#ni-unit").value,sub=($("#ni-sub")||{}).value||"";
     if(bar&&findByCode(bar)){toast("यह बारकोड पहले से "+findByCode(bar).name+" में है");return}
     const rkv=window.SRK&&$("#ni-rack")?SRK.canon($("#ni-rack").value):"";
-    const it={...(rkv?{rack:rkv}:{}),name,hi:$("#ni-hi").value.trim(),alias:$("#ni-alias").value.trim(),secret:($("#ni-secret").value.trim().toUpperCase()),perPack:(parseInt($("#ni-pack").value)||0),sub,emoji:$("#ni-emoji").value.trim()||"🛒",cat,unit,code,barcode:bar||ean13("2000000"+code+"0"),track:cat==="kirana",min:5,mrp:parseFloat($("#ni-mrp").value)||0,sale:parseFloat($("#ni-sale").value)||0,cost:parseFloat($("#ni-cost").value)||0,hue:Math.floor(Math.random()*360),order:S.items.length+1,active:true};
+    const it={...(rkv?{rack:rkv}:{}),name,hi:$("#ni-hi").value.trim(),alias:$("#ni-alias").value.trim(),secret:($("#ni-secret").value.trim().toUpperCase()),perPack:(parseInt($("#ni-pack").value)||0),sub,emoji:$("#ni-emoji").value.trim()||"🛒",cat,unit,code,barcode:bar||ownCode(code),track:cat==="kirana",min:5,mrp:parseFloat($("#ni-mrp").value)||0,sale:parseFloat($("#ni-sale").value)||0,cost:parseFloat($("#ni-cost").value)||0,hue:Math.floor(Math.random()*360),order:S.items.length+1,active:true};
     if(!it.secret&&isTob({...it,sub})){const mx=S.items.reduce((a,x)=>{const m=/^S-(\d+)$/.exec(x.secret||"");return m?Math.max(a,+m[1]):a},0);it.secret="S-"+String(mx+1).padStart(2,"0")}
     const pkR=parseFloat(($("#ni-pkrate")||{}).value)||0,pkB=(($("#ni-pkbar")||{}).value||"").trim();
     try{if(S.demo)S.items.push({id,...it});else await S.db.collection("items").doc(id).set(it);
-      if(it.perPack>1&&pkR>0){const pid=id+"-pk";let pc=nextCode(cat,[code]);const pk={...it,name:shortNm(it).replace(/\s*\(?1\s*(pc|पीस)\)?\s*$/i,"")+" "+it.perPack+" पैक",short:"",secret:it.secret?it.secret+"P":"",packOf:id,sale:pkR,mrp:it.mrp?r2(it.mrp*it.perPack):0,cost:it.cost?r2(it.cost*it.perPack):0,code:pc,barcode:pkB||ean13("2000000"+pc+"0"),track:false,min:0,order:it.order+0.5};if(S.demo)S.items.push({id:pid,...pk});else await S.db.collection("items").doc(pid).set(pk)}
+      if(it.perPack>1&&pkR>0){const pid=id+"-pk";let pc=nextCode(cat,[code]);const pk={...it,name:shortNm(it).replace(/\s*\(?1\s*(pc|पीस)\)?\s*$/i,"")+" "+it.perPack+" पैक",short:"",secret:it.secret?it.secret+"P":"",packOf:id,sale:pkR,mrp:it.mrp?r2(it.mrp*it.perPack):0,cost:it.cost?r2(it.cost*it.perPack):0,code:pc,barcode:pkB||ownCode(pc),track:false,min:0,order:it.order+0.5};if(S.demo)S.items.push({id:pid,...pk});else await S.db.collection("items").doc(pid).set(pk)}
       toast(name+" जुड़ गया · कोड "+code+(it.perPack>1&&pkR>0?" · 📦 पैकेट भी":""));renderSettings();if(window.SBC&&!bar)SBC.onNew(id)}catch(err){toast("नहीं जुड़ा — सिर्फ मालिक जोड़ सकते हैं")}
   }
 });

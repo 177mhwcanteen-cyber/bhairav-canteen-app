@@ -67,6 +67,17 @@ async def main():
         F2 = {"app": "bhairav-fix", "id": "F-TEST-02", "ops": [{"op": "pur", "pid": "pX", "item": B, "qty": 12, "rate": 20}]}
         await pg.evaluate("SFX.preview(%s)" % json.dumps(F2)); await pg.wait_for_timeout(300); await pg.click("[data-fxgo]"); await pg.wait_for_timeout(500)
         L = await pg.evaluate("S.purchases[0].lines[0]"); assert L["qty"] == 12 and L["rate"] == 20 and L["fix"]["qty"] == 384, L
+        # 🆕 नया सामान (खुला + पैकेट) + 🚚 खरीद एक ही फाइल में
+        F3 = {"app": "bhairav-fix", "id": "F-TEST-03", "ops": [
+            {"op": "new", "id": "t-x", "item": {"name": "TEST CIG 1 PC", "cat": "kirana", "sub": "tob", "unit": "pc", "perPack": 10, "sale": 10, "secret": "S-01", "code": "1901", "barcode": ""}},
+            {"op": "new", "id": "t-x-pk", "item": {"name": "TEST CIG 10 पैक", "cat": "kirana", "sub": "tob", "unit": "pc", "perPack": 10, "packOf": "t-x", "sale": 100, "secret": "S-01P", "code": "1902", "barcode": "8901725135812"}},
+            {"op": "buy", "id": "pTEST", "sup": "177 MH कैंटीन", "no": "715", "lines": [{"id": "t-x-pk", "qty": 3, "rate": 100}, {"id": "t-x", "qty": 4, "rate": 10}]}]}
+        await pg.evaluate("SFX.preview(%s)" % json.dumps(F3)); await pg.wait_for_timeout(400)
+        t = await pg.inner_text("#sheet"); assert "TEST CIG 10 पैक" in t and "चालान 715" in t, t[:400]
+        await pg.click("[data-fxgo]"); await pg.wait_for_timeout(700)
+        r = await pg.evaluate("[!!item('t-x-pk'),+(S.pstock['t-x']||{}).qty||0,(S.purchases||[]).some(p=>p.id==='pTEST'),findByCode('8901725135812')&&findByCode('8901725135812').id]")
+        assert r == [True, 34, True, "t-x-pk"], r
+        assert (await pg.evaluate("ownCode('1004')")).startswith(await pg.evaluate("OWN_PFX"))
         # मेन्यू में 📒
         await pg.evaluate("S.tab='stock';showTab()"); await pg.wait_for_timeout(400)
         assert await pg.locator("#p-stock [data-bhopen]").count() == 1

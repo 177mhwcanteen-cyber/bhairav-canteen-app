@@ -85,7 +85,7 @@ SFI.apply=async function(D,st){
     const packOnly=x.modes==="pack";
     const sale=packOnly&&x.packSale>0?x.packSale:(x.sale||x.packSale);
     if(!it){id="f"+ts.toString(36)+x.i.toString(36);const mc=mcat({cat,sub}),code=nextCode(mc);
-      const bar=x.bc||ean13("2000000"+code+"0");if(!x.bc&&mc!=="fast"&&unit!=="pl")labels.push(id); /* बना खाना — लेबल नहीं चाहिए */
+      const bar=x.bc||ownCode(code);if(!x.bc&&mc!=="fast"&&unit!=="pl")labels.push(id); /* बना खाना — लेबल नहीं चाहिए */
       it={name:x.nm,cat,sub,unit,code,barcode:bar,mrp:num(packOnly?(r.packMrp||r.mrp):r.mrp),sale,cost:num(r.cost),
         track:!["fast","sabzi"].includes(mc)&&unit!=="pl",min:num(r.minStock)||(["fast","sabzi"].includes(mc)?0:5),emoji:"📦",hue:Math.floor(Math.random()*360),order:S.items.length+1,active:true,
         perPack:x.perPack||0,secret:String(r.secret||"").toUpperCase(),fileKey:x.key,fileBatch:D.batch,addedTs:ts,addedBy:S.uid||"",addedByName:biller(),...base,info};
@@ -105,7 +105,7 @@ SFI.apply=async function(D,st){
     /* 📦 खुला + पैकेट: पैकेट वाला अलग सामान (packOf), टाइल एक, पॉपअप में दो */
     if(x.modes==="both"&&x.perPack>1&&x.packSale>0){const pid=id+"-pk";const have=item(pid)||S.items.find(i=>i.packOf===id&&+i.perPack===x.perPack);
       if(!have){const pc=String(+it.code+500);const pbar=String(r.packBarcode||"").replace(/\s+/g,"");const pk={name:shortNm(it).replace(/\s*\(?1\s*(pc|पीस)\)?\s*$/i,"")+" "+x.perPack+" पैक",cat:it.cat,sub:it.sub||"",unit:"pc",code:pc,
-          barcode:gtin(pbar)?pbar:ean13("2000000"+pc+"0"),packOf:id,perPack:x.perPack,sale:x.packSale,mrp:num(r.packMrp)||(num(r.mrp)?r2(num(r.mrp)*x.perPack):0),cost:num(r.cost)?r2(num(r.cost)*x.perPack):0,
+          barcode:gtin(pbar)?pbar:ownCode(pc),packOf:id,perPack:x.perPack,sale:x.packSale,mrp:num(r.packMrp)||(num(r.mrp)?r2(num(r.mrp)*x.perPack):0),cost:num(r.cost)?r2(num(r.cost)*x.perPack):0,
           track:false,min:0,secret:it.secret?it.secret+"P":"",emoji:"📦",hue:it.hue||200,order:(it.order||0)+0.5,active:true,fileBatch:D.batch,addedTs:ts};
         if(!gtin(pbar))labels.push(pid);await put(pid,pk);made.push(pid)}
       else if(st.price&&Math.abs(num(have.sale)-x.packSale)>0.001)await put(have.id,{sale:x.packSale},true)}

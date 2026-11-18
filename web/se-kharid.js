@@ -114,12 +114,12 @@ SKJ.makeItems=async function(plan){const r2=n=>Math.round((+n||0)*100)/100;let n
     const id="i"+ts.toString(36)+Math.random().toString(36).slice(2,5),code=nextCode(cat);
     const common={hi:"",alias:"",sub:tob?"tob":"",emoji:tob?"🚬":"🛒",cat,unit:"pc",hue:Math.floor(Math.random()*360),active:true,src:"kharid-bahi",addedTs:ts,addedBy:S.uid||"",...(tob&&SE.org==="mh177"?{rack:"5-1"}:{})};
     try{if(pp>1){const sec=tob?nextS():"";
-        const pc={...common,name:base+" 1 PC",short:(base+" 1PC").slice(0,24),secret:sec,perPack:pp,code,barcode:ean13("2000000"+code+"0"),track:true,min:pp,mrp:r2((+l.mrp||0)/pp),sale:+l.saleOne||r2((+l.sale||0)/pp),cost:r2((+l.uc||+l.rate||0)/pp),order:(S.items||[]).length+1};
+        const pc={...common,name:base+" 1 PC",short:(base+" 1PC").slice(0,24),secret:sec,perPack:pp,code,barcode:ownCode(code),track:true,min:pp,mrp:r2((+l.mrp||0)/pp),sale:+l.saleOne||r2((+l.sale||0)/pp),cost:r2((+l.uc||+l.rate||0)/pp),order:(S.items||[]).length+1};
         if(!S.demo)await S.db.collection("items").doc(id).set(pc);S.items.push({id,...pc});
         let c2=nextCode(cat,[code]);const pid=id+"-pk";
-        const pk={...common,name:SE.capNm(l.nm),short:SE.capNm(l.nm).slice(0,24),secret:sec?sec+"P":"",packOf:id,perPack:pp,code:c2,barcode:String(l.bc||ean13("2000000"+c2+"0")),track:false,min:0,mrp:+l.mrp||0,sale:+l.sale||r2((+l.saleOne||0)*pp),cost:r2(+l.uc||+l.rate||0),order:pc.order+0.5};
+        const pk={...common,name:SE.capNm(l.nm),short:SE.capNm(l.nm).slice(0,24),secret:sec?sec+"P":"",packOf:id,perPack:pp,code:c2,barcode:String(l.bc||ownCode(c2)),track:false,min:0,mrp:+l.mrp||0,sale:+l.sale||r2((+l.saleOne||0)*pp),cost:r2(+l.uc||+l.rate||0),order:pc.order+0.5};
         if(!S.demo)await S.db.collection("items").doc(pid).set(pk);S.items.push({id:pid,...pk});made.push(pk.name+" + 1 PC");n+=2}
-      else{const it={...common,name:SE.capNm(l.nm),short:SE.capNm(l.nm).slice(0,24),secret:tob?nextS():"",perPack:0,code,barcode:String(l.bc||ean13("2000000"+code+"0")),track:true,min:5,mrp:+l.mrp||0,sale:+l.sale||+l.saleOne||0,cost:r2(+l.uc||+l.rate||0),order:(S.items||[]).length+1};
+      else{const it={...common,name:SE.capNm(l.nm),short:SE.capNm(l.nm).slice(0,24),secret:tob?nextS():"",perPack:0,code,barcode:String(l.bc||ownCode(code)),track:true,min:5,mrp:+l.mrp||0,sale:+l.sale||+l.saleOne||0,cost:r2(+l.uc||+l.rate||0),order:(S.items||[]).length+1};
         if(!S.demo)await S.db.collection("items").doc(id).set(it);S.items.push({id,...it});made.push(it.name);n++}
       P.ok=false;P.why="🆕 बन गया";P.have=id}catch(e){P.why="नहीं बना: "+(e.code||e.message||"")}}
   return {n,made}};

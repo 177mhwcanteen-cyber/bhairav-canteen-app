@@ -858,7 +858,7 @@ const SIZES=SF.SIZES={"50x25":[50,25],"40x30":[40,30],"38x25":[38,25],"60x40":[6
    🛒 किराना — हर पैकेट पर पक्का: दुकान का नाम, सामान, पैकेट की मात्रा, कीमत, एक्सपायरी, बारकोड */
 let L={id:"",type:"kirana",copies:"1",size:LS.get("se_lsize")||"50x25",pack:"",price:"",exp:"",mfg:"",q:""};
 const isKirana=it=>it&&(it.cat==="kirana"||it.cat==="packed"||isPc(it.unit)&&it.cat!=="sabzi"&&it.cat!=="patta"&&it.cat!=="fal"&&it.cat!=="fast");
-const ownBar=it=>/^2000000\d{6}$/.test(String(it.barcode||"").split(",")[0]);
+const ownBar=it=>/^2[09]00000\d{6}$/.test(String(it.barcode||"").split(",")[0]);
 function itemCode(it){
   const own=String(it.barcode||"").split(",").map(x=>x.trim()).filter(Boolean)[0];
   if(own)return own;                       // कंपनी का अपना बारकोड (पैकेट पर पहले से छपा)
@@ -986,7 +986,7 @@ SF.bindLabel=function(){
       if(bc&&findByCode(bc)){toast("यह बारकोड पहले से "+findByCode(bc).name+" में है");return}
       const id="k"+uid(),used=S.items.map(i=>+i.plu||0);
       const code=nextCode("kirana");
-      const it={name,size:pack,pack,emoji:"🛒",cat:"kirana",unit:"pc",sale,cost,code,min:5,hue:210,order:S.items.length+1,active:true,barcode:bc||ean13("2000000"+code+"0"),track:true,alias:"",plu:Math.max(100,...used)+1};
+      const it={name,size:pack,pack,emoji:"🛒",cat:"kirana",unit:"pc",sale,cost,code,min:5,hue:210,order:S.items.length+1,active:true,barcode:bc||ownCode(code),track:true,alias:"",plu:Math.max(100,...used)+1};
       try{if(!S.demo)await S.db.collection("items").doc(id).set(it);if(!item(id))S.items.push({id,...it});if(!S.demo&&window.logPrice)logPrice(id,"sale",0,sale);
         L.id=id;L.pack=pack;SF.renderLabel(1);toast(name+" जुड़ गया — अब लेबल छापें")}catch(err){toast("नहीं जुड़ा — सिर्फ़ विक्रम जी जोड़ सकते हैं")}}
   });

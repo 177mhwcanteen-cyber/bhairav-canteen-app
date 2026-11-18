@@ -310,7 +310,7 @@ async function receive(b,btn){if(!RCV)return;btn.disabled=true;btn.textContent="
   try{for(const l of b.lines||[]){const got=num(RCV.got[l.lid]);rl.push({lid:l.lid,got});if(got!==num(l.qty))diff.push(`${l.name} ${l.qty} लिखे, ${got} आए`);if(!(got>0))continue;
       let id=l.itemId&&item(l.itemId)?l.itemId:"";if(!id&&l.bar){const ex=findByCode(l.bar);if(ex)id=ex.id}
       if(!id){id="i"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);const code=nextCode("kirana");
-        const bar=/^\d{8,14}$/.test(l.bar||"")&&!findByCode(l.bar)?l.bar:ean13("2000000"+code+"0");
+        const bar=/^\d{8,14}$/.test(l.bar||"")&&!findByCode(l.bar)?l.bar:ownCode(code);
         const it={name:l.name,hi:l.hi||"",emoji:"",cat:"kirana",sub:"",unit:"pc",size:"",mrp:num(l.mrp),sale:num(l.mrp)||0,cost:num(l.rate),code,barcode:bar,track:true,min:5,
           hue:Math.floor(Math.random()*360),order:S.items.length+1,active:true,src:"market",mp:b.no,addedBy:S.uid||"",addedByName:biller(),addedTs:ts,pending:!S.isOwner};
         if(!S.demo)await S.db.collection("items").doc(id).set(it);if(!item(id))S.items.push({id,...it});if(l.f&&!SE.photos[id])SE.photos[id]=l.f;nNew++}

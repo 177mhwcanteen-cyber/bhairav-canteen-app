@@ -234,7 +234,7 @@ async function apply(){
       if(S.isOwner){const p={};if(!r.ex.hi&&r.hi)p.hi=r.hi;if(!r.ex.size&&r.a.size)p.size=r.a.size;if(!(+r.ex.mrp)&&r.mrp)p.mrp=r.mrp;if(!r.ex.sub&&r.a.sub)p.sub=r.a.sub;if(!(+r.ex.cost)&&r.cost)p.cost=r.cost;
         if(!r.ex.barcode&&r.bar)p.barcode=r.bar;if(!r.ex.aiPrompt&&r.a.img)Object.assign(p,imgP(r.a));if(Object.keys(p).length){Object.assign(r.ex,p);if(!S.demo)S.db.doc("items/"+id).update(p).catch(()=>{})}}}
     else{nNew++;id="i"+uid();const cat=["kirana","fast","sabzi"].includes(r.a.cat)?r.a.cat:"kirana",code=nextCode(cat);
-      const bar=/^\d{8,14}$/.test(r.bar)&&!findByCode(r.bar)?r.bar:ean13("2000000"+code+"0");
+      const bar=/^\d{8,14}$/.test(r.bar)&&!findByCode(r.bar)?r.bar:ownCode(code);
       const it={name:r.name,hi:r.hi,emoji:r.a.emoji||"📦",cat,sub:(SUBS[cat]||[]).some(([k])=>k===r.a.sub)?r.a.sub:"",unit:"pc",size:r.a.size||"",mrp:r.mrp,sale:r.sale,cost:r.cost||0,code,barcode:bar,track:true,min:5,
         hue:Math.floor(Math.random()*360),order:S.items.length+1,active:true,src:"photo-ai",photoSrc:"shop",...imgP(r.a),addedBy:S.uid||"",addedByName:biller(),addedTs:ts,pending:!S.isOwner,...(r.exp?{exp:r.exp}:{})};
       // ऐप में छोटी फोटो (≈6-10 KB)
