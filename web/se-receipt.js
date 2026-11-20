@@ -79,7 +79,7 @@ SRc.draw=function(b,o,widthPx,cfg){
   const rr=(a,bb,w,h,r)=>{x.beginPath();x.moveTo(a+r,bb);x.arcTo(a+w,bb,a+w,bb+h,r);x.arcTo(a+w,bb+h,a,bb+h,r);x.arcTo(a,bb+h,a,bb,r);x.arcTo(a,bb,a+w,bb,r);x.closePath()};
   const SEP=()=>th==="modern"||th==="compact"?LINE(th==="compact"?1:1.5):th==="premium"?DLINE():DASH();
   const inst=b.mode==="inst";
-  const shop=(sh.logo&&!inst?"🛒 ":"")+(cfg.shop||o.shop||"भैरव कैंटीन");
+  const shop=(sh.logo&&!inst?"🛒 ":"")+SE.nm177(cfg.shop||o.shop||"भैरव कैंटीन");
   const tag=inst?(o.tag||""):(sh.tag?cfg.tag:"");
   /* ---------- ऊपर: दुकान ---------- */
   if(th==="modern"){const y0=y;const lines=[];font(fs(28),800,FB);const sL=wrap(x,shop,W-2*P-px(16));
@@ -87,10 +87,10 @@ SRc.draw=function(b,o,widthPx,cfg){
     sL.forEach(l=>{font(fs(28),800,FB);const tw=x.measureText(l).width;x.fillText(l,(W-tw)/2,y);y+=Math.round(fs(28)*1.25)});
     if(tag){font(fs(14),600);const tw=x.measureText(tag).width;x.fillText(tag,(W-tw)/2,y);y+=Math.round(fs(14)*1.35)}x.restore();y=y0+h+px(6);void lines}
   else if(th==="premium"){const y0=y;y+=px(10);T("✦ "+shop+" ✦",fs(27),"c",800,FB);if(tag)T(tag,fs(14),"c",600);
-    if(sh.addr&&cfg.addr)T(cfg.addr,fs(14),"c");if(sh.phone&&o.phone)T("📞 "+o.phone,fs(15),"c",700);if(sh.gst&&cfg.gst)T("GSTIN: "+cfg.gst,fs(13),"c",700);
+    if(sh.addr&&cfg.addr)T(SE.nm177(cfg.addr)||"Barmer",fs(14),"c");if(sh.phone&&o.phone)T("📞 "+o.phone,fs(15),"c",700);if(sh.gst&&cfg.gst)T("GSTIN: "+cfg.gst,fs(13),"c",700);
     y+=px(8);x.lineWidth=px(2.5);rr(P,y0,W-2*P,y-y0,px(12));x.stroke();x.lineWidth=px(1);rr(P+px(5),y0+px(5),W-2*P-px(10),y-y0-px(10),px(9));x.stroke();y+=px(8)}
   else{T(shop,fs(th==="compact"?24:30),"c",800,FB);if(tag)T(tag,fs(15),"c")}
-  if(th!=="premium"){if(sh.addr&&cfg.addr)T(cfg.addr,fs(th==="compact"?13:16),"c");if(sh.phone&&o.phone)T("📞 ऑर्डर: "+o.phone,fs(th==="compact"?13:16),"c");if(sh.gst&&cfg.gst)T("GSTIN: "+cfg.gst,fs(13),"c",700)}
+  if(th!=="premium"){if(sh.addr&&cfg.addr)T(SE.nm177(cfg.addr)||"Barmer",fs(th==="compact"?13:16),"c");if(sh.phone&&o.phone)T("📞 ऑर्डर: "+o.phone,fs(th==="compact"?13:16),"c");if(sh.gst&&cfg.gst)T("GSTIN: "+cfg.gst,fs(13),"c",700)}
   if(th==="classic"||th==="bigtotal")LINE();else if(th==="compact")DASH();
   /* ---------- ग्राहक टैग ---------- */
   if(sh.custTag&&o.custTag){const h=fs(34);x.fillStyle="#000";if(o.vip){x.fillRect(P,y,W-2*P,h);x.fillStyle="#fff"}else{x.lineWidth=Math.max(2,px(2));x.strokeRect(P,y,W-2*P,h)}

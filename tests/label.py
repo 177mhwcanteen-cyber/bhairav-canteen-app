@@ -57,7 +57,7 @@ async def main():
         await pg.click("#cats [data-tools]"); await pg.wait_for_timeout(150)  # चरण 4: औज़ार पहले खोलो
         chips = await pg.evaluate("[...document.querySelectorAll('#cats .chip')].slice(1,3).map(x=>x.textContent.trim())")
         assert "भाव" in chips[0] and "बारकोड" in chips[1], chips
-        await pg.click("[data-lblmode]")
+        await pg.click("[data-lblmode]"); await pg.wait_for_selector("#lblbar", state="visible", timeout=3000)
         assert await pg.is_visible("#lblbar"), "lblbar"
         await pg.screenshot(path=f"{SHOTS}/l1-mode.png")
         # टैप = +1 (बिक्री जैसा, कोई पॉपअप नहीं)
@@ -90,7 +90,7 @@ async def main():
         bar = await pg.evaluate("document.querySelector('#lblbar').innerHTML")
         assert "data-lblgo" in bar and "3·" in bar, bar
         # बंद करो → सामान फिर से बिल में
-        await pg.click("[data-lbloff]")
+        await pg.click("[data-lbloff]"); await pg.wait_for_selector("#lblbar", state="hidden", timeout=3000)
         assert await pg.is_hidden("#lblbar")
         await pg.click(f'#grid [data-item="{ids[3]}"] .tile'); await pg.wait_for_timeout(150)
         print("billing label mode ok")

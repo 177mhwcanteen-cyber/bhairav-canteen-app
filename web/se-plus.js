@@ -165,7 +165,9 @@ SX.orderPill=function(){let el=document.getElementById("sxOrd");const n=SX.order
   el.innerHTML=`📥 ऑर्डर <b>${m}</b>${n?'<i></i>':""}`;
   /* 🔔 हर नए ऑर्डर पर: बीप ×3 + कंपन + नाम के साथ सूचना (पहले सिर्फ़ एक बार बीप होती थी) */
   const seen=SX._seen||(SX._seen=new Set());const fresh=SX.orders.filter(o=>o.status==="new"&&!seen.has(o.id));fresh.forEach(o=>seen.add(o.id));
-  if(fresh.length&&SX._oInit){try{beep(true);setTimeout(()=>beep(true),350);setTimeout(()=>beep(true),700)}catch(e){}try{if(navigator.vibrate)navigator.vibrate([200,100,200,100,300])}catch(e){}
+  if(!n&&window.SRG&&SRG.st&&SRG.st.ringing)SRG.silence();
+  if(fresh.length&&SX._oInit){if(!(window.SRG&&SRG.running())){try{beep(true);setTimeout(()=>beep(true),350);setTimeout(()=>beep(true),700)}catch(e){}try{if(navigator.vibrate)navigator.vibrate([200,100,200,100,300])}catch(e){}}
+    if(window.SRG&&SRG.popup)SRG.popup(fresh[0]);
     toast("📥 नया ऑर्डर: "+fresh.map(o=>(o.name||"ग्राहक")+" ("+(o.items||[]).length+" सामान)").join(", ")+" — ऊपर 📥 दबाएँ")}
   else if(n&&!SX._oInit){try{beep(true)}catch(e){}}SX._oInit=1};
 SX.ordersSheet=function(){const L=SX.orders;$("#sheet").innerHTML=`<div class="scrim" data-close><div class="sheet px" role="dialog" aria-label="ऑर्डर"><div class="grab"></div>
@@ -179,7 +181,8 @@ SX.orderBill=async function(id){const o=SX.orders.find(x=>x.id===id);if(!o)retur
   if(String(o.phone||"").length===10){S.mode="walk";S.cust={phone:o.phone,name:o.name||""}}
   (o.items||[]).forEach(x=>{const it=item(x.id);if(it&&num(x.q)>0)try{quickAdd(it,num(x.q))}catch(e){}});
   try{if(!S.demo)await S.db.collection("orders").doc(id).update({status:"billing",byName:biller()||"",bts:Date.now()})}catch(e){}
-  S.sxOrder={id,phone:o.phone,ts:Date.now()};try{refreshAfterCart()}catch(e){}toast("📥 ऑर्डर का सामान बिल में — तौलकर मात्रा ठीक करें, फिर सेव करें")};
+  const cp=window.SON&&SON.parse?SON.parse(o):{};/* 🎟️ ऑनलाइन कूपन की छूट बिल में अपने-आप (बिलर बदल सकता है) */
+  S.sxOrder={id,phone:o.phone,ts:Date.now(),cpn:cp.cpn||"",cpnOff:num(cp.cpnOff)};try{refreshAfterCart()}catch(e){}toast(cp.cpn?"📥 ऑर्डर बिल में — 🎟️ कूपन "+cp.cpn+" की ₹"+num(cp.cpnOff)+" छूट लग जाएगी":"📥 ऑर्डर का सामान बिल में — तौलकर मात्रा ठीक करें, फिर सेव करें")};
 SX.orderSet=async function(id,status,extra){try{if(!S.demo)await S.db.collection("orders").doc(id).update({status,dts:Date.now(),byName:biller()||"",...(extra||{})})}catch(e){toast("नहीं हुआ: "+(e.code||""))}};
 /* बिल सेव हुआ तो उसी ग्राहक का ऑर्डर अपने-आप पूरा */
 SX.checkOrderDone=function(){const o=S.sxOrder;if(!o)return;const b=(S.dayBills||[]).find(x=>!x.cancelled&&x.ts>o.ts&&(!o.phone||x.custPhone===o.phone));if(b){S.sxOrder=null;SX.orderSet(o.id,"done",{billNo:b.no});toast("✓ ऑर्डर पूरा — बिल "+b.no)}};
